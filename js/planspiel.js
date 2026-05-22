@@ -558,7 +558,7 @@ document.getElementById('btn-sandbox-toggle')?.addEventListener('click', () => {
 // Ohne Session-Parameter läuft alles ausschließlich über localStorage — kein
 // Netzwerk-Zugriff, volle Offline-Funktionalität.
 
-const API_BASE = '/api'; // Relativ zur aktuellen Domain
+const API_BASE = 'https://planspiel-api.aramisda2.workers.dev/api';
 
 async function apiPushState() {
   if (!URL_SESSION_ID || !state.team_id) return;

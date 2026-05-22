@@ -7,10 +7,10 @@ compatibility_flags = ["nodejs_compat"]
 # Nach `wrangler kv namespace create SESSIONS` die ID hier eintragen:
 [[kv_namespaces]]
 binding = "SESSIONS"
-id      = "ERSETZEN_MIT_KV_NAMESPACE_ID"
+id      = "40b5cb200ccc4372a2f8ffab88233b29"
 # Für lokale Entwicklung (wrangler dev) optional:
 # preview_id = "ERSETZEN_MIT_PREVIEW_ID"
 
 [vars]
 # Erlaubte Frontend-Ursprünge für CORS (Komma-getrennt)
-ALLOWED_ORIGINS = "http://localhost:8080,https://planspiel.kassensturz.de"
+ALLOWED_ORIGINS = "http://localhost:8080,https://floderso.github.io,https://planspiel.kassensturz.de"
