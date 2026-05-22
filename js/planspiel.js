@@ -8,18 +8,39 @@ import { simulierePfad } from './rechner/transition.js';
 import { berechneAbgeleitet, CO2_BUDGET_DE } from './rechner/abgeleitet.js';
 import { PRESETS, KURS_KONFIG_DEFAULT, SCHOCK_BIBLIOTHEK } from './data.js';
 
+// ── URL-Konfiguration ─────────────────────────────────────────────────────────
+// Lehrpersonen können die Kurskonfiguration per URL-Parameter setzen:
+//   ?perioden=5&teams=4&sandbox=false&name=WiPo+SS26&session=abc123
+// Fehlende Parameter fallen auf KURS_KONFIG_DEFAULT zurück.
+
+function parseUrlKonfig() {
+  const p = new URLSearchParams(location.search);
+  const konfig = {};
+  if (p.has('perioden'))  konfig.perioden_anzahl      = Math.max(1, Math.min(12, +p.get('perioden')));
+  if (p.has('teams'))     konfig.team_groesse          = Math.max(1, Math.min(50, +p.get('teams')));
+  if (p.has('sandbox'))   konfig.sandbox               = p.get('sandbox') !== 'false';
+  if (p.has('name'))      konfig.kurs_name             = p.get('name').slice(0, 80);
+  return konfig;
+}
+
+// session_id aus URL — wird für Backend-Sync verwendet (Phase 2b)
+const URL_SESSION_ID = new URLSearchParams(location.search).get('session') ?? null;
+
 // ── LocalStorage-Schema ──────────────────────────────────────────────────────
 
 const LS_KEY = 'kassensturz_planspiel_v1';
 
 function defaultState(konfig = KURS_KONFIG_DEFAULT) {
+  const urlKonfig   = parseUrlKonfig();
+  const mergedKonfig = { ...konfig, ...urlKonfig };
   return {
     version:         1,
     team_id:         'Team A',
-    sandbox:         konfig.sandbox ?? true,
-    kurs_konfig:     { ...konfig },
+    sandbox:         mergedKonfig.sandbox ?? true,
+    session_id:      URL_SESSION_ID,
+    kurs_konfig:     mergedKonfig,
     current_periode: 0,
-    perioden:        Array.from({ length: konfig.perioden_anzahl }, (_, i) => ({
+    perioden:        Array.from({ length: mergedKonfig.perioden_anzahl }, (_, i) => ({
       idx:    i,
       locked: false,
       params: { ...PRESETS.status_quo, invest_impuls: 0 },
@@ -38,6 +59,8 @@ function loadState() {
 
 function saveState(state) {
   try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (_) {}
+  // Bei aktiver Session asynchron ans Backend pushen (Fehler werden ignoriert)
+  if (URL_SESSION_ID) apiPushState();
 }
 
 // ── Simulation ────────────────────────────────────────────────────────────────
@@ -143,6 +166,11 @@ function renderSessionBar() {
   document.getElementById('bar-total').textContent   = state.kurs_konfig.perioden_anzahl;
   const sandboxBadge = document.getElementById('sandbox-badge');
   sandboxBadge.style.display = state.sandbox ? '' : 'none';
+  const kursNameEl = document.getElementById('bar-kurs-name');
+  if (kursNameEl) {
+    kursNameEl.textContent = state.kurs_konfig.kurs_name ?? '';
+    kursNameEl.style.display = state.kurs_konfig.kurs_name ? '' : 'none';
+  }
 }
 
 function renderPeriodNav() {
@@ -525,7 +553,78 @@ document.getElementById('btn-sandbox-toggle')?.addEventListener('click', () => {
   renderAll();
 });
 
+// ── API-Sync (Phase 2b) ───────────────────────────────────────────────────────
+// Aktiv nur wenn ?session=... in der URL gesetzt ist (URL_SESSION_ID != null).
+// Ohne Session-Parameter läuft alles ausschließlich über localStorage — kein
+// Netzwerk-Zugriff, volle Offline-Funktionalität.
+
+const API_BASE = '/api'; // Relativ zur aktuellen Domain
+
+async function apiPushState() {
+  if (!URL_SESSION_ID || !state.team_id) return;
+  try {
+    await fetch(`${API_BASE}/sessions/${URL_SESSION_ID}/teams/${encodeURIComponent(state.team_id)}`, {
+      method:  'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ perioden: state.perioden }),
+    });
+  } catch (_) {
+    // Netzwerkfehler ignorieren — localStorage-State bleibt gültig
+  }
+}
+
+async function apiVote(periode_idx) {
+  if (!URL_SESSION_ID || !state.team_id) return null;
+  try {
+    const res = await fetch(
+      `${API_BASE}/sessions/${URL_SESSION_ID}/teams/${encodeURIComponent(state.team_id)}/vote`,
+      {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ periode_idx }),
+      }
+    );
+    return res.ok ? await res.json() : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function apiPollSession() {
+  if (!URL_SESSION_ID) return;
+  try {
+    const res = await fetch(`${API_BASE}/sessions/${URL_SESSION_ID}`);
+    if (!res.ok) return;
+    const session = await res.json();
+    // Andere Teams: locked-Status übernehmen, wenn sich etwas geändert hat
+    let changed = false;
+    for (const [teamName, teamState] of Object.entries(session.teams)) {
+      if (teamName === state.team_id) continue;
+      for (const remotePeriod of teamState.perioden) {
+        const local = state.perioden[remotePeriod.idx];
+        if (local && remotePeriod.locked && !local.locked) {
+          local.locked = true;
+          changed = true;
+        }
+      }
+    }
+    if (changed) {
+      saveState(state);
+      renderAll();
+    }
+  } catch (_) {}
+}
+
+// Polling starten (nur mit aktiver Session, nicht im Sandbox-Modus)
+function startPolling() {
+  if (!URL_SESSION_ID || state.sandbox) return;
+  setInterval(apiPollSession, 5000);
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 state = loadState();
+// session_id aus URL immer neu setzen (auch wenn localStorage älteren State hat)
+if (URL_SESSION_ID) state.session_id = URL_SESSION_ID;
 renderAll();
+startPolling();

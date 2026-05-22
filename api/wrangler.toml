@@ -1,0 +1,16 @@
+name = "planspiel-api"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# KV-Namespace für Session-Storage
+# Nach `wrangler kv namespace create SESSIONS` die ID hier eintragen:
+[[kv_namespaces]]
+binding = "SESSIONS"
+id      = "ERSETZEN_MIT_KV_NAMESPACE_ID"
+# Für lokale Entwicklung (wrangler dev) optional:
+# preview_id = "ERSETZEN_MIT_PREVIEW_ID"
+
+[vars]
+# Erlaubte Frontend-Ursprünge für CORS (Komma-getrennt)
+ALLOWED_ORIGINS = "http://localhost:8080,https://planspiel.kassensturz.de"
