@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kassensturz Planspiel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ── Design-Tokens ── */
+    :root {
+      --bg:        #F1F3F7;
+      --surface:   #FFFFFF;
+      --surface-2: #F8F9FB;
+      --ink:       #0D1117;
+      --ink-2:     #374151;
+      --muted:     #6B7280;
+      --border:    #E3E6EC;
+      --divider:   #CDD2DA;
+      --accent:    #1B4FD8;
+      --accent-lt: #EEF2FF;
+      --good:      #166534;
+      --good-bg:   #F0FDF4;
+      --bad:       #991B1B;
+      --bad-bg:    #FEF2F2;
+      --warn:      #92400E;
+      --warn-bg:   #FFFBEB;
+      --neutral:   #374151;
+      --bar-h:     48px;
+      --nav-h:     56px;
+      --ctrl-w:    300px;
+      --radius:    6px;
+      --shadow:    0 1px 3px rgba(0,0,0,.06);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    /* ── Session Bar ── */
+    #session-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: var(--bar-h);
+      background: #111827;
+      color: #E5E7EB;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 20px;
+      border-bottom: 1px solid #374151;
+    }
+    #session-bar .logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 500;
+      font-size: 14px;
+      color: #F9FAFB;
+      letter-spacing: -.5px;
+    }
+    #session-bar .logo span { color: #60A5FA; }
+    .bar-sep { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    .bar-team-label { color: #9CA3AF; font-size: 11px; }
+    .bar-team-name  { color: #F3F4F6; font-weight: 500; }
+    .bar-period     { color: #9CA3AF; font-size: 11px; margin-left: auto; }
+    .bar-period strong { color: #60A5FA; font-family: 'JetBrains Mono', monospace; }
+    #sandbox-badge {
+      background: #374151;
+      color: #D1D5DB;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      cursor: pointer;
+      border: 1px solid #4B5563;
+    }
+    #sandbox-badge:hover { background: #4B5563; }
+    #btn-reset {
+      margin-left: 8px;
+      background: transparent;
+      border: 1px solid #374151;
+      color: #9CA3AF;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #btn-reset:hover { border-color: #6B7280; color: #D1D5DB; }
+
+    /* ── Period Navigator ── */
+    #period-nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      height: var(--nav-h);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 8px;
+      overflow-x: auto;
+    }
+    #period-steps { display: flex; gap: 6px; flex: 1; }
+    .period-step {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--ink-2);
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .period-step:hover { border-color: var(--accent); color: var(--accent); }
+    .period-step.active {
+      border-color: var(--accent);
+      background: var(--accent-lt);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .period-step.locked { opacity: .75; }
+    .step-num {
+      width: 20px; height: 20px;
+      background: currentColor;
+      color: white;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .period-step.active .step-num { background: var(--accent); color: white; }
+    .lock-icon { font-size: 10px; }
+    .deadline-badge {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 4px;
+      background: var(--warn-bg);
+      color: var(--warn);
+      border: 1px solid #FDE68A;
+      white-space: nowrap;
+    }
+
+    /* ── Shock Banner ── */
+    #shock-banner {
+      background: #FEF3C7;
+      border-bottom: 1px solid #FDE68A;
+      padding: 8px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: #92400E;
+    }
+    .shock-type-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #F59E0B;
+      color: white;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    #shock-name  { font-weight: 600; }
+    #shock-desc  { color: #A37000; }
+
+    /* ── Main Grid ── */
+    #main-grid {
+      display: grid;
+      grid-template-columns: var(--ctrl-w) 1fr;
+      height: calc(100vh - var(--bar-h) - var(--nav-h));
+      overflow: hidden;
+    }
+
+    /* ── Controls Panel ── */
+    #controls-panel {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    #controls-sections { flex: 1; }
+
+    .ctrl-section {
+      border-bottom: 1px solid var(--border);
+    }
+    .ctrl-section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+      user-select: none;
+      font-weight: 500;
+      font-size: 12px;
+    }
+    .ctrl-section-header:hover { background: var(--surface-2); }
+    .ctrl-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .ctrl-section-label { flex: 1; }
+    .ctrl-chevron { color: var(--muted); font-size: 14px; transition: transform .15s; }
+    .ctrl-section-body { padding: 0 14px 10px; }
+    .ctrl-section-body.collapsed { display: none; }
+
+    .slider-row { padding: 7px 0; }
+    .slider-label-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .slider-varname {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--accent);
+      background: var(--accent-lt);
+      padding: 1px 5px;
+      border-radius: 3px;
+      cursor: help;
+      flex-shrink: 0;
+    }
+    .slider-label { flex: 1; color: var(--ink-2); font-size: 12px; }
+    .slider-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--ink);
+    }
+    .slider-input {
+      width: 100%;
+      height: 4px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .slider-input.disabled { opacity: .45; cursor: not-allowed; }
+    .slider-meta { margin-top: 3px; }
+    .sq-label { font-size: 10px; color: var(--muted); }
+
+    /* Commit area */
+    .commit-area {
+      padding: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .btn-commit {
+      width: 100%;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      transition: background .15s;
+    }
+    .btn-commit:hover:not(:disabled) { background: #1741c0; }
+    .btn-commit.locked { background: #4B5563; cursor: default; }
+    .btn-commit small { font-size: 11px; font-weight: 400; opacity: .8; }
+    .sandbox-note {
+      text-align: center;
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    /* ── Results Panel ── */
+    #results-panel {
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* KPI Strip */
+    #kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .kpi-cell {
+      background: var(--surface);
+      padding: 12px 14px;
+    }
+    .kpi-label {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 4px;
+    }
+    .kpi-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--ink);
+      margin-bottom: 3px;
+    }
+    .kpi-delta {
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .kpi-sub { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+    /* Panels */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .panel-header {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .panel-header .panel-ref {
+      margin-left: auto;
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 400;
+    }
+    .panel-body { padding: 12px 14px; }
+
+    /* History Table */
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .history-table th {
+      text-align: left;
+      font-weight: 500;
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .history-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--ink-2);
+    }
+    .history-table .active-row td { background: var(--accent-lt); }
+    .history-table .schock-row td:first-child::after { content: ' ⚡'; }
+
+    /* Fiskal Panel */
+    .fiskal-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .fiskal-row:last-child { border-bottom: none; }
+    .fiskal-label { display: flex; flex-direction: column; gap: 1px; }
+    .fiskal-var { font-size: 12px; font-weight: 500; }
+    .fiskal-formula { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+    .fiskal-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 500;
+      font-size: 13px;
+    }
+
+    /* Distribution Chart */
+    .dist-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 3px 0;
+      font-size: 11px;
+    }
+    .dist-label { width: 32px; color: var(--muted); flex-shrink: 0; }
+    .dist-bar-wrap { flex: 1; height: 12px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
+    .dist-bar { height: 100%; border-radius: 2px; transition: width .3s; }
+    .good-bar { background: #16a34a; }
+    .bad-bar  { background: #dc2626; }
+    .warn-bar { background: #f59e0b; }
+    .dist-val { width: 72px; text-align: right; font-family: 'JetBrains Mono', monospace; }
+
+    /* HANK panel */
+    .hank-mu {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .hank-mu-label { font-family: 'JetBrains Mono', monospace; color: var(--muted); }
+    .hank-mu-val   { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 600; }
+    .hank-mu-ref   { font-size: 11px; color: var(--muted); }
+    .hank-note     { font-size: 11px; color: var(--ink-2); margin-bottom: 6px; }
+    .hank-ref      { font-size: 10px; color: var(--muted); }
+
+    /* Domar panel */
+    .domar-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+    .domar-rg { font-weight: 600; }
+    .domar-verdict {
+      margin-top: 8px;
+      font-weight: 600;
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 4px;
+    }
+    .domar-verdict.good { background: var(--good-bg); color: var(--good); }
+    .domar-verdict.bad  { background: var(--bad-bg);  color: var(--bad); }
+    .domar-ref { font-size: 10px; color: var(--muted); margin-top: 6px; }
+
+    /* CO2 budget */
+    .co2-track {
+      height: 12px;
+      background: var(--surface-2);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 6px;
+      border: 1px solid var(--border);
+    }
+    .co2-fill { height: 100%; border-radius: 6px; transition: width .3s; }
+    .co2-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* GGI */
+    #ggi-value {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .ggi-label { font-size: 11px; color: var(--muted); }
+    .ggi-val   { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 600; }
+    .ggi-sub   { font-size: 11px; color: var(--muted); }
+
+    /* Two-col layout for smaller panels */
+    .panel-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    /* Color classes */
+    .good    { color: var(--good); }
+    .bad     { color: var(--bad); }
+    .warn    { color: var(--warn); }
+    .neutral { color: var(--neutral); }
+    .mono    { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body>
+
+<!-- ── Session Bar ── -->
+<header id="session-bar">
+  <div class="logo">Kassensturz <span>Planspiel</span></div>
+  <div class="bar-sep"></div>
+  <div>
+    <div class="bar-team-label">Team</div>
+    <div class="bar-team-name" id="bar-team">Team A</div>
+  </div>
+  <div class="bar-sep"></div>
+  <div class="bar-period">
+    Periode <strong id="bar-periode">1</strong> / <strong id="bar-total">5</strong>
+  </div>
+  <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+    <div id="sandbox-badge" title="Sandbox-Modus: kein Scoring, kein Lock">Sandbox</div>
+    <button id="btn-reset">↺ Reset</button>
+  </div>
+</header>
+
+<!-- ── Period Navigator ── -->
+<nav id="period-nav">
+  <div id="period-steps"></div>
+  <div id="deadline-badge" class="deadline-badge" style="display:none">⏱ 48 h</div>
+</nav>
+
+<!-- ── Shock Banner ── -->
+<div id="shock-banner" style="display:none">
+  <span id="shock-type-badge" class="shock-type-badge">energie</span>
+  <span id="shock-name">—</span>
+  <span id="shock-desc"></span>
+</div>
+
+<!-- ── Main Grid ── -->
+<div id="main-grid">
+
+  <!-- Controls -->
+  <aside id="controls-panel">
+    <div id="controls-sections"></div>
+  </aside>
+
+  <!-- Results -->
+  <main id="results-panel">
+
+    <!-- KPI Strip -->
+    <div id="kpi-strip"></div>
+
+    <!-- History Table -->
+    <div class="panel">
+      <div class="panel-header">
+        Perioden-Verlauf
+        <span class="panel-ref">simulierePfad() — alle Perioden</span>
+      </div>
+      <div class="panel-body" style="padding:0; overflow-x:auto;">
+        <div id="history-table"></div>
+      </div>
+    </div>
+
+    <!-- Fiskal + Verteilung nebeneinander -->
+    <div class="panel-row">
+
+      <!-- Fiskalstruktur -->
+      <div class="panel">
+        <div class="panel-header">
+          Fiskalstruktur &amp; Nachhaltigkeit
+          <span class="panel-ref">Blanchard (2019) · Domar (1944)</span>
+        </div>
+        <div class="panel-body" id="fiskal-body"></div>
+      </div>
+
+      <!-- Dezilverteilung -->
+      <div class="panel">
+        <div class="panel-header">
+          Einkommenseffekte je Dezil
+          <span class="panel-ref">SOEP v40 · Mikrozensus 2024</span>
+        </div>
+        <div class="panel-body" id="verteilung-chart"></div>
+      </div>
+
+    </div>
+
+    <!-- HANK + Domar nebeneinander -->
+    <div class="panel-row">
+
+      <!-- HANK Multiplikator -->
+      <div class="panel">
+        <div class="panel-header">
+          HANK-Multiplikator μ<sub>G</sub>
+          <span class="panel-ref">Kaplan/Moll/Violante (2018)</span>
+        </div>
+        <div class="panel-body" id="hank-body"></div>
+      </div>
+
+      <!-- Domar r-g -->
+      <div class="panel">
+        <div class="panel-header">
+          Schuldentragfähigkeit (r − g)
+          <span class="panel-ref">Domar (1944) · Blanchard (2019)</span>
+        </div>
+        <div class="panel-body" id="domar-body"></div>
+      </div>
+
+    </div>
+
+    <!-- CO₂-Budget + GGI -->
+    <div class="panel">
+      <div class="panel-header">
+        CO₂-Budget &amp; Generationengerechtigkeit
+        <span class="panel-ref">IPCC AR6 · SRU (2022)</span>
+      </div>
+      <div class="panel-body">
+        <div style="font-size:11px; color:var(--muted); margin-bottom:6px;">
+          Deutsches 1,5°C-Budget ab 2025: 6.600 Mt CO₂e (SRU 2022 · IPCC AR6 SPM C.1)
+        </div>
+        <div id="co2-budget-bar"></div>
+        <div id="ggi-value"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script type="module" src="js/planspiel.js"></script>
+</body>
+</html>
