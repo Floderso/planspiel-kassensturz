@@ -190,6 +190,13 @@ function startDashboard(sessionId, token, joinUrl, meta) {
     await uploadMatrikeln(sessionId, token, matrikeln, document.getElementById('csv-status-dash'));
   });
 
+  // Sofortige Lade-Anzeige bis erster Poll-Response da ist
+  const tbodyEl = document.getElementById('teams-tbody');
+  if (tbodyEl) {
+    tbodyEl.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Lade Teams …</td></tr>`;
+  }
+  document.getElementById('last-updated').textContent = 'Verbinde …';
+
   pollDashboard(sessionId, token);
   pollInterval = setInterval(() => pollDashboard(sessionId, token), 5000);
 }
@@ -197,10 +204,18 @@ function startDashboard(sessionId, token, joinUrl, meta) {
 async function pollDashboard(sessionId, token) {
   try {
     const res = await fetch(`${API_BASE}/sessions/${sessionId}/admin?token=${token}`);
-    if (!res.ok) return;
+    if (!res.ok) {
+      const msg = document.getElementById('last-updated');
+      if (msg) msg.textContent = `Fehler beim Laden: HTTP ${res.status} — Token korrekt?`;
+      return;
+    }
     const session = await res.json();
     renderDashboard(session);
-  } catch (_) {}
+  } catch (e) {
+    console.error('pollDashboard:', e);
+    const msg = document.getElementById('last-updated');
+    if (msg) msg.textContent = 'Netzwerkfehler: ' + e.message;
+  }
 }
 
 function renderDashboard(session) {
@@ -291,10 +306,14 @@ function renderDashboard(session) {
     tbody.appendChild(tr);
   }
 
-  // Schock-Panel einmalig initialisieren (User-Auswahl nicht überschreiben)
+  // Schock-Panel einmalig initialisieren (Fehler dürfen Tabelle nicht blockieren)
   if (!schockPanelReady) {
-    renderSchockPanel(session);
-    schockPanelReady = true;
+    try {
+      renderSchockPanel(session);
+      schockPanelReady = true;
+    } catch (e) {
+      console.error('renderSchockPanel:', e);
+    }
   }
 
   const expires = new Date(session.expires_at);
