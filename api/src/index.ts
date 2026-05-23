@@ -45,6 +45,12 @@ type TeamState = {
   last_updated: string;
 };
 
+type Member = {
+  name: string;
+  team: string;
+  joined_at: string;
+};
+
 type SessionData = {
   id: string;
   name: string;
@@ -54,14 +60,20 @@ type SessionData = {
   sandbox: boolean;
   created_at: string;
   expires_at: string;
+  admin_token: string;
+  team_names: string[];
+  members: Member[];
   teams: Record<string, TeamState>;
 };
 
 // ── Hilfsfunktionen ───────────────────────────────────────────────────────────
 
-/** Erzeugt eine zufällige 6-stellige alphanumerische Session-ID */
-function generateSessionId(): string {
-  return Math.random().toString(36).slice(2, 8).toUpperCase();
+function generateId(len: number): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(len)))
+    .map(b => b.toString(36).padStart(2, '0'))
+    .join('')
+    .slice(0, len)
+    .toUpperCase();
 }
 
 async function getSession(kv: KVNamespace, id: string): Promise<SessionData | null> {
@@ -71,73 +83,159 @@ async function getSession(kv: KVNamespace, id: string): Promise<SessionData | nu
 }
 
 async function putSession(kv: KVNamespace, session: SessionData): Promise<void> {
-  // TTL: 24 Stunden (86400 Sekunden) — Sessions laufen automatisch ab
   await kv.put(`session:${session.id}`, JSON.stringify(session), {
     expirationTtl: 86400,
   });
+}
+
+function requireToken(session: SessionData, token: string | undefined) {
+  return token && token === session.admin_token;
 }
 
 // ── App ───────────────────────────────────────────────────────────────────────
 
 const app = new Hono<{ Bindings: Env }>();
 
-// CORS: erlaubt nur konfigurierte Ursprünge (wrangler.toml → ALLOWED_ORIGINS)
 app.use('/api/*', async (c, next) => {
   const origins = c.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
   return cors({ origin: origins, allowMethods: ['GET', 'POST', 'PUT'] })(c, next);
 });
 
-// ── Endpunkte ─────────────────────────────────────────────────────────────────
+// ── Session-Endpunkte ─────────────────────────────────────────────────────────
 
 /**
  * POST /api/sessions
- * Erstellt eine neue Spielsession für eine Lehrveranstaltung.
+ * Erstellt eine neue Spielsession.
  *
- * Body: { name, perioden_anzahl, team_groesse, min_teilnahme_quote, sandbox }
- * Response: { session_id, join_url }
+ * Body: { name, perioden_anzahl, team_groesse, team_names, min_teilnahme_quote, sandbox }
+ * Response: { session_id, admin_token, join_url, admin_url }
  */
 app.post('/api/sessions', async (c) => {
-  const body = await c.req.json<Partial<SessionData>>();
-  const id = generateSessionId();
-  const now = new Date().toISOString();
+  const body = await c.req.json<Partial<SessionData> & { team_names?: string[] }>();
+  const id          = generateId(6);
+  const admin_token = generateId(32);
+  const now         = new Date().toISOString();
+
+  const defaultTeamNames = ['Team A', 'Team B', 'Team C'];
+  const team_names = (body.team_names && body.team_names.length > 0)
+    ? body.team_names
+    : defaultTeamNames;
 
   const session: SessionData = {
     id,
-    name:                 body.name               ?? 'Planspiel',
-    perioden_anzahl:      body.perioden_anzahl     ?? 5,
-    team_groesse:         body.team_groesse        ?? 4,
-    min_teilnahme_quote:  body.min_teilnahme_quote ?? 0.5,
-    sandbox:              body.sandbox             ?? false,
-    created_at:           now,
-    expires_at:           new Date(Date.now() + 86400_000).toISOString(),
-    teams:                {},
+    admin_token,
+    name:                body.name               ?? 'Planspiel',
+    perioden_anzahl:     body.perioden_anzahl     ?? 5,
+    team_groesse:        body.team_groesse        ?? 4,
+    min_teilnahme_quote: body.min_teilnahme_quote ?? 0.5,
+    sandbox:             body.sandbox             ?? false,
+    team_names,
+    members:             [],
+    created_at:          now,
+    expires_at:          new Date(Date.now() + 86400_000).toISOString(),
+    teams:               {},
   };
 
   await putSession(c.env.SESSIONS, session);
 
-  const origin = c.req.header('origin') ?? '';
-  const join_url = `${origin}?session=${id}&perioden=${session.perioden_anzahl}&teams=${session.team_groesse}&sandbox=${session.sandbox}&name=${encodeURIComponent(session.name)}`;
+  const origin    = c.req.header('origin') ?? '';
+  const baseParams = `session=${id}&perioden=${session.perioden_anzahl}&teams=${session.team_groesse}&sandbox=${session.sandbox}&name=${encodeURIComponent(session.name)}`;
+  const join_url  = `${origin}?${baseParams}`;
+  const admin_url = `${origin}/admin.html?session=${id}&token=${admin_token}`;
 
-  return c.json({ session_id: id, join_url }, 201);
+  return c.json({ session_id: id, admin_token, join_url, admin_url }, 201);
 });
 
 /**
  * GET /api/sessions/:id
- * Gibt den vollständigen Session-State zurück (alle Teams).
- * Wird vom Frontend alle 5 Sekunden gepolt (→ ADR 004).
+ * Öffentlicher State — alle Teams, ohne admin_token und ohne members.
  */
 app.get('/api/sessions/:id', async (c) => {
   const session = await getSession(c.env.SESSIONS, c.req.param('id'));
   if (!session) return c.json({ error: 'Session nicht gefunden' }, 404);
-  return c.json(session);
+
+  const { admin_token: _, members: __, ...pub } = session;
+  return c.json(pub);
 });
+
+/**
+ * GET /api/sessions/:id/admin?token=...
+ * Vollständiger State inkl. members — nur für Lehrpersonen.
+ */
+app.get('/api/sessions/:id/admin', async (c) => {
+  const session = await getSession(c.env.SESSIONS, c.req.param('id'));
+  if (!session) return c.json({ error: 'Session nicht gefunden' }, 404);
+  if (!requireToken(session, c.req.query('token'))) {
+    return c.json({ error: 'Nicht autorisiert' }, 403);
+  }
+  const { admin_token: _, ...adminView } = session;
+  return c.json(adminView);
+});
+
+// ── Member-Endpunkte ──────────────────────────────────────────────────────────
+
+/**
+ * GET /api/sessions/:id/members
+ * Öffentliche Mitgliederliste — für die Belegungsanzeige im Team-Picker.
+ */
+app.get('/api/sessions/:id/members', async (c) => {
+  const session = await getSession(c.env.SESSIONS, c.req.param('id'));
+  if (!session) return c.json({ error: 'Session nicht gefunden' }, 404);
+
+  const belegung: Record<string, number> = {};
+  for (const name of session.team_names) belegung[name] = 0;
+  for (const m of session.members) {
+    belegung[m.team] = (belegung[m.team] ?? 0) + 1;
+  }
+
+  return c.json({
+    team_names:   session.team_names,
+    team_groesse: session.team_groesse,
+    belegung,
+    anzahl:       session.members.length,
+  });
+});
+
+/**
+ * POST /api/sessions/:id/members
+ * Studierenden in Session registrieren und einem Team zuweisen.
+ *
+ * Body: { name, team }
+ * Response: { ok, member }
+ */
+app.post('/api/sessions/:id/members', async (c) => {
+  const session = await getSession(c.env.SESSIONS, c.req.param('id'));
+  if (!session) return c.json({ error: 'Session nicht gefunden' }, 404);
+
+  const { name, team } = await c.req.json<{ name: string; team: string }>();
+
+  if (!name?.trim()) return c.json({ error: 'Name darf nicht leer sein' }, 400);
+  if (!session.team_names.includes(team)) {
+    return c.json({ error: 'Ungültiges Team' }, 400);
+  }
+
+  // Idempotent: gleiche Name+Team-Kombination nicht doppelt eintragen
+  const existing = session.members.find(m => m.name === name.trim() && m.team === team);
+  if (existing) return c.json({ ok: true, member: existing });
+
+  // Team-Kapazität prüfen
+  const belegung = session.members.filter(m => m.team === team).length;
+  if (belegung >= session.team_groesse) {
+    return c.json({ error: 'Team ist voll' }, 409);
+  }
+
+  const member: Member = { name: name.trim(), team, joined_at: new Date().toISOString() };
+  session.members.push(member);
+  await putSession(c.env.SESSIONS, session);
+
+  return c.json({ ok: true, member }, 201);
+});
+
+// ── Team-Endpunkte ────────────────────────────────────────────────────────────
 
 /**
  * PUT /api/sessions/:id/teams/:team
  * Speichert den State eines Teams (Parameter + locked-Status je Periode).
- * Wird nach jeder Parameteränderung und beim Abschließen einer Periode aufgerufen.
- *
- * Body: { perioden: TeamPeriod[] }
  */
 app.put('/api/sessions/:id/teams/:team', async (c) => {
   const session = await getSession(c.env.SESSIONS, c.req.param('id'));
@@ -158,9 +256,6 @@ app.put('/api/sessions/:id/teams/:team', async (c) => {
 /**
  * POST /api/sessions/:id/teams/:team/vote
  * Registriert eine Stimme für den Perioden-Abschluss.
- * Wenn Quorum erreicht: Periode wird automatisch gesperrt.
- *
- * Body: { periode_idx: number }
  */
 app.post('/api/sessions/:id/teams/:team/vote', async (c) => {
   const session = await getSession(c.env.SESSIONS, c.req.param('id'));
@@ -177,10 +272,11 @@ app.post('/api/sessions/:id/teams/:team/vote', async (c) => {
   if (!periode) return c.json({ error: 'Ungültiger Perioden-Index' }, 400);
   if (periode.locked) return c.json({ ok: true, locked: true, message: 'Periode bereits gesperrt' });
 
-  periode.votes = Math.min(session.team_groesse, periode.votes + 1);
+  const teamMembers = session.members.filter(m => m.team === teamName).length;
+  const quorum      = Math.max(1, teamMembers);
+  periode.votes     = Math.min(quorum, periode.votes + 1);
 
-  const minVotes = Math.ceil(session.team_groesse * session.min_teilnahme_quote);
-  if (session.sandbox || periode.votes >= minVotes) {
+  if (session.sandbox || periode.votes >= Math.ceil(quorum * session.min_teilnahme_quote)) {
     periode.locked = true;
   }
 
@@ -192,8 +288,7 @@ app.post('/api/sessions/:id/teams/:team/vote', async (c) => {
 
 /**
  * GET /api/sessions/:id/results
- * Gibt die abgeschlossenen Parameter aller Teams zurück — für den Ergebnis-Vergleich.
- * Das Frontend berechnet die Simulation aus diesen Parametern neu.
+ * Parameter aller Teams — Frontend berechnet KPIs client-seitig.
  */
 app.get('/api/sessions/:id/results', async (c) => {
   const session = await getSession(c.env.SESSIONS, c.req.param('id'));
@@ -208,6 +303,7 @@ app.get('/api/sessions/:id/results', async (c) => {
     session_id:      session.id,
     name:            session.name,
     perioden_anzahl: session.perioden_anzahl,
+    team_names:      session.team_names,
     teams:           results,
   });
 });

@@ -487,9 +487,82 @@
     .warn    { color: var(--warn); }
     .neutral { color: var(--neutral); }
     .mono    { font-family: 'JetBrains Mono', monospace; }
+
+    /* ── Team-Picker Overlay ── */
+    #team-picker-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,.55);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #team-picker-overlay.hidden { display: none; }
+    .picker-card {
+      background: var(--surface);
+      border-radius: 10px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.18);
+      padding: 32px;
+      width: 420px;
+      max-width: 95vw;
+    }
+    .picker-card h2 {
+      font-size: 16px; font-weight: 600; margin-bottom: 4px;
+    }
+    .picker-subtitle {
+      font-size: 12px; color: var(--muted); margin-bottom: 20px;
+    }
+    .picker-label {
+      font-size: 11px; font-weight: 600; color: var(--ink-2);
+      text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px;
+    }
+    #picker-name-input {
+      width: 100%; padding: 8px 10px; border: 1px solid var(--border);
+      border-radius: var(--radius); font-size: 13px; margin-bottom: 18px;
+      font-family: inherit; outline: none;
+    }
+    #picker-name-input:focus { border-color: var(--accent); }
+    .picker-teams { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .picker-team-btn {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px; border: 1.5px solid var(--border);
+      border-radius: var(--radius); background: var(--surface-2);
+      cursor: pointer; font-size: 13px; font-family: inherit;
+      transition: border-color .15s, background .15s;
+    }
+    .picker-team-btn:hover:not(:disabled) {
+      border-color: var(--accent); background: var(--accent-lt);
+    }
+    .picker-team-btn:disabled {
+      opacity: .45; cursor: not-allowed;
+    }
+    .picker-team-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; color: var(--muted);
+    }
+    .picker-team-count.full { color: var(--bad); }
+    #picker-error {
+      font-size: 12px; color: var(--bad); margin-bottom: 12px;
+      min-height: 18px;
+    }
+    #picker-loading {
+      font-size: 12px; color: var(--muted); margin-top: 12px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
+
+<!-- ── Team-Picker Overlay ── -->
+<div id="team-picker-overlay" class="hidden">
+  <div class="picker-card">
+    <h2>Planspiel beitreten</h2>
+    <div class="picker-subtitle" id="picker-session-name"></div>
+    <div class="picker-label">Dein Name</div>
+    <input id="picker-name-input" type="text" placeholder="Vor- und Nachname" maxlength="60" autocomplete="off">
+    <div class="picker-label">Team wählen</div>
+    <div class="picker-teams" id="picker-teams"></div>
+    <div id="picker-error"></div>
+    <div id="picker-loading"></div>
+  </div>
+</div>
 
 <!-- ── Session Bar ── -->
 <header id="session-bar">

@@ -553,6 +553,98 @@ document.getElementById('btn-sandbox-toggle')?.addEventListener('click', () => {
   renderAll();
 });
 
+// ── Team-Picker ───────────────────────────────────────────────────────────────
+// Erscheint wenn ?session= vorhanden aber ?team= fehlt.
+// Blockiert das Spiel bis der Studierende Name + Team gewählt hat.
+
+const URL_PARAMS   = new URLSearchParams(location.search);
+const URL_TEAM     = URL_PARAMS.get('team');
+const URL_MEMBER   = URL_PARAMS.get('member');
+
+async function showTeamPicker() {
+  const overlay = document.getElementById('team-picker-overlay');
+  const nameEl  = document.getElementById('picker-session-name');
+  const teamsEl = document.getElementById('picker-teams');
+  const errorEl = document.getElementById('picker-error');
+  const loadEl  = document.getElementById('picker-loading');
+  overlay.classList.remove('hidden');
+
+  let sessionMeta = null;
+  let pollTimer   = null;
+
+  async function loadMembers() {
+    try {
+      const res  = await fetch(`${API_BASE}/sessions/${URL_SESSION_ID}/members`);
+      if (!res.ok) return;
+      const data = await res.json();
+      sessionMeta = data;
+      renderTeams(data);
+    } catch (_) {}
+  }
+
+  function renderTeams(data) {
+    if (nameEl && data) {
+      nameEl.textContent = URL_PARAMS.get('name')
+        ? decodeURIComponent(URL_PARAMS.get('name'))
+        : 'Session ' + URL_SESSION_ID;
+    }
+    teamsEl.innerHTML = '';
+    for (const team of (data?.team_names ?? [])) {
+      const count  = data.belegung[team] ?? 0;
+      const max    = data.team_groesse;
+      const full   = count >= max;
+      const btn    = document.createElement('button');
+      btn.className = 'picker-team-btn';
+      btn.disabled  = full;
+      btn.innerHTML = `
+        <span>${team}</span>
+        <span class="picker-team-count ${full ? 'full' : ''}">${count}/${max}${full ? ' — voll' : ''}</span>`;
+      btn.addEventListener('click', () => joinTeam(team));
+      teamsEl.appendChild(btn);
+    }
+  }
+
+  async function joinTeam(team) {
+    const name = document.getElementById('picker-name-input').value.trim();
+    if (!name) { errorEl.textContent = 'Bitte deinen Namen eingeben.'; return; }
+    errorEl.textContent = '';
+    loadEl.textContent  = 'Beitreten …';
+
+    try {
+      const res = await fetch(`${API_BASE}/sessions/${URL_SESSION_ID}/members`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ name, team }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        loadEl.textContent = '';
+        errorEl.textContent = data.error ?? 'Fehler beim Beitreten.';
+        return;
+      }
+      // Erfolgreich: URL anpassen und Spiel starten
+      clearInterval(pollTimer);
+      overlay.classList.add('hidden');
+      const newUrl = new URL(location.href);
+      newUrl.searchParams.set('team',   team);
+      newUrl.searchParams.set('member', name);
+      history.replaceState({}, '', newUrl.toString());
+      // State mit Team-Info initialisieren
+      state = defaultState();
+      state.team_id = team;
+      saveState(state);
+      renderAll();
+      startPolling();
+    } catch (_) {
+      loadEl.textContent  = '';
+      errorEl.textContent = 'Netzwerkfehler — bitte erneut versuchen.';
+    }
+  }
+
+  await loadMembers();
+  pollTimer = setInterval(loadMembers, 3000);
+}
+
 // ── API-Sync (Phase 2b) ───────────────────────────────────────────────────────
 // Aktiv nur wenn ?session=... in der URL gesetzt ist (URL_SESSION_ID != null).
 // Ohne Session-Parameter läuft alles ausschließlich über localStorage — kein
@@ -623,8 +715,16 @@ function startPolling() {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
-state = loadState();
-// session_id aus URL immer neu setzen (auch wenn localStorage älteren State hat)
-if (URL_SESSION_ID) state.session_id = URL_SESSION_ID;
-renderAll();
-startPolling();
+if (URL_SESSION_ID && !URL_TEAM) {
+  // Session aktiv, aber noch kein Team gewählt → Team-Picker anzeigen
+  showTeamPicker();
+} else {
+  state = loadState();
+  if (URL_SESSION_ID) {
+    state.session_id = URL_SESSION_ID;
+    if (URL_TEAM)   state.team_id = URL_TEAM;
+  }
+  saveState(state);
+  renderAll();
+  startPolling();
+}
