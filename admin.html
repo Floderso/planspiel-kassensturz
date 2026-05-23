@@ -222,6 +222,31 @@
     }
     .btn-secondary:hover { background: var(--accent-lt); }
 
+    /* ── CSV-Upload ── */
+    .csv-upload-area {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .csv-upload-area:hover, .csv-upload-area.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-lt);
+      color: var(--accent);
+    }
+    .csv-upload-area input[type="file"] { display: none; }
+    #csv-status {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--good);
+      min-height: 18px;
+    }
+    #csv-status.error { color: var(--bad); }
+
     /* ── Dashboard ── */
     #dashboard { display: none; }
 
@@ -356,6 +381,17 @@
       </div>
 
       <div class="form-group full">
+        <label>Zulassungsliste (Matrikelnummern)</label>
+        <div class="csv-upload-area" id="csv-drop-zone">
+          <input type="file" id="csv-file-input" accept=".csv,.txt">
+          <div>CSV-Datei hier ablegen oder <u>klicken zum Auswählen</u></div>
+          <div style="font-size:11px;margin-top:4px">Unterstützte Formate: eine Matrikelnummer pro Zeile, oder semikolon-/kommagetrennt</div>
+        </div>
+        <div id="csv-status"></div>
+        <span class="hint">Wenn keine Liste hochgeladen wird, kann jeder mit der Join-URL beitreten.</span>
+      </div>
+
+      <div class="form-group full">
         <label>Admin-Code (automatisch generiert)</label>
         <div class="token-row">
           <input id="f-admin-token" type="text" readonly>
@@ -382,6 +418,15 @@
       <div class="hint">Diesen Link per Moodle, E-Mail oder Beamer weitergeben.</div>
     </div>
 
+    <div class="card" id="matrikel-dashboard-card">
+      <div class="card-title">Zulassungsliste aktualisieren</div>
+      <div class="csv-upload-area" id="csv-drop-zone-dash">
+        <input type="file" id="csv-file-input-dash" accept=".csv,.txt">
+        <div>CSV-Datei ablegen oder <u>klicken</u></div>
+      </div>
+      <div id="csv-status-dash" style="margin-top:8px;font-size:12px;min-height:18px"></div>
+    </div>
+
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <div class="card-title" style="margin-bottom:0">Team-Übersicht</div>
@@ -392,7 +437,7 @@
           <thead>
             <tr>
               <th>Team</th>
-              <th>Mitglieder</th>
+              <th>Mitglieder (Matrikel)</th>
               <th>Periode</th>
               <th>Saldo</th>
               <th>Gini</th>

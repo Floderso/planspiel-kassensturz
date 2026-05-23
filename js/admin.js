@@ -35,8 +35,9 @@ function copyToClipboard(text, btn) {
 
 // ── Setup-Formular ────────────────────────────────────────────────────────────
 
-let sandboxOn = true;
-let teamCount = 0;
+let sandboxOn    = true;
+let teamCount    = 0;
+let pendingMatrikeln = [];   // vor Session-Erstellung zwischengespeichert
 
 function addTeam(name = '') {
   teamCount++;
@@ -84,6 +85,11 @@ function initSetup() {
     );
   });
 
+  // CSV-Upload im Setup-Formular (wird nach Session-Erstellung hochgeladen)
+  setupCsvUpload('csv-drop-zone', 'csv-file-input', 'csv-status', matrikeln => {
+    pendingMatrikeln = matrikeln;
+  });
+
   document.getElementById('btn-create').addEventListener('click', createSession);
 }
 
@@ -126,6 +132,14 @@ async function createSession() {
     newUrl.searchParams.set('token',   data.admin_token);
     history.pushState({}, '', newUrl.toString());
 
+    // Matrikelnummern hochladen wenn vorhanden
+    if (pendingMatrikeln.length > 0) {
+      await uploadMatrikeln(
+        data.session_id, data.admin_token, pendingMatrikeln,
+        document.getElementById('csv-status')
+      );
+    }
+
     // Join-URL enthält nur session-id, kein token
     const origin   = location.origin + location.pathname.replace('admin.html', '');
     const join_url = `${origin}index.html?session=${data.session_id}&perioden=${perioden}&teams=${groesse}&sandbox=${sandboxOn}&name=${encodeURIComponent(name)}`;
@@ -156,6 +170,11 @@ function startDashboard(sessionId, token, joinUrl, meta) {
   );
 
   document.getElementById('btn-refresh').addEventListener('click', () => pollDashboard(sessionId, token));
+
+  // CSV-Upload im laufenden Dashboard
+  setupCsvUpload('csv-drop-zone-dash', 'csv-file-input-dash', 'csv-status-dash', async matrikeln => {
+    await uploadMatrikeln(sessionId, token, matrikeln, document.getElementById('csv-status-dash'));
+  });
 
   pollDashboard(sessionId, token);
   pollInterval = setInterval(() => pollDashboard(sessionId, token), 5000);
@@ -206,8 +225,9 @@ function renderDashboard(session) {
   for (const teamName of session.team_names) {
     const members    = session.members.filter(m => m.team === teamName);
     const memberStr  = members.length
-      ? members.map(m => m.name).join(', ') + ` (${members.length}/${session.team_groesse})`
-      : `0/${session.team_groesse}`;
+      ? members.map(m => `${m.name} <span style="color:var(--muted);font-size:10px">(${m.matrikelnummer})</span>`).join(', ')
+        + ` <span style="color:var(--muted)">${members.length}/${session.team_groesse}</span>`
+      : `<span style="color:var(--muted)">0/${session.team_groesse}</span>`;
     const kpi        = teamKpis[teamName];
     const lockedN    = kpi?.periode ?? 0;
     const allDone    = lockedN >= session.perioden_anzahl;
@@ -217,7 +237,7 @@ function renderDashboard(session) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>${teamName}</strong></td>
-      <td class="member-list">${memberStr}</td>
+      <td class="member-list" style="line-height:1.8">${memberStr}</td>
       <td>
         <span class="period-badge ${allDone ? 'done' : ''}">
           ${lockedN}/${session.perioden_anzahl}
@@ -244,6 +264,71 @@ function renderDashboard(session) {
     'Läuft ab: ' + expires.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
   document.getElementById('last-updated').textContent =
     'Zuletzt aktualisiert: ' + new Date().toLocaleTimeString('de-DE');
+}
+
+// ── CSV-Parsing + Upload ──────────────────────────────────────────────────────
+
+/** Extrahiert Matrikelnummern aus CSV-Text (ein/zeile oder semikolon/kommagetrennt) */
+function parseMatrikeln(text) {
+  return [...new Set(
+    text.split(/[\r\n;,\t]+/)
+      .map(s => s.replace(/\D/g, '').trim())
+      .filter(s => s.length >= 4)
+  )];
+}
+
+function setupCsvUpload(dropZoneId, fileInputId, statusId, onParsed) {
+  const zone   = document.getElementById(dropZoneId);
+  const input  = document.getElementById(fileInputId);
+  const status = document.getElementById(statusId);
+  if (!zone || !input) return;
+
+  zone.addEventListener('click', () => input.click());
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) readFile(file);
+  });
+  input.addEventListener('change', () => { if (input.files[0]) readFile(input.files[0]); });
+
+  function readFile(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const matrikeln = parseMatrikeln(e.target.result);
+      if (matrikeln.length === 0) {
+        status.className = 'error';
+        status.textContent = 'Keine gültigen Matrikelnummern gefunden.';
+        return;
+      }
+      status.className = '';
+      status.textContent = `✓ ${matrikeln.length} Matrikelnummern geladen.`;
+      onParsed(matrikeln);
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+}
+
+async function uploadMatrikeln(sessionId, token, matrikeln, statusEl) {
+  try {
+    const res = await fetch(`${API_BASE}/sessions/${sessionId}/matrikelnummern?token=${token}`, {
+      method:  'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ matrikelnummern: matrikeln }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      statusEl.textContent = `✓ ${data.count} Matrikelnummern gespeichert.`;
+    } else {
+      statusEl.className   = 'error';
+      statusEl.textContent = 'Fehler: ' + (data.error ?? res.statusText);
+    }
+  } catch (_) {
+    statusEl.className   = 'error';
+    statusEl.textContent = 'Netzwerkfehler beim Speichern.';
+  }
 }
 
 // ── Initialisierung ───────────────────────────────────────────────────────────

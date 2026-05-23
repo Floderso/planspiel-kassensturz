@@ -605,8 +605,10 @@ async function showTeamPicker() {
   }
 
   async function joinTeam(team) {
-    const name = document.getElementById('picker-name-input').value.trim();
-    if (!name) { errorEl.textContent = 'Bitte deinen Namen eingeben.'; return; }
+    const matrikelnummer = document.getElementById('picker-matrikel-input')?.value.trim() ?? '';
+    const name           = document.getElementById('picker-name-input').value.trim();
+    if (!matrikelnummer) { errorEl.textContent = 'Bitte Matrikelnummer eingeben.'; return; }
+    if (!name)           { errorEl.textContent = 'Bitte deinen Namen eingeben.';   return; }
     errorEl.textContent = '';
     loadEl.textContent  = 'Beitreten …';
 
@@ -614,7 +616,7 @@ async function showTeamPicker() {
       const res = await fetch(`${API_BASE}/sessions/${URL_SESSION_ID}/members`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ name, team }),
+        body:    JSON.stringify({ name, matrikelnummer, team }),
       });
       const data = await res.json();
       if (!res.ok) {

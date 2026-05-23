@@ -47,6 +47,7 @@ type TeamState = {
 
 type Member = {
   name: string;
+  matrikelnummer: string;
   team: string;
   joined_at: string;
 };
@@ -62,6 +63,7 @@ type SessionData = {
   expires_at: string;
   admin_token: string;
   team_names: string[];
+  matrikelnummern: string[];   // erlaubte Matrikelnummern (leer = keine Verifikation)
   members: Member[];
   teams: Record<string, TeamState>;
 };
@@ -130,6 +132,7 @@ app.post('/api/sessions', async (c) => {
     min_teilnahme_quote: body.min_teilnahme_quote ?? 0.5,
     sandbox:             body.sandbox             ?? false,
     team_names,
+    matrikelnummern:     [],
     members:             [],
     created_at:          now,
     expires_at:          new Date(Date.now() + 86400_000).toISOString(),
@@ -172,6 +175,36 @@ app.get('/api/sessions/:id/admin', async (c) => {
   return c.json(adminView);
 });
 
+// ── Matrikelnummer-Endpunkt ───────────────────────────────────────────────────
+
+/**
+ * PUT /api/sessions/:id/matrikelnummern?token=...
+ * Ersetzt die erlaubte Matrikelnummern-Liste der Session (Admin only).
+ * Wird nach CSV-Upload durch die Lehrperson aufgerufen.
+ *
+ * Body: { matrikelnummern: string[] }
+ */
+app.put('/api/sessions/:id/matrikelnummern', async (c) => {
+  const session = await getSession(c.env.SESSIONS, c.req.param('id'));
+  if (!session) return c.json({ error: 'Session nicht gefunden' }, 404);
+  if (!requireToken(session, c.req.query('token'))) {
+    return c.json({ error: 'Nicht autorisiert' }, 403);
+  }
+
+  const { matrikelnummern } = await c.req.json<{ matrikelnummern: string[] }>();
+  if (!Array.isArray(matrikelnummern)) {
+    return c.json({ error: 'matrikelnummern muss ein Array sein' }, 400);
+  }
+
+  // Normalisieren: nur Ziffern, Duplikate entfernen
+  session.matrikelnummern = [...new Set(
+    matrikelnummern.map(m => String(m).replace(/\D/g, '')).filter(m => m.length >= 4)
+  )];
+
+  await putSession(c.env.SESSIONS, session);
+  return c.json({ ok: true, count: session.matrikelnummern.length });
+});
+
 // ── Member-Endpunkte ──────────────────────────────────────────────────────────
 
 /**
@@ -207,16 +240,30 @@ app.post('/api/sessions/:id/members', async (c) => {
   const session = await getSession(c.env.SESSIONS, c.req.param('id'));
   if (!session) return c.json({ error: 'Session nicht gefunden' }, 404);
 
-  const { name, team } = await c.req.json<{ name: string; team: string }>();
+  const { name, matrikelnummer: rawMatrikel, team } =
+    await c.req.json<{ name: string; matrikelnummer: string; team: string }>();
 
-  if (!name?.trim()) return c.json({ error: 'Name darf nicht leer sein' }, 400);
+  const matrikelnummer = String(rawMatrikel ?? '').replace(/\D/g, '');
+
+  if (!name?.trim())          return c.json({ error: 'Name darf nicht leer sein' }, 400);
+  if (matrikelnummer.length < 4) return c.json({ error: 'Ungültige Matrikelnummer' }, 400);
   if (!session.team_names.includes(team)) {
     return c.json({ error: 'Ungültiges Team' }, 400);
   }
 
-  // Idempotent: gleiche Name+Team-Kombination nicht doppelt eintragen
-  const existing = session.members.find(m => m.name === name.trim() && m.team === team);
-  if (existing) return c.json({ ok: true, member: existing });
+  // Matrikelnummer gegen Zulassungsliste prüfen (nur wenn Liste nicht leer)
+  if (session.matrikelnummern.length > 0 && !session.matrikelnummern.includes(matrikelnummer)) {
+    return c.json({ error: 'Diese Matrikelnummer ist nicht für diesen Kurs zugelassen.' }, 403);
+  }
+
+  // Idempotent: gleiche Matrikelnummer kann nur einmal beitreten
+  const existing = session.members.find(m => m.matrikelnummer === matrikelnummer);
+  if (existing) {
+    if (existing.team !== team) {
+      return c.json({ error: `Du bist bereits in ${existing.team} eingetragen.` }, 409);
+    }
+    return c.json({ ok: true, member: existing });
+  }
 
   // Team-Kapazität prüfen
   const belegung = session.members.filter(m => m.team === team).length;
@@ -224,7 +271,12 @@ app.post('/api/sessions/:id/members', async (c) => {
     return c.json({ error: 'Team ist voll' }, 409);
   }
 
-  const member: Member = { name: name.trim(), team, joined_at: new Date().toISOString() };
+  const member: Member = {
+    name: name.trim(),
+    matrikelnummer,
+    team,
+    joined_at: new Date().toISOString(),
+  };
   session.members.push(member);
   await putSession(c.env.SESSIONS, session);
 
