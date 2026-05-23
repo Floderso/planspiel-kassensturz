@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kassensturz Planspiel — Prototyp-Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #F1F3F7;
+      --surface:   #FFFFFF;
+      --surface-2: #F8F9FB;
+      --ink:       #0D1117;
+      --ink-2:     #374151;
+      --muted:     #6B7280;
+      --border:    #E3E6EC;
+      --accent:    #1B4FD8;
+      --accent-lt: #EEF2FF;
+      --good:      #166534;
+      --good-bg:   #F0FDF4;
+      --radius:    8px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 14px;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      background: #0D1117;
+      color: white;
+      padding: 56px 24px 48px;
+      text-align: center;
+    }
+    .hero-logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: #60A5FA;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: clamp(24px, 4vw, 36px);
+      font-weight: 700;
+      line-height: 1.25;
+      margin-bottom: 14px;
+      color: #F9FAFB;
+    }
+    .hero h1 span { color: #60A5FA; }
+    .hero-sub {
+      font-size: 15px;
+      color: #9CA3AF;
+      max-width: 520px;
+      margin: 0 auto 32px;
+      line-height: 1.6;
+    }
+    .proto-badge {
+      display: inline-block;
+      background: #1e3a5f;
+      color: #93c5fd;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      letter-spacing: .5px;
+      margin-bottom: 28px;
+    }
+
+    /* ── CTAs ── */
+    .cta-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .btn-cta-primary {
+      padding: 13px 28px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .15s, transform .1s;
+      display: flex; align-items: center; gap: 8px;
+      text-decoration: none;
+    }
+    .btn-cta-primary:hover { background: #1a44c0; transform: translateY(-1px); }
+    .btn-cta-secondary {
+      padding: 13px 28px;
+      background: transparent;
+      color: #D1D5DB;
+      border: 1.5px solid #374151;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color .15s, color .15s, transform .1s;
+      display: flex; align-items: center; gap: 8px;
+      text-decoration: none;
+    }
+    .btn-cta-secondary:hover { border-color: #6B7280; color: white; transform: translateY(-1px); }
+
+    /* ── Status-Banner ── */
+    #demo-status {
+      text-align: center;
+      padding: 14px 24px;
+      font-size: 13px;
+      background: #1e3a5f;
+      color: #93c5fd;
+      display: none;
+    }
+    #demo-status.error { background: #3b1a1a; color: #fca5a5; }
+
+    /* ── Content ── */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 20px 80px;
+    }
+
+    /* ── Was ist drin ── */
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 14px;
+      margin-bottom: 48px;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .feature-icon {
+      font-size: 22px;
+      margin-bottom: 10px;
+      display: block;
+    }
+    .feature-card h3 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .feature-card p {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .feature-tag {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--good-bg);
+      color: var(--good);
+    }
+    .feature-tag.planned {
+      background: #FEF3C7;
+      color: #92400E;
+    }
+
+    /* ── Ablauf ── */
+    .flow-section {
+      margin-bottom: 48px;
+    }
+    .flow-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 600px) { .flow-grid { grid-template-columns: 1fr; } }
+    .flow-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .flow-card h3 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .role-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .role-badge.lehrer { background: #EEF2FF; color: var(--accent); }
+    .role-badge.student { background: var(--good-bg); color: var(--good); }
+    .flow-steps {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .flow-steps li {
+      display: flex;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--ink-2);
+      line-height: 1.5;
+    }
+    .step-num {
+      width: 18px; height: 18px;
+      background: var(--accent-lt);
+      color: var(--accent);
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ── Tech-Stack ── */
+    .tech-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 48px;
+    }
+    .tech-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .tech-chip {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--ink-2);
+    }
+
+    /* ── Demo-Links (nach Erstellung) ── */
+    #demo-links { display: none; }
+    .demo-links-card {
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .demo-links-card h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .link-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .link-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      width: 90px;
+      flex-shrink: 0;
+    }
+    .link-url {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--accent);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .btn-link-copy {
+      padding: 4px 10px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .btn-link-copy:hover { background: var(--accent-lt); }
+    .btn-link-open {
+      padding: 4px 10px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+      flex-shrink: 0;
+      text-decoration: none;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 11px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Hero ── -->
+<section class="hero">
+  <div class="hero-logo">Kassensturz · kassensturz.org</div>
+  <div class="proto-badge">Prototyp · Phase 2 · Mai 2026</div>
+  <h1>Interaktives Steuerpolitik-<span>Planspiel</span></h1>
+  <p class="hero-sub">
+    Studierende stellen in Teams Steuerpolitik-Parameter ein und beobachten
+    live die Auswirkungen auf Haushaltssaldo, Ungleichheit, CO₂ und BIP —
+    mit wissenschaftlich kalibrierter Simulationsengine.
+  </p>
+  <div class="cta-row">
+    <button class="btn-cta-primary" id="btn-start-demo">
+      ▶ Demo starten
+    </button>
+    <a class="btn-cta-secondary" href="admin.html" target="_blank">
+      Lehrperson-Ansicht öffnen
+    </a>
+  </div>
+</section>
+
+<div id="demo-status"></div>
+
+<!-- ── Demo-Links (nach Erstellung) ── -->
+<div style="max-width:860px;margin:0 auto;padding:0 20px">
+  <div id="demo-links">
+    <div class="demo-links-card" style="margin-top:24px">
+      <h3>Demo-Session bereit — bitte Link wählen:</h3>
+      <div class="link-row">
+        <span class="link-label">Lehrperson</span>
+        <span class="link-url" id="dl-admin"></span>
+        <button class="btn-link-copy" data-target="dl-admin">Kopieren</button>
+        <a class="btn-link-open" id="dl-admin-open" href="#" target="_blank">Öffnen →</a>
+      </div>
+      <div class="link-row">
+        <span class="link-label">Studierende</span>
+        <span class="link-url" id="dl-join"></span>
+        <button class="btn-link-copy" data-target="dl-join">Kopieren</button>
+        <a class="btn-link-open" id="dl-join-open" href="#" target="_blank">Öffnen →</a>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:12px">
+        Die Demo-Session läuft 24 Stunden. Matrikelnummer-Verifikation ist in der Demo deaktiviert (Sandbox-Modus).
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Main Content ── -->
+<main>
+
+  <!-- Features -->
+  <div class="section-title">Was der Prototyp enthält</div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <span class="feature-icon">🎚️</span>
+      <h3>Interaktive Simulation</h3>
+      <p>12 Steuerpolitik-Parameter (Einkommensteuer, MwSt, CO₂, SV-Beiträge, Investitionen) mit sofortiger Rückmeldung — keine Ladezeit.</p>
+      <span class="feature-tag">✓ Implementiert</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📊</span>
+      <h3>Wissenschaftliche Engine</h3>
+      <p>Dezil-Verteilung (SOEP v40), HANK-Multiplikator, DICE-Klimaschaden, Domar-Schuldbedingung — alle Formeln mit Quellenangaben dokumentiert.</p>
+      <span class="feature-tag">✓ Implementiert</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">👥</span>
+      <h3>Multi-Team-Betrieb</h3>
+      <p>Mehrere Teams spielen gleichzeitig. Jedes Team sieht nur seine eigenen Parameter; Lehrperson sieht alle Teams nebeneinander.</p>
+      <span class="feature-tag">✓ Implementiert</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🎓</span>
+      <h3>Matrikelnummer-Verifikation</h3>
+      <p>Lehrperson lädt CSV-Datei mit zugelassenen Matrikelnummern hoch. Nur eingetragene Studierende können beitreten.</p>
+      <span class="feature-tag">✓ Implementiert</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">⚡</span>
+      <h3>Schockereignisse</h3>
+      <p>10 vordefinierte externe Schocks (Energiepreisanstieg, Rezession, Finanzkrise, Handelskrieg) beeinflussen automatisch die Simulation.</p>
+      <span class="feature-tag">✓ Implementiert</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📈</span>
+      <h3>KPI-Vergleich</h3>
+      <p>Lehrperson-Dashboard zeigt Haushaltssaldo, Gini-Koeffizient, CO₂-Emissionen und BIP aller Teams live nebeneinander.</p>
+      <span class="feature-tag">✓ Implementiert</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🔗</span>
+      <h3>URL-Konfiguration</h3>
+      <p>Kurse per URL einrichten: Periodenzahl, Teamgröße, Sandbox-Modus und Kursname als Parameter — kein Login für Lehrpersonen nötig.</p>
+      <span class="feature-tag">✓ Implementiert</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🗂️</span>
+      <h3>Technische Dokumentation</h3>
+      <p>Vollständige Architekturdokumentation, API-Referenz, Engine-Erklärung und Deployment-Anleitung — für Dritte verständlich.</p>
+      <span class="feature-tag">✓ Implementiert</span>
+    </div>
+  </div>
+
+  <!-- Ablauf -->
+  <div class="flow-section">
+    <div class="section-title">Typischer Ablauf im Kurs</div>
+    <div class="flow-grid">
+      <div class="flow-card">
+        <h3>
+          <span class="role-badge lehrer">Lehrperson</span>
+          Vor der Veranstaltung
+        </h3>
+        <ul class="flow-steps">
+          <li><span class="step-num">1</span> admin.html öffnen, Session konfigurieren (Perioden, Teams, Kursname)</li>
+          <li><span class="step-num">2</span> CSV-Datei mit Matrikelnummern aus ILIAS/Moodle hochladen</li>
+          <li><span class="step-num">3</span> Join-Link per QR-Code oder Moodle an Studierende senden</li>
+        </ul>
+      </div>
+      <div class="flow-card">
+        <h3>
+          <span class="role-badge student">Studierende</span>
+          Während der Veranstaltung
+        </h3>
+        <ul class="flow-steps">
+          <li><span class="step-num">1</span> Join-Link öffnen, Matrikelnummer und Name eingeben</li>
+          <li><span class="step-num">2</span> Team wählen (Belegung live sichtbar)</li>
+          <li><span class="step-num">3</span> Steuerpolitik per Slider einstellen, Ergebnisse sofort sehen</li>
+          <li><span class="step-num">4</span> Periode abstimmen und abschließen</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tech -->
+  <div class="tech-section">
+    <div class="section-title" style="margin-bottom:0">Technischer Stack</div>
+    <div class="tech-row">
+      <span class="tech-chip">Vanilla HTML/JS</span>
+      <span class="tech-chip">Hono.js</span>
+      <span class="tech-chip">Cloudflare Workers</span>
+      <span class="tech-chip">Cloudflare KV</span>
+      <span class="tech-chip">GitHub Pages</span>
+      <span class="tech-chip">kein Build-Schritt</span>
+      <span class="tech-chip">kein Login-System</span>
+      <span class="tech-chip">CC-BY-4.0</span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-top:12px">
+      Läuft vollständig im Browser — Backend nur für Session-Koordination.
+      Offline-Betrieb ohne Backend möglich. Kostenloses Hosting (Cloudflare Free Tier + GitHub Pages).
+    </p>
+  </div>
+
+  <div style="text-align:center">
+    <div class="section-title">Jetzt ausprobieren</div>
+    <div class="cta-row">
+      <button class="btn-cta-primary" id="btn-start-demo-2">
+        ▶ Demo-Session starten
+      </button>
+      <a class="btn-cta-secondary" href="admin.html" target="_blank">
+        Leere Lehrperson-Ansicht
+      </a>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  Kassensturz Planspiel · Prototyp Phase 2 · Mai 2026 ·
+  <a href="https://github.com/Floderso/planspiel-kassensturz" style="color:inherit">GitHub</a> ·
+  CC-BY-4.0
+</footer>
+
+<script>
+  const API_BASE = 'https://planspiel-api.aramisda2.workers.dev/api';
+
+  async function startDemo() {
+    const statusEl = document.getElementById('demo-status');
+    statusEl.style.display = 'block';
+    statusEl.className = '';
+    statusEl.textContent = 'Demo-Session wird erstellt …';
+
+    document.querySelectorAll('#btn-start-demo, #btn-start-demo-2').forEach(b => {
+      b.disabled = true; b.textContent = 'Erstelle …';
+    });
+
+    try {
+      const res = await fetch(`${API_BASE}/sessions`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        origin:  location.origin,
+        body: JSON.stringify({
+          name:            'Demo-Session',
+          perioden_anzahl: 3,
+          team_groesse:    3,
+          team_names:      ['Team Rot', 'Team Blau', 'Team Grün'],
+          sandbox:         true,
+          min_teilnahme_quote: 0.5,
+        }),
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+
+      const base     = location.origin + location.pathname.replace('demo.html', '');
+      const joinUrl  = `${base}index.html?session=${data.session_id}&perioden=3&teams=3&sandbox=true&name=Demo-Session`;
+      const adminUrl = `${base}admin.html?session=${data.session_id}&token=${data.admin_token}`;
+
+      document.getElementById('dl-admin').textContent = adminUrl;
+      document.getElementById('dl-join').textContent  = joinUrl;
+      document.getElementById('dl-admin-open').href   = adminUrl;
+      document.getElementById('dl-join-open').href    = joinUrl;
+
+      document.getElementById('demo-links').style.display = '';
+      statusEl.textContent = '✓ Demo bereit — Links unten auswählen.';
+
+      document.getElementById('demo-links').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (e) {
+      statusEl.className   = 'error';
+      statusEl.textContent = 'Fehler beim Erstellen der Demo: ' + e.message;
+      document.querySelectorAll('#btn-start-demo, #btn-start-demo-2').forEach(b => {
+        b.disabled = false; b.textContent = '▶ Demo starten';
+      });
+    }
+  }
+
+  document.getElementById('btn-start-demo').addEventListener('click', startDemo);
+  document.getElementById('btn-start-demo-2').addEventListener('click', startDemo);
+
+  // Kopier-Buttons
+  document.querySelectorAll('.btn-link-copy').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const text = document.getElementById(btn.dataset.target).textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = '✓';
+        setTimeout(() => { btn.textContent = orig; }, 1500);
+      });
+    });
+  });
+</script>
+</body>
+</html>
