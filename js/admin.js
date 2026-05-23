@@ -165,7 +165,7 @@ function startDashboard(sessionId, token, joinUrl, meta) {
   currentToken     = token;
 
   document.getElementById('setup').style.display    = 'none';
-  document.getElementById('dashboard').style.display = '';
+  document.getElementById('dashboard').style.display = 'block';
   document.getElementById('header-session-info').style.display = '';
   document.getElementById('header-session-id').textContent     = sessionId;
 
@@ -572,7 +572,7 @@ if (SESSION_ID && ADMIN_TOKEN) {
   currentToken     = ADMIN_TOKEN;
 
   document.getElementById('setup').style.display    = 'none';
-  document.getElementById('dashboard').style.display = '';
+  document.getElementById('dashboard').style.display = 'block';
   document.getElementById('header-session-info').style.display = '';
   document.getElementById('header-session-id').textContent     = SESSION_ID;
 
