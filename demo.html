@@ -361,21 +361,48 @@
 <div style="max-width:860px;margin:0 auto;padding:0 20px">
   <div id="demo-links">
     <div class="demo-links-card" style="margin-top:24px">
-      <h3>Demo-Session bereit — bitte Link wählen:</h3>
-      <div class="link-row">
-        <span class="link-label">Lehrperson</span>
-        <span class="link-url" id="dl-admin"></span>
-        <button class="btn-link-copy" data-target="dl-admin">Kopieren</button>
-        <a class="btn-link-open" id="dl-admin-open" href="#" target="_blank">Öffnen →</a>
+      <h3>Demo-Session bereit — beide Ansichten öffnen:</h3>
+
+      <!-- Lehrperson -->
+      <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="background:#EEF2FF;color:var(--accent);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">LEHRPERSON</span>
+          <strong style="font-size:12px">Admin-Dashboard</strong>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px">
+          Zeigt alle Teams, wer beigetreten ist, aktuelle Periode und KPI-Vergleich (Saldo, Gini, CO₂, BIP). Aktualisiert sich alle 5 Sekunden automatisch.
+        </div>
+        <div class="link-row" style="margin-bottom:0">
+          <span class="link-url" id="dl-admin" style="font-size:10px"></span>
+          <button class="btn-link-copy" data-target="dl-admin">Kopieren</button>
+          <a class="btn-link-open" id="dl-admin-open" href="#" target="_blank">Öffnen →</a>
+        </div>
       </div>
-      <div class="link-row">
-        <span class="link-label">Studierende</span>
-        <span class="link-url" id="dl-join"></span>
-        <button class="btn-link-copy" data-target="dl-join">Kopieren</button>
-        <a class="btn-link-open" id="dl-join-open" href="#" target="_blank">Öffnen →</a>
+
+      <!-- Studierende -->
+      <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="background:var(--good-bg);color:var(--good);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">STUDIERENDE</span>
+          <strong style="font-size:12px">Team-Auswahl + Spiel</strong>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px">
+          Öffnet den Team-Picker: Name eingeben, eines der drei Teams wählen (Rot, Blau, Grün, je max. 3 Personen) — dann startet das Planspiel direkt. Keine Matrikelnummer nötig (Sandbox).
+        </div>
+        <div class="link-row" style="margin-bottom:0">
+          <span class="link-url" id="dl-join" style="font-size:10px"></span>
+          <button class="btn-link-copy" data-target="dl-join">Kopieren</button>
+          <a class="btn-link-open" id="dl-join-open" href="#" target="_blank">Öffnen →</a>
+        </div>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:12px">
-        Die Demo-Session läuft 24 Stunden. Matrikelnummer-Verifikation ist in der Demo deaktiviert (Sandbox-Modus).
+
+      <!-- Hinweis -->
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:12px;font-size:11px;color:#92400E">
+        <strong>Empfohlene Demo-Reihenfolge:</strong>
+        Admin-Dashboard in Tab 1 öffnen, Studierenden-Link in Tab 2. Nach dem Beitreten eines Teams erscheint es sofort im Dashboard — live, ohne Seite neu zu laden.
+      </div>
+
+      <div style="font-size:11px;color:var(--muted);margin-top:10px">
+        Die Demo-Session läuft 24 Stunden. Sandbox-Modus: keine Matrikelnummer-Verifikation aktiv.
       </div>
     </div>
   </div>

@@ -193,10 +193,13 @@ function renderDashboard(session) {
   const tbody = document.getElementById('teams-tbody');
   tbody.innerHTML = '';
 
+  const teamNames  = session.team_names || Object.keys(session.teams || {});
+  const allMembers = session.members || [];
+
   // KPIs für alle Teams berechnen (client-seitig)
   const teamKpis = {};
-  for (const teamName of session.team_names) {
-    const teamState = session.teams[teamName];
+  for (const teamName of teamNames) {
+    const teamState = (session.teams || {})[teamName];
     if (!teamState) continue;
     try {
       const params = teamState.perioden.map(p => p.params);
@@ -222,8 +225,16 @@ function renderDashboard(session) {
 
   const isBest = (val, best) => val !== null && best !== null && Math.abs(val - best) < 0.001;
 
-  for (const teamName of session.team_names) {
-    const members    = session.members.filter(m => m.team === teamName);
+  if (teamNames.length === 0) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="7" style="text-align:center;color:var(--muted);padding:24px">
+      Keine Teams – Session-Daten werden geladen …</td>`;
+    tbody.appendChild(tr);
+    return;
+  }
+
+  for (const teamName of teamNames) {
+    const members    = allMembers.filter(m => m.team === teamName);
     const memberStr  = members.length
       ? members.map(m => `${m.name} <span style="color:var(--muted);font-size:10px">(${m.matrikelnummer})</span>`).join(', ')
         + ` <span style="color:var(--muted)">${members.length}/${session.team_groesse}</span>`
