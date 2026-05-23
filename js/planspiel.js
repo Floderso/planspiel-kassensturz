@@ -702,6 +702,15 @@ async function apiPollSession() {
         }
       }
     }
+
+    // Schocks vom Admin übernehmen (werden vom Admin-Dashboard gesetzt)
+    const remoteSchocks = JSON.stringify(session.schocks ?? []);
+    const localSchocks  = JSON.stringify(state.kurs_konfig.schocks ?? []);
+    if (remoteSchocks !== localSchocks) {
+      state.kurs_konfig.schocks = session.schocks ?? [];
+      changed = true;
+    }
+
     if (changed) {
       saveState(state);
       renderAll();

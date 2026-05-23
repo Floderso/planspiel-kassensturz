@@ -52,6 +52,17 @@ type Member = {
   joined_at: string;
 };
 
+type SchockEvent = {
+  periode:     number;
+  id:          string;
+  typ:         string;
+  staerke:     number;
+  name:        string;
+  beschreibung:string;
+  quelle?:     string;
+  effekte:     Record<string, number>;
+};
+
 type SessionData = {
   id: string;
   name: string;
@@ -66,6 +77,7 @@ type SessionData = {
   matrikelnummern: string[];   // erlaubte Matrikelnummern (leer = keine Verifikation)
   members: Member[];
   teams: Record<string, TeamState>;
+  schocks: SchockEvent[];      // externe Schockereignisse je Periode (Admin-gesetzt)
 };
 
 // ── Hilfsfunktionen ───────────────────────────────────────────────────────────
@@ -134,6 +146,7 @@ app.post('/api/sessions', async (c) => {
     team_names,
     matrikelnummern:     [],
     members:             [],
+    schocks:             [],
     created_at:          now,
     expires_at:          new Date(Date.now() + 86400_000).toISOString(),
     teams:               {},
@@ -336,6 +349,32 @@ app.post('/api/sessions/:id/teams/:team/vote', async (c) => {
   await putSession(c.env.SESSIONS, session);
 
   return c.json({ ok: true, locked: periode.locked, votes: periode.votes });
+});
+
+/**
+ * PUT /api/sessions/:id/schocks?token=...
+ * Setzt die Schockereignisse der Session (Admin only).
+ * Teams erhalten die Schocks beim nächsten Polling-Zyklus (GET /sessions/:id).
+ *
+ * Body: { schocks: SchockEvent[] }
+ */
+app.put('/api/sessions/:id/schocks', async (c) => {
+  const session = await getSession(c.env.SESSIONS, c.req.param('id'));
+  if (!session) return c.json({ error: 'Session nicht gefunden' }, 404);
+  if (!requireToken(session, c.req.query('token'))) {
+    return c.json({ error: 'Nicht autorisiert' }, 403);
+  }
+
+  const { schocks } = await c.req.json<{ schocks: SchockEvent[] }>();
+  if (!Array.isArray(schocks)) {
+    return c.json({ error: 'schocks muss ein Array sein' }, 400);
+  }
+
+  session.schocks = schocks.filter(s =>
+    typeof s.periode === 'number' && typeof s.id === 'string' && s.effekte
+  );
+  await putSession(c.env.SESSIONS, session);
+  return c.json({ ok: true, count: session.schocks.length });
 });
 
 /**

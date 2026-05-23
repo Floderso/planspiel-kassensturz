@@ -6,7 +6,7 @@
 // ═══════════════════════════════════════════════════════
 
 import { simulierePfad } from './rechner/transition.js';
-import { KURS_KONFIG_DEFAULT } from './data.js';
+import { KURS_KONFIG_DEFAULT, SCHOCK_BIBLIOTHEK } from './data.js';
 
 const API_BASE = 'https://planspiel-api.aramisda2.workers.dev/api';
 
@@ -156,12 +156,26 @@ async function createSession() {
 
 let pollInterval = null;
 let joinUrlGlobal = '';
+let currentSessionId   = null;
+let currentToken       = null;
+let schockPanelReady   = false;
 
 function startDashboard(sessionId, token, joinUrl, meta) {
+  currentSessionId = sessionId;
+  currentToken     = token;
+
   document.getElementById('setup').style.display    = 'none';
   document.getElementById('dashboard').style.display = '';
   document.getElementById('header-session-info').style.display = '';
   document.getElementById('header-session-id').textContent     = sessionId;
+
+  // Modal-Close-Handler einmalig verdrahten
+  document.getElementById('team-detail-close').addEventListener('click', () => {
+    document.getElementById('team-detail-modal').style.display = 'none';
+  });
+  document.getElementById('team-detail-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) e.currentTarget.style.display = 'none';
+  });
 
   joinUrlGlobal = joinUrl;
   document.getElementById('join-url-display').textContent = joinUrl;
@@ -196,15 +210,20 @@ function renderDashboard(session) {
   const teamNames  = session.team_names || Object.keys(session.teams || {});
   const allMembers = session.members || [];
 
-  // KPIs für alle Teams berechnen (client-seitig)
+  const sessionKonfig = {
+    ...KURS_KONFIG_DEFAULT,
+    perioden_anzahl: session.perioden_anzahl,
+    schocks: session.schocks ?? [],
+  };
+
+  // KPIs für alle Teams berechnen (client-seitig, inkl. aktiver Schocks)
   const teamKpis = {};
   for (const teamName of teamNames) {
     const teamState = (session.teams || {})[teamName];
     if (!teamState) continue;
     try {
       const params = teamState.perioden.map(p => p.params);
-      const konfig = { ...KURS_KONFIG_DEFAULT, perioden_anzahl: session.perioden_anzahl };
-      const pfad   = simulierePfad(params, konfig);
+      const pfad   = simulierePfad(params, sessionKonfig);
       const last   = pfad[pfad.length - 1];
       teamKpis[teamName] = {
         saldo:    last.result.saldo,
@@ -246,8 +265,9 @@ function renderDashboard(session) {
     const cls = (val, best) => isBest(val, best) ? 'kpi-best' : '';
 
     const tr = document.createElement('tr');
+    tr.title = 'Klicken für Team-Details';
     tr.innerHTML = `
-      <td><strong>${teamName}</strong></td>
+      <td><strong>${teamName}</strong> <span style="font-size:10px;color:var(--accent)">↗</span></td>
       <td class="member-list" style="line-height:1.8">${memberStr}</td>
       <td>
         <span class="period-badge ${allDone ? 'done' : ''}">
@@ -267,7 +287,14 @@ function renderDashboard(session) {
       <td class="${cls(kpi?.bip, bestBip)}">
         ${kpi ? kpi.bip.toFixed(0) : '—'}
       </td>`;
+    tr.addEventListener('click', () => openTeamDetail(teamName, session, sessionKonfig));
     tbody.appendChild(tr);
+  }
+
+  // Schock-Panel einmalig initialisieren (User-Auswahl nicht überschreiben)
+  if (!schockPanelReady) {
+    renderSchockPanel(session);
+    schockPanelReady = true;
   }
 
   const expires = new Date(session.expires_at);
@@ -275,6 +302,201 @@ function renderDashboard(session) {
     'Läuft ab: ' + expires.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
   document.getElementById('last-updated').textContent =
     'Zuletzt aktualisiert: ' + new Date().toLocaleTimeString('de-DE');
+}
+
+// ── Team-Detail-Modal ─────────────────────────────────────────────────────────
+
+function openTeamDetail(teamName, session, konfig) {
+  const modal   = document.getElementById('team-detail-modal');
+  const members = (session.members || []).filter(m => m.team === teamName);
+
+  document.getElementById('team-detail-name').textContent = teamName;
+  document.getElementById('team-detail-members').innerHTML = members.length
+    ? members.map(m => `<strong>${m.name}</strong> <span style="color:var(--muted)">(${m.matrikelnummer})</span>`).join(' · ')
+    : '<em style="color:var(--muted)">Noch keine Mitglieder beigetreten</em>';
+
+  const teamState = (session.teams || {})[teamName];
+  const content   = document.getElementById('team-detail-content');
+
+  if (!teamState?.perioden?.length) {
+    content.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:16px 0">Dieses Team hat noch keine Parameter eingestellt.</p>';
+    modal.style.display = 'flex';
+    return;
+  }
+
+  let pfad = [];
+  try {
+    pfad = simulierePfad(teamState.perioden.map(p => p.params), konfig);
+  } catch (_) {}
+
+  const lockedCount = teamState.perioden.filter(p => p.locked).length;
+  const n           = session.perioden_anzahl;
+
+  let rows = '';
+  for (let i = 0; i < n; i++) {
+    const pd = teamState.perioden[i];
+    const pf = pfad[i];
+    const isLocked  = pd?.locked;
+    const isActive  = (i === lockedCount) && !isLocked;
+    const hasParams = isLocked || isActive;
+
+    const statusHtml = isLocked
+      ? '<span class="period-badge done">✓ Gesperrt</span>'
+      : isActive
+        ? '<span class="period-badge">Aktiv</span>'
+        : `<span style="color:var(--muted);font-size:11px">—</span>`;
+
+    const schock = (session.schocks ?? []).find(s => s.periode === i);
+    const schockHtml = schock
+      ? `<span title="${schock.beschreibung}" style="color:#92400E;font-size:11px">⚡ ${schock.name}</span>`
+      : '<span style="color:var(--muted)">—</span>';
+
+    if (!hasParams) {
+      rows += `<tr>
+        <td>${pf?.label ?? `P${i + 1}`}</td>
+        <td>${statusHtml}</td>
+        <td>${schockHtml}</td>
+        <td colspan="9" style="color:var(--muted)">Noch nicht gespielt</td>
+      </tr>`;
+      continue;
+    }
+
+    const p = pd.params;
+    const r = pf?.result;
+    const z = pf?.zustand;
+    rows += `<tr class="${isActive ? 'active-period' : ''}">
+      <td>${pf?.label ?? `P${i + 1}`}</td>
+      <td>${statusHtml}</td>
+      <td>${schockHtml}</td>
+      <td>${p?.spitze?.toFixed(0) ?? '—'} %</td>
+      <td>${p?.mwst?.toFixed(0) ?? '—'} %</td>
+      <td>${p?.co2?.toFixed(0) ?? '—'} €/t</td>
+      <td>${p?.kst?.toFixed(0) ?? '—'} %</td>
+      <td>${p?.invest_impuls?.toFixed(0) ?? '—'} Mrd.</td>
+      <td style="color:${r?.saldo < 0 ? 'var(--bad)' : 'var(--good)'}">
+        ${r ? (r.saldo >= 0 ? '+' : '') + r.saldo.toFixed(0) : '—'} Mrd.
+      </td>
+      <td>${r ? r.gini.toFixed(3) : '—'}</td>
+      <td>${z ? Math.round(z.co2_kumulat) : '—'} Mt</td>
+      <td>${z ? z.bip.toFixed(0) : '—'} Mrd.</td>
+    </tr>`;
+  }
+
+  content.innerHTML = `
+    <div style="overflow-x:auto">
+      <table class="detail-table">
+        <thead><tr>
+          <th>Periode</th><th>Status</th><th>Schock</th>
+          <th>Spitze</th><th>MwSt</th><th>CO₂-Preis</th><th>KSt</th><th>Invest-Impuls</th>
+          <th>Saldo</th><th>Gini</th><th>CO₂ kum.</th><th>BIP</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-top:10px">
+      Aktive Periode ist blau markiert. Schock-Effekte sind in der Simulation eingerechnet.
+    </p>`;
+  modal.style.display = 'flex';
+}
+
+// ── Schock-Verwaltung ─────────────────────────────────────────────────────────
+
+function renderSchockPanel(session) {
+  const panel  = document.getElementById('schock-panel');
+  const grid   = document.getElementById('schock-grid');
+  if (!panel || !grid) return;
+  panel.style.display = '';
+
+  const n       = session.perioden_anzahl ?? 5;
+  const nJahre  = KURS_KONFIG_DEFAULT.perioden_laenge_jahre ?? 4;
+  const active  = {};
+  for (const s of (session.schocks ?? [])) active[s.periode] = s.id;
+
+  const byTyp = (typ) => SCHOCK_BIBLIOTHEK.filter(s => s.typ === typ);
+  const opts  = (typ, sel) => byTyp(typ).map(s =>
+    `<option value="${s.id}"${s.id === sel ? ' selected' : ''}>${'⚡'.repeat(s.staerke)} ${s.name}</option>`
+  ).join('');
+
+  let html = '';
+  for (let i = 0; i < n; i++) {
+    const start = 2025 + i * nJahre;
+    const label = nJahre === 1 ? `${start}` : `${start}–${start + nJahre - 1}`;
+    const sel   = active[i] ?? '';
+    html += `
+      <div class="schock-row">
+        <div class="schock-period-label">Periode ${i + 1}<span class="schock-period-sub">${label}</span></div>
+        <select class="schock-select" id="schock-sel-${i}">
+          <option value="">Kein Schock</option>
+          <optgroup label="Energie">${opts('energie', sel)}</optgroup>
+          <optgroup label="Nachfrage / Konjunktur">${opts('nachfrage', sel)}</optgroup>
+          <optgroup label="Finanz / Zinsen">${opts('finanz', sel)}</optgroup>
+          <optgroup label="Geopolitisch">${opts('geopolitisch', sel)}</optgroup>
+        </select>
+        <div></div>
+        <div class="schock-preview" id="schock-prev-${i}"></div>
+      </div>`;
+  }
+  grid.innerHTML = html;
+
+  // Effekt-Vorschau verdrahten
+  for (let i = 0; i < n; i++) {
+    const selEl  = document.getElementById(`schock-sel-${i}`);
+    const prevEl = document.getElementById(`schock-prev-${i}`);
+    const update = () => {
+      const s = SCHOCK_BIBLIOTHEK.find(x => x.id === selEl.value);
+      if (!s) { prevEl.textContent = ''; return; }
+      const e = s.effekte;
+      const parts = [];
+      if (e.bip_malus)     parts.push(`BIP −${(e.bip_malus * 100).toFixed(1)} %`);
+      if (e.schuld_bonus)  parts.push(`Schuldenquote +${e.schuld_bonus.toFixed(1)} PP`);
+      if (e.invest_malus)  parts.push(`Investitionen −${(e.invest_malus * 100).toFixed(1)} %`);
+      if (e.zins_bonus)    parts.push(`Zinsen +${(e.zins_bonus * 100).toFixed(2)} PP`);
+      if (e.co2_reduktion) parts.push(`CO₂ −${(e.co2_reduktion * 100).toFixed(0)} %`);
+      prevEl.textContent = s.beschreibung + (parts.length ? ` · Effekte: ${parts.join(', ')}` : '');
+    };
+    update();
+    selEl.addEventListener('change', update);
+  }
+
+  // Speichern-Button verdrahten (alten Handler entfernen)
+  const oldBtn = document.getElementById('btn-save-schocks');
+  const newBtn = oldBtn.cloneNode(true);
+  oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+  const statusEl = document.getElementById('schock-status');
+
+  newBtn.addEventListener('click', async () => {
+    const schocks = [];
+    for (let i = 0; i < n; i++) {
+      const id = document.getElementById(`schock-sel-${i}`)?.value;
+      if (id) {
+        const def = SCHOCK_BIBLIOTHEK.find(s => s.id === id);
+        if (def) schocks.push({ ...def, periode: i });
+      }
+    }
+    newBtn.disabled = true;
+    newBtn.textContent = 'Speichere …';
+    statusEl.textContent = '';
+    try {
+      const res = await fetch(`${API_BASE}/sessions/${currentSessionId}/schocks?token=${currentToken}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schocks }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        statusEl.style.color = 'var(--good)';
+        statusEl.textContent = `✓ ${data.count} Schock(s) gespeichert — Teams erhalten Update in ~5 Sek.`;
+      } else {
+        statusEl.style.color = 'var(--bad)';
+        statusEl.textContent = 'Fehler: ' + (data.error ?? res.statusText);
+      }
+    } catch (_) {
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = 'Netzwerkfehler';
+    } finally {
+      newBtn.disabled = false;
+      newBtn.textContent = 'Schocks speichern';
+    }
+  });
 }
 
 // ── CSV-Parsing + Upload ──────────────────────────────────────────────────────
@@ -346,10 +568,21 @@ async function uploadMatrikeln(sessionId, token, matrikeln, statusEl) {
 
 if (SESSION_ID && ADMIN_TOKEN) {
   // Bereits eine Session aktiv → Dashboard direkt laden
+  currentSessionId = SESSION_ID;
+  currentToken     = ADMIN_TOKEN;
+
   document.getElementById('setup').style.display    = 'none';
   document.getElementById('dashboard').style.display = '';
   document.getElementById('header-session-info').style.display = '';
   document.getElementById('header-session-id').textContent     = SESSION_ID;
+
+  // Modal-Close-Handler einmalig setzen
+  document.getElementById('team-detail-close').addEventListener('click', () => {
+    document.getElementById('team-detail-modal').style.display = 'none';
+  });
+  document.getElementById('team-detail-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) e.currentTarget.style.display = 'none';
+  });
 
   const origin   = location.origin + location.pathname.replace('admin.html', '');
   const joinUrl  = `${origin}index.html?session=${SESSION_ID}`;

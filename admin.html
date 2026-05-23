@@ -330,6 +330,96 @@
       margin-top: 10px;
       min-height: 18px;
     }
+
+    /* ── Klickbare Team-Zeilen ── */
+    .teams-table tbody tr { cursor: pointer; transition: background .1s; }
+    .teams-table tbody tr:hover { background: var(--surface-2); }
+
+    /* ── Schock-Panel ── */
+    .schock-row {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      gap: 8px 12px;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .schock-row:last-of-type { border-bottom: none; }
+    .schock-period-label { font-size: 11px; font-weight: 600; color: var(--ink-2); }
+    .schock-period-sub   { font-size: 10px; font-weight: 400; color: var(--muted); display: block; margin-top: 1px; }
+    .schock-select {
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 12px;
+      font-family: inherit;
+      background: var(--surface);
+      outline: none;
+      width: 100%;
+    }
+    .schock-select:focus { border-color: var(--accent); }
+    .schock-preview {
+      grid-column: 2;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.5;
+      padding-bottom: 2px;
+    }
+
+    /* ── Team-Detail-Modal ── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      z-index: 200;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      overflow-y: auto;
+      padding: 40px 20px 60px;
+    }
+    .modal-card {
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 24px;
+      max-width: 860px;
+      width: 100%;
+      position: relative;
+    }
+    .modal-close {
+      position: absolute;
+      top: 14px; right: 16px;
+      background: none;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      color: var(--muted);
+      line-height: 1;
+    }
+    .modal-close:hover { color: var(--ink); }
+    .detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    .detail-table th {
+      text-align: left;
+      padding: 6px 8px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .3px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .detail-table td {
+      padding: 8px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .detail-table tr.active-period > td { background: var(--accent-lt); }
+    .detail-table tr:last-child td { border-bottom: none; }
   </style>
 </head>
 <body>
@@ -450,9 +540,33 @@
       </div>
       <div id="last-updated"></div>
     </div>
+
+    <!-- ── Schock-Verwaltung ── -->
+    <div class="card" id="schock-panel" style="display:none">
+      <div class="card-title">Schock-Ereignisse konfigurieren</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px">
+        Wähle für jede Periode ein externes Schockereignis. Teams erhalten den Schock beim nächsten Abruf (ca. 5 Sek.).
+        Die Auswirkungen werden sofort in der Team-Übersicht berechnet.
+      </div>
+      <div id="schock-grid"></div>
+      <div style="margin-top:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <button class="btn-primary" id="btn-save-schocks">Schocks speichern</button>
+        <span id="schock-status" style="font-size:12px"></span>
+      </div>
+    </div>
   </div>
 
 </main>
+
+<!-- ── Team-Detail-Modal ── -->
+<div id="team-detail-modal" class="modal-backdrop" style="display:none">
+  <div class="modal-card">
+    <button class="modal-close" id="team-detail-close" title="Schließen">×</button>
+    <div id="team-detail-name" style="font-size:15px;font-weight:600;margin-bottom:4px"></div>
+    <div id="team-detail-members" style="font-size:12px;color:var(--muted);margin-bottom:16px"></div>
+    <div id="team-detail-content"></div>
+  </div>
+</div>
 
 <script type="module" src="js/admin.js"></script>
 </body>
