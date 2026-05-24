@@ -10,6 +10,16 @@ import { KURS_KONFIG_DEFAULT, SCHOCK_BIBLIOTHEK } from './data.js';
 
 const API_BASE = 'https://planspiel-api.aramisda2.workers.dev/api';
 
+/** HTML-Sonderzeichen escapen — verhindert XSS durch User-Daten in innerHTML */
+function esc(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ── URL-Parameter ─────────────────────────────────────────────────────────────
 
 const urlParams    = new URLSearchParams(location.search);
@@ -270,7 +280,7 @@ function renderDashboard(session) {
   for (const teamName of teamNames) {
     const members    = allMembers.filter(m => m.team === teamName);
     const memberStr  = members.length
-      ? members.map(m => `${m.name} <span style="color:var(--muted);font-size:10px">(${m.matrikelnummer})</span>`).join(', ')
+      ? members.map(m => `${esc(m.name)} <span style="color:var(--muted);font-size:10px">(${esc(m.matrikelnummer)})</span>`).join(', ')
         + ` <span style="color:var(--muted)">${members.length}/${session.team_groesse}</span>`
       : `<span style="color:var(--muted)">0/${session.team_groesse}</span>`;
     const kpi        = teamKpis[teamName];
@@ -282,7 +292,7 @@ function renderDashboard(session) {
     const tr = document.createElement('tr');
     tr.title = 'Klicken für Team-Details';
     tr.innerHTML = `
-      <td><strong>${teamName}</strong> <span style="font-size:10px;color:var(--accent)">↗</span></td>
+      <td><strong>${esc(teamName)}</strong> <span style="font-size:10px;color:var(--accent)">↗</span></td>
       <td class="member-list" style="line-height:1.8">${memberStr}</td>
       <td>
         <span class="period-badge ${allDone ? 'done' : ''}">
@@ -331,7 +341,7 @@ function openTeamDetail(teamName, session, konfig) {
 
   document.getElementById('team-detail-name').textContent = teamName;
   document.getElementById('team-detail-members').innerHTML = members.length
-    ? members.map(m => `<strong>${m.name}</strong> <span style="color:var(--muted)">(${m.matrikelnummer})</span>`).join(' · ')
+    ? members.map(m => `<strong>${esc(m.name)}</strong> <span style="color:var(--muted)">(${esc(m.matrikelnummer)})</span>`).join(' · ')
     : '<em style="color:var(--muted)">Noch keine Mitglieder beigetreten</em>';
 
   const teamState = (session.teams || {})[teamName];
@@ -367,7 +377,7 @@ function openTeamDetail(teamName, session, konfig) {
 
     const schock = (session.schocks ?? []).find(s => s.periode === i);
     const schockHtml = schock
-      ? `<span title="${schock.beschreibung}" style="color:#92400E;font-size:11px">⚡ ${schock.name}</span>`
+      ? `<span title="${esc(schock.beschreibung)}" style="color:#92400E;font-size:11px">⚡ ${esc(schock.name)}</span>`
       : '<span style="color:var(--muted)">—</span>';
 
     if (!hasParams) {

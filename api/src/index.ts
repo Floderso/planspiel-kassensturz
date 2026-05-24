@@ -154,10 +154,13 @@ app.post('/api/sessions', async (c) => {
 
   await putSession(c.env.SESSIONS, session);
 
-  const origin    = c.req.header('origin') ?? '';
-  const baseParams = `session=${id}&perioden=${session.perioden_anzahl}&teams=${session.team_groesse}&sandbox=${session.sandbox}&name=${encodeURIComponent(session.name)}`;
-  const join_url  = `${origin}?${baseParams}`;
-  const admin_url = `${origin}/admin.html?session=${id}&token=${admin_token}`;
+  // Origin gegen Whitelist prüfen bevor er in URLs verwendet wird
+  const rawOrigin   = c.req.header('origin') ?? '';
+  const allowedList = c.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
+  const origin      = allowedList.includes(rawOrigin) ? rawOrigin : allowedList[0] ?? '';
+  const baseParams  = `session=${id}&perioden=${session.perioden_anzahl}&teams=${session.team_groesse}&sandbox=${session.sandbox}&name=${encodeURIComponent(session.name)}`;
+  const join_url    = `${origin}/planspiel-kassensturz/index.html?${baseParams}`;
+  const admin_url   = `${origin}/planspiel-kassensturz/admin.html?session=${id}&token=${admin_token}`;
 
   return c.json({ session_id: id, admin_token, join_url, admin_url }, 201);
 });
@@ -307,7 +310,20 @@ app.put('/api/sessions/:id/teams/:team', async (c) => {
   if (!session) return c.json({ error: 'Session nicht gefunden' }, 404);
 
   const teamName = decodeURIComponent(c.req.param('team'));
+  if (!session.team_names.includes(teamName)) {
+    return c.json({ error: 'Ungültiges Team' }, 400);
+  }
+
   const body = await c.req.json<{ perioden: TeamPeriod[] }>();
+  if (!Array.isArray(body.perioden) || body.perioden.length === 0) {
+    return c.json({ error: 'perioden muss ein nicht-leeres Array sein' }, 400);
+  }
+  // Perioden-Struktur validieren
+  for (const p of body.perioden) {
+    if (typeof p.idx !== 'number' || typeof p.locked !== 'boolean' || typeof p.params !== 'object') {
+      return c.json({ error: 'Ungültige Perioden-Struktur' }, 400);
+    }
+  }
 
   session.teams[teamName] = {
     perioden:     body.perioden,
@@ -328,6 +344,9 @@ app.post('/api/sessions/:id/teams/:team/vote', async (c) => {
 
   const teamName = decodeURIComponent(c.req.param('team'));
   const { periode_idx } = await c.req.json<{ periode_idx: number }>();
+  if (typeof periode_idx !== 'number' || !Number.isInteger(periode_idx) || periode_idx < 0) {
+    return c.json({ error: 'periode_idx muss eine nicht-negative Ganzzahl sein' }, 400);
+  }
 
   if (!session.teams[teamName]) {
     return c.json({ error: 'Team nicht in Session registriert' }, 400);

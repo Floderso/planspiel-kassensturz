@@ -575,11 +575,18 @@ async function showTeamPicker() {
   async function loadMembers() {
     try {
       const res  = await fetch(`${API_BASE}/sessions/${URL_SESSION_ID}/members`);
-      if (!res.ok) return;
+      if (!res.ok) {
+        errorEl.textContent = `Fehler beim Laden der Session (HTTP ${res.status}).`;
+        return;
+      }
       const data = await res.json();
+      errorEl.textContent = '';
       sessionMeta = data;
       renderTeams(data);
-    } catch (_) {}
+    } catch (err) {
+      console.error('loadMembers:', err);
+      errorEl.textContent = 'Netzwerkfehler — Verbindung prüfen.';
+    }
   }
 
   function renderTeams(data) {
@@ -596,8 +603,9 @@ async function showTeamPicker() {
       const btn    = document.createElement('button');
       btn.className = 'picker-team-btn';
       btn.disabled  = full;
+      const escTeam = team.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       btn.innerHTML = `
-        <span>${team}</span>
+        <span>${escTeam}</span>
         <span class="picker-team-count ${full ? 'full' : ''}">${count}/${max}${full ? ' — voll' : ''}</span>`;
       btn.addEventListener('click', () => joinTeam(team));
       teamsEl.appendChild(btn);
@@ -715,7 +723,9 @@ async function apiPollSession() {
       saveState(state);
       renderAll();
     }
-  } catch (_) {}
+  } catch (err) {
+    console.error('apiPollSession:', err);
+  }
 }
 
 // Polling starten (nur mit aktiver Session, nicht im Sandbox-Modus)
