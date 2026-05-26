@@ -179,20 +179,26 @@ function renderSessionBar() {
 }
 
 function renderPeriodNav() {
-  const container = document.getElementById('period-steps');
-  const n = state.kurs_konfig.perioden_anzahl;
+  const container  = document.getElementById('period-steps');
+  const n          = state.kurs_konfig.perioden_anzahl;
+  const lockedCount = state.perioden.filter(p => p.locked).length;
   container.innerHTML = '';
   for (let i = 0; i < n; i++) {
-    const p = state.perioden[i];
-    const btn = document.createElement('button');
-    btn.className = 'period-step'
+    const p        = state.perioden[i];
+    const isFuture = i > lockedCount; // nur abgeschlossene + aktuelle Periode zugänglich
+    const btn      = document.createElement('button');
+    btn.className  = 'period-step'
       + (i === state.current_periode ? ' active' : '')
-      + (p.locked ? ' locked' : '');
+      + (p.locked   ? ' locked' : '')
+      + (isFuture   ? ' future' : '');
+    btn.disabled   = isFuture;
+    if (isFuture) btn.title = 'Erst verfügbar nach Abschluss der aktuellen Periode';
     const entry = pfad[i];
     btn.innerHTML = `<span class="step-num">${i + 1}</span>
       <span class="step-label">${entry.label}</span>
-      ${p.locked ? '<span class="lock-icon">🔒</span>' : ''}`;
-    btn.addEventListener('click', () => navigatePeriode(i));
+      ${p.locked  ? '<span class="lock-icon">🔒</span>' : ''}
+      ${isFuture  ? '<span class="lock-icon" style="opacity:.5">⏳</span>' : ''}`;
+    if (!isFuture) btn.addEventListener('click', () => navigatePeriode(i));
     container.appendChild(btn);
   }
 }
@@ -534,6 +540,8 @@ function renderCo2Panel(z, abl) {
 // ── Navigation & Locking ──────────────────────────────────────────────────────
 
 function navigatePeriode(idx) {
+  const lockedCount = state.perioden.filter(p => p.locked).length;
+  if (idx > lockedCount) return; // Zugriff auf zukünftige Perioden verhindern
   state.current_periode = idx;
   saveState(state);
   renderAll();
@@ -722,6 +730,20 @@ async function apiPollSession() {
     const session = await res.json();
     // Andere Teams: locked-Status übernehmen, wenn sich etwas geändert hat
     let changed = false;
+
+    // Eigenes Team: locked-Status vom Server übernehmen (Admin-Override-Support)
+    const ownState = session.teams[state.team_id];
+    if (ownState) {
+      for (const remotePeriod of ownState.perioden) {
+        const local = state.perioden[remotePeriod.idx];
+        if (local && remotePeriod.locked !== local.locked) {
+          local.locked = remotePeriod.locked;
+          changed = true;
+        }
+      }
+    }
+
+    // Andere Teams: locked-Status synchronisieren (nur true→true, nicht unlock)
     for (const [teamName, teamState] of Object.entries(session.teams)) {
       if (teamName === state.team_id) continue;
       for (const remotePeriod of teamState.perioden) {
@@ -731,6 +753,14 @@ async function apiPollSession() {
           changed = true;
         }
       }
+    }
+
+    // current_periode nach Sync validieren
+    const lockedAfterSync = state.perioden.filter(p => p.locked).length;
+    const maxPeriode      = Math.min(lockedAfterSync, state.kurs_konfig.perioden_anzahl - 1);
+    if (state.current_periode > maxPeriode) {
+      state.current_periode = maxPeriode;
+      changed = true;
     }
 
     // Schocks vom Admin übernehmen
@@ -775,6 +805,10 @@ if (URL_SESSION_ID && !URL_TEAM) {
     state.session_id = URL_SESSION_ID;
     if (URL_TEAM)   state.team_id = URL_TEAM;
   }
+  // current_periode auf erste offene Periode setzen (falls gespeicherter Wert ungültig)
+  const lockedOnLoad = state.perioden.filter(p => p.locked).length;
+  const maxAllowed   = Math.min(lockedOnLoad, state.kurs_konfig.perioden_anzahl - 1);
+  if (state.current_periode > maxAllowed) state.current_periode = maxAllowed;
   saveState(state);
   renderAll();
   startPolling();
