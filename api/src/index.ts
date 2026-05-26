@@ -78,6 +78,7 @@ type SessionData = {
   members: Member[];
   teams: Record<string, TeamState>;
   schocks: SchockEvent[];      // externe Schockereignisse je Periode (Admin-gesetzt)
+  perioden_laenge_jahre: number | number[];  // Länge je Periode in Jahren (Zahl oder Array)
 };
 
 // ── Hilfsfunktionen ───────────────────────────────────────────────────────────
@@ -135,6 +136,12 @@ app.post('/api/sessions', async (c) => {
     ? body.team_names
     : defaultTeamNames;
 
+  // perioden_laenge_jahre: Zahl oder Array; Array-Elemente auf 1–20 begrenzen
+  const rawLaengen = body.perioden_laenge_jahre ?? 4;
+  const perioden_laenge_jahre: number | number[] = Array.isArray(rawLaengen)
+    ? (rawLaengen as number[]).map(n => Math.max(1, Math.min(20, Number(n) || 4)))
+    : Math.max(1, Math.min(20, Number(rawLaengen) || 4));
+
   const session: SessionData = {
     id,
     admin_token,
@@ -143,6 +150,7 @@ app.post('/api/sessions', async (c) => {
     team_groesse:        body.team_groesse        ?? 4,
     min_teilnahme_quote: body.min_teilnahme_quote ?? 0.5,
     sandbox:             body.sandbox             ?? false,
+    perioden_laenge_jahre,
     team_names,
     matrikelnummern:     [],
     members:             [],
@@ -158,7 +166,10 @@ app.post('/api/sessions', async (c) => {
   const rawOrigin   = c.req.header('origin') ?? '';
   const allowedList = c.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
   const origin      = allowedList.includes(rawOrigin) ? rawOrigin : allowedList[0] ?? '';
-  const baseParams  = `session=${id}&perioden=${session.perioden_anzahl}&teams=${session.team_groesse}&sandbox=${session.sandbox}&name=${encodeURIComponent(session.name)}`;
+  const laengenParam = Array.isArray(perioden_laenge_jahre)
+    ? perioden_laenge_jahre.join(',')
+    : String(perioden_laenge_jahre);
+  const baseParams  = `session=${id}&perioden=${session.perioden_anzahl}&teams=${session.team_groesse}&sandbox=${session.sandbox}&name=${encodeURIComponent(session.name)}&laengen=${laengenParam}`;
   const join_url    = `${origin}/planspiel-kassensturz/index.html?${baseParams}`;
   const admin_url   = `${origin}/planspiel-kassensturz/admin.html?session=${id}&token=${admin_token}`;
 

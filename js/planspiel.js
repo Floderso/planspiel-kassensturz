@@ -20,6 +20,10 @@ function parseUrlKonfig() {
   if (p.has('teams'))     konfig.team_groesse          = Math.max(1, Math.min(50, +p.get('teams')));
   if (p.has('sandbox'))   konfig.sandbox               = p.get('sandbox') !== 'false';
   if (p.has('name'))      konfig.kurs_name             = p.get('name').slice(0, 80);
+  if (p.has('laengen')) {
+    const parts = p.get('laengen').split(',').map(s => Math.max(1, Math.min(20, parseInt(s) || 4)));
+    konfig.perioden_laenge_jahre = parts.length === 1 ? parts[0] : parts;
+  }
   return konfig;
 }
 

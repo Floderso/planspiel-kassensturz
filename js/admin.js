@@ -111,6 +111,10 @@ async function createSession() {
   const groesse  = Math.max(1, Math.min(50, +document.getElementById('f-groesse').value || 4));
   const teams    = getTeamNames();
 
+  const laengenRaw    = (document.getElementById('f-laengen')?.value ?? '4').trim();
+  const laengenParsed = laengenRaw.split(',').map(s => Math.max(1, Math.min(20, parseInt(s.trim()) || 4)));
+  const perioden_laenge_jahre = laengenParsed.length === 1 ? laengenParsed[0] : laengenParsed;
+
   if (teams.length === 0) {
     errorEl.textContent = 'Mindestens ein Team hinzufügen.'; return;
   }
@@ -125,11 +129,12 @@ async function createSession() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name,
-        perioden_anzahl:    perioden,
-        team_groesse:       groesse,
-        team_names:         teams,
-        sandbox:            sandboxOn,
+        perioden_anzahl:     perioden,
+        team_groesse:        groesse,
+        team_names:          teams,
+        sandbox:             sandboxOn,
         min_teilnahme_quote: 0.5,
+        perioden_laenge_jahre,
       }),
     });
 
@@ -151,8 +156,11 @@ async function createSession() {
     }
 
     // Join-URL enthält nur session-id, kein token
-    const origin   = location.origin + location.pathname.replace('admin.html', '');
-    const join_url = `${origin}index.html?session=${data.session_id}&perioden=${perioden}&teams=${groesse}&sandbox=${sandboxOn}&name=${encodeURIComponent(name)}`;
+    const origin       = location.origin + location.pathname.replace('admin.html', '');
+    const laengenParam = Array.isArray(perioden_laenge_jahre)
+      ? perioden_laenge_jahre.join(',')
+      : String(perioden_laenge_jahre);
+    const join_url = `${origin}index.html?session=${data.session_id}&perioden=${perioden}&teams=${groesse}&sandbox=${sandboxOn}&name=${encodeURIComponent(name)}&laengen=${laengenParam}`;
 
     startDashboard(data.session_id, data.admin_token, join_url, { name, perioden, groesse, teams });
   } catch (e) {
@@ -237,8 +245,9 @@ function renderDashboard(session) {
 
   const sessionKonfig = {
     ...KURS_KONFIG_DEFAULT,
-    perioden_anzahl: session.perioden_anzahl,
-    schocks: session.schocks ?? [],
+    perioden_anzahl:       session.perioden_anzahl,
+    perioden_laenge_jahre: session.perioden_laenge_jahre ?? KURS_KONFIG_DEFAULT.perioden_laenge_jahre,
+    schocks:               session.schocks ?? [],
   };
 
   // KPIs für alle Teams berechnen (client-seitig, inkl. aktiver Schocks)
@@ -486,9 +495,10 @@ function renderSchockPanel(session) {
   if (!panel || !grid) return;
   panel.style.display = '';
 
-  const n       = session.perioden_anzahl ?? 5;
-  const nJahre  = KURS_KONFIG_DEFAULT.perioden_laenge_jahre ?? 4;
-  const active  = {};
+  const n          = session.perioden_anzahl ?? 5;
+  const rawLaengen = session.perioden_laenge_jahre ?? 4;
+  const laengen    = Array.isArray(rawLaengen) ? rawLaengen : Array(n).fill(rawLaengen);
+  const active     = {};
   for (const s of (session.schocks ?? [])) active[s.periode] = s.id;
 
   const byTyp = (typ) => SCHOCK_BIBLIOTHEK.filter(s => s.typ === typ);
@@ -497,9 +507,12 @@ function renderSchockPanel(session) {
   ).join('');
 
   let html = '';
+  let startJahr = 2025;
   for (let i = 0; i < n; i++) {
-    const start = 2025 + i * nJahre;
-    const label = nJahre === 1 ? `${start}` : `${start}–${start + nJahre - 1}`;
+    const nJahre = laengen[i] ?? 4;
+    const start  = startJahr;
+    const label  = nJahre === 1 ? `${start}` : `${start}–${start + nJahre - 1}`;
+    startJahr   += nJahre;
     const sel   = active[i] ?? '';
     html += `
       <div class="schock-row">

@@ -118,18 +118,22 @@ function berechneTransition(prevState, prevResult, nextStartJahr, n) {
 }
 
 function simulierePfad(perioden_params, kursKonfig = KURS_KONFIG_DEFAULT) {
-  const n       = kursKonfig.perioden_laenge_jahre ?? 4;
+  const rawLaengen = kursKonfig.perioden_laenge_jahre ?? 4;
+  const laengen    = Array.isArray(rawLaengen)
+    ? rawLaengen
+    : Array(perioden_params.length).fill(rawLaengen);
   const schocks = kursKonfig.schocks ?? [];
 
-  let zustand = { ...PERIOD_STATE_0, renten_faktor: getDemoForYear(2025).renten_faktor };
+  let zustand   = { ...PERIOD_STATE_0, renten_faktor: getDemoForYear(2025).renten_faktor };
   const ergebnisse = [];
+  let startJahr = 2025;
 
   for (let i = 0; i < perioden_params.length; i++) {
-    const startJahr = 2025 + i * n;
+    const n = laengen[i] ?? 4;
     zustand.renten_faktor = getDemoForYear(startJahr).renten_faktor;
 
     // Schock für diese Periode anwenden (falls vorhanden)
-    const schock_i = schocks.find(s => s.periode === i) ?? null;
+    const schock_i    = schocks.find(s => s.periode === i) ?? null;
     const zustand_eff = applySchock(zustand, schock_i);
 
     const result = berechne(perioden_params[i], zustand_eff);
@@ -145,6 +149,7 @@ function simulierePfad(perioden_params, kursKonfig = KURS_KONFIG_DEFAULT) {
     if (i < perioden_params.length - 1) {
       zustand = berechneTransition(zustand_eff, result, startJahr + n, n);
     }
+    startJahr += n;
   }
 
   return ergebnisse;
