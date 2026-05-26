@@ -152,6 +152,27 @@
       white-space: nowrap;
     }
 
+    /* ── Lernziele-Bar ── */
+    #lernziele-bar {
+      background: #EFF6FF;
+      border-bottom: 1px solid #BFDBFE;
+      padding: 7px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 11px;
+      color: var(--ink-2);
+    }
+    .lz-bar-title { font-weight: 600; color: var(--accent); white-space: nowrap; }
+    .lz-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600;
+      white-space: nowrap;
+    }
+    .lz-chip.ok  { background: var(--good-bg); color: var(--good); border: 1px solid #bbf7d0; }
+    .lz-chip.nok { background: var(--bad-bg);  color: var(--bad);  border: 1px solid #fecaca; }
+
     /* ── Shock Banner ── */
     #shock-banner {
       background: #FEF3C7;
@@ -591,6 +612,9 @@
   <div id="period-steps"></div>
   <div id="deadline-badge" class="deadline-badge" style="display:none">⏱ 48 h</div>
 </nav>
+
+<!-- ── Lernziele-Bar ── -->
+<div id="lernziele-bar" style="display:none"></div>
 
 <!-- ── Shock Banner ── -->
 <div id="shock-banner" style="display:none">

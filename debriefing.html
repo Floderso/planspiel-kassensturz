@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kassensturz Planspiel — Auswertung</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #F1F3F7;
+      --surface:   #FFFFFF;
+      --surface-2: #F8F9FB;
+      --ink:       #0D1117;
+      --ink-2:     #374151;
+      --muted:     #6B7280;
+      --border:    #E3E6EC;
+      --accent:    #1B4FD8;
+      --accent-lt: #EEF2FF;
+      --good:      #166534;
+      --good-bg:   #F0FDF4;
+      --bad:       #991B1B;
+      --bad-bg:    #FEF2F2;
+      --warn:      #92400E;
+      --radius:    6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; font-size: 13px; background: var(--bg); color: var(--ink); min-height: 100vh; }
+
+    header {
+      background: #111827; color: #E5E7EB; height: 48px;
+      display: flex; align-items: center; gap: 16px; padding: 0 24px;
+      border-bottom: 1px solid #374151;
+    }
+    .logo { font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 14px; color: #F9FAFB; }
+    .logo span { color: #60A5FA; }
+    .header-badge { background: #1e3a5f; color: #93c5fd; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; letter-spacing: .3px; }
+    #session-name-header { color: #9CA3AF; font-size: 12px; }
+    .btn-export { padding: 5px 12px; font-size: 11px; font-family: inherit; border-radius: 4px; cursor: pointer; }
+    .btn-export-csv { background: #1e3a5f; color: #93c5fd; border: 1px solid #2d4f7c; }
+    .btn-export-csv:hover { background: #2d4f7c; }
+    .btn-export-pdf { background: transparent; color: #9CA3AF; border: 1px solid #374151; }
+    .btn-export-pdf:hover { border-color: #6B7280; color: #D1D5DB; }
+
+    main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 60px; }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin-bottom: 24px; }
+    .card-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    .card-sub { font-size: 11px; color: var(--muted); margin-bottom: 18px; }
+
+    #loading { text-align: center; padding: 80px 24px; color: var(--muted); font-size: 14px; }
+    #error-msg { text-align: center; padding: 40px 24px; color: var(--bad); display: none; }
+
+    /* Comparison Table */
+    .cmp-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .cmp-table th {
+      padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .4px; color: var(--muted);
+      border-bottom: 2px solid var(--border); white-space: nowrap;
+    }
+    .cmp-table td { padding: 12px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .cmp-table tr:last-child td { border-bottom: none; }
+    .cmp-table tbody tr:hover td { background: var(--surface-2); }
+    .kpi-best { font-weight: 600; color: var(--good); }
+    .kpi-best::after { content: ' ★'; font-size: 9px; opacity: .8; }
+    .period-badge { background: var(--accent-lt); color: var(--accent); padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .period-badge.done { background: var(--good-bg); color: var(--good); }
+    .feedback-cell { color: var(--ink-2); font-size: 11px; max-width: 220px; line-height: 1.4; }
+
+    /* Feedback Cards */
+    .feedback-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+    .feedback-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 18px; }
+    .feedback-card-team { font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+    .feedback-card-text {
+      color: var(--ink-2); font-size: 12px; line-height: 1.6;
+      padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border);
+    }
+    .lernziel-item { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; font-size: 11px; }
+    .lz-icon { font-size: 12px; flex-shrink: 0; }
+    .lz-label { flex: 1; color: var(--ink-2); }
+    .lz-ist { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); }
+    .lernziel-ok .lz-label { color: var(--good); font-weight: 500; }
+    .lernziel-nok .lz-label { color: var(--bad); }
+    .no-lernziele { color: var(--muted); font-size: 11px; font-style: italic; }
+    .no-data-row { text-align: center; color: var(--muted); padding: 40px; }
+
+    @media print {
+      header .btn-export, header a { display: none !important; }
+      body { background: white; }
+      .card { border: 1px solid #ccc; box-shadow: none; break-inside: avoid; }
+      .feedback-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Kassensturz <span>Planspiel</span></div>
+  <div class="header-badge">Auswertung</div>
+  <span id="session-name-header"></span>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+    <button class="btn-export btn-export-csv" id="btn-csv">↓ CSV</button>
+    <button class="btn-export btn-export-pdf" onclick="window.print()">↓ PDF drucken</button>
+    <a href="demo.html" style="color:#6B7280;font-size:11px;text-decoration:none;border-left:1px solid #374151;padding-left:10px;margin-left:2px">← Übersicht</a>
+  </div>
+</header>
+
+<main>
+  <div id="loading">Lade Auswertung …</div>
+  <div id="error-msg"></div>
+  <div id="content" style="display:none">
+
+    <div class="card">
+      <div class="card-title">Ergebnisvergleich aller Teams</div>
+      <div class="card-sub">KPI-Werte der letzten gespeicherten Periode. ★ = bester Wert im Kurs.</div>
+      <div style="overflow-x:auto">
+        <table class="cmp-table">
+          <thead>
+            <tr>
+              <th>Team</th>
+              <th>Perioden</th>
+              <th>Saldo (Mrd.)</th>
+              <th>Schuldenquote</th>
+              <th>Gini</th>
+              <th>CO₂ (Mt)</th>
+              <th>BIP (Mrd.)</th>
+              <th id="th-lernziele" style="display:none">Lernziele</th>
+              <th>Einschätzung</th>
+            </tr>
+          </thead>
+          <tbody id="cmp-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Team-Einschätzungen</div>
+      <div class="card-sub">Regelbasierte Auswertung + Lernziel-Status je Team.</div>
+      <div id="feedback-grid" class="feedback-grid"></div>
+    </div>
+
+  </div>
+</main>
+
+<script type="module" src="js/debriefing.js"></script>
+</body>
+</html>

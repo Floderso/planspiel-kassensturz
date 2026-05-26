@@ -7,6 +7,7 @@
 import { simulierePfad } from './rechner/transition.js';
 import { berechneAbgeleitet, CO2_BUDGET_DE } from './rechner/abgeleitet.js';
 import { PRESETS, KURS_KONFIG_DEFAULT, SCHOCK_BIBLIOTHEK } from './data.js';
+import { bewerteLernziele } from './feedback.js';
 
 // ── URL-Konfiguration ─────────────────────────────────────────────────────────
 // Lehrpersonen können die Kurskonfiguration per URL-Parameter setzen:
@@ -309,12 +310,29 @@ function renderResults() {
   const sqR   = pfad[0].result; // Status-quo-Vergleich = Periode 0
 
   renderKpiStrip(r, z, abl, sqR);
+  renderLernzieleBar(r, z);
   renderHistoryTable();
   renderFiskalPanel(r, z, abl);
   renderVerteilungChart(r);
   renderHankPanel(r, abl);
   renderDomarPanel(z, abl);
   renderCo2Panel(z, abl);
+}
+
+function renderLernzieleBar(r, z) {
+  const bar = document.getElementById('lernziele-bar');
+  if (!bar) return;
+  const lernziele = state.kurs_konfig.lernziele ?? [];
+  if (!lernziele.length || !URL_SESSION_ID) { bar.style.display = 'none'; return; }
+
+  const bwg = bewerteLernziele(r, z, lernziele);
+  bar.style.display = '';
+  bar.innerHTML = `
+    <span class="lz-bar-title">🎯 Lernziele ${bwg.erreicht}/${bwg.total}</span>
+    ${bwg.details.map(d => `
+      <span class="lz-chip ${d.erreicht ? 'ok' : 'nok'}" title="${d.erreicht ? 'Erreicht' : 'Noch nicht erreicht'}">
+        ${d.erreicht ? '✓' : '✗'} ${d.label}
+      </span>`).join('')}`;
 }
 
 function renderKpiStrip(r, z, abl, sqR) {
@@ -715,11 +733,19 @@ async function apiPollSession() {
       }
     }
 
-    // Schocks vom Admin übernehmen (werden vom Admin-Dashboard gesetzt)
+    // Schocks vom Admin übernehmen
     const remoteSchocks = JSON.stringify(session.schocks ?? []);
     const localSchocks  = JSON.stringify(state.kurs_konfig.schocks ?? []);
     if (remoteSchocks !== localSchocks) {
       state.kurs_konfig.schocks = session.schocks ?? [];
+      changed = true;
+    }
+
+    // Lernziele vom Admin übernehmen
+    const remoteLernziele = JSON.stringify(session.lernziele ?? []);
+    const localLernziele  = JSON.stringify(state.kurs_konfig.lernziele ?? []);
+    if (remoteLernziele !== localLernziele) {
+      state.kurs_konfig.lernziele = session.lernziele ?? [];
       changed = true;
     }
 

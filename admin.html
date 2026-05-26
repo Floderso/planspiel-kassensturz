@@ -169,6 +169,29 @@
     }
     .btn-copy:hover { background: var(--accent-lt); border-color: var(--accent); }
 
+    /* Lernziele Form */
+    .lernziele-grid { display: flex; flex-direction: column; gap: 7px; margin-top: 4px; }
+    .lernziel-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+    .lernziel-row input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; accent-color: var(--accent); }
+    .lz-name { min-width: 120px; color: var(--ink-2); }
+    .lz-op { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-weight: 600; min-width: 18px; text-align: center; }
+    .lz-val { width: 80px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; font-family: inherit; }
+    .lz-unit { min-width: 50px; color: var(--ink-2); }
+    .lz-ref { color: var(--muted); font-size: 11px; }
+
+    /* Debriefing-Link */
+    .debriefing-bar {
+      background: var(--good-bg);
+      border: 1px solid #bbf7d0;
+      border-radius: 6px;
+      padding: 10px 16px;
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 16px;
+      font-size: 12px;
+    }
+    .debriefing-bar a { color: var(--good); font-weight: 600; text-decoration: none; }
+    .debriefing-bar a:hover { text-decoration: underline; }
+
     /* Toggle */
     .toggle-row {
       display: flex;
@@ -511,6 +534,53 @@
       </div>
 
       <div class="form-group full">
+        <label>Lernziele (optional)</label>
+        <span class="hint" style="margin-bottom:8px;display:block">Aktiviere Zielwerte, die Teams im Spiel und in der Auswertung sehen.</span>
+        <div class="lernziele-grid">
+          <div class="lernziel-row">
+            <input type="checkbox" id="lz-saldo" checked>
+            <span class="lz-name">Haushaltssaldo</span>
+            <span class="lz-op">≥</span>
+            <input type="number" id="lz-saldo-wert" class="lz-val" value="-0.35" step="0.05">
+            <span class="lz-unit">% BIP</span>
+            <span class="lz-ref">Schuldenbremse: −0,35 %</span>
+          </div>
+          <div class="lernziel-row">
+            <input type="checkbox" id="lz-schuld">
+            <span class="lz-name">Schuldenquote</span>
+            <span class="lz-op">≤</span>
+            <input type="number" id="lz-schuld-wert" class="lz-val" value="70" step="1">
+            <span class="lz-unit">%</span>
+            <span class="lz-ref">Maastricht: 60 %</span>
+          </div>
+          <div class="lernziel-row">
+            <input type="checkbox" id="lz-gini">
+            <span class="lz-name">Gini-Koeffizient</span>
+            <span class="lz-op">≤</span>
+            <input type="number" id="lz-gini-wert" class="lz-val" value="0.290" step="0.005">
+            <span class="lz-unit"></span>
+            <span class="lz-ref">Status quo: 0,297</span>
+          </div>
+          <div class="lernziel-row">
+            <input type="checkbox" id="lz-co2">
+            <span class="lz-name">CO₂-Kumulat</span>
+            <span class="lz-op">≤</span>
+            <input type="number" id="lz-co2-wert" class="lz-val" value="4500" step="100">
+            <span class="lz-unit">Mt</span>
+            <span class="lz-ref">Budget: 6.600 Mt</span>
+          </div>
+          <div class="lernziel-row">
+            <input type="checkbox" id="lz-bip">
+            <span class="lz-name">BIP</span>
+            <span class="lz-op">≥</span>
+            <input type="number" id="lz-bip-wert" class="lz-val" value="4400" step="50">
+            <span class="lz-unit">Mrd. €</span>
+            <span class="lz-ref">Status quo: 4.470 Mrd.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group full">
         <label>Admin-Code (automatisch generiert)</label>
         <div class="token-row">
           <input id="f-admin-token" type="text" readonly>
@@ -528,6 +598,12 @@
 
   <!-- ── Dashboard ── -->
   <div id="dashboard">
+    <div class="debriefing-bar" id="debriefing-bar" style="display:none">
+      <span>🎯 Auswertung &amp; Vergleich aller Teams:</span>
+      <a id="debriefing-link" href="#">Zur Auswertungsseite →</a>
+      <span style="color:var(--muted);font-size:11px">(auch für Studierende freigegeben)</span>
+    </div>
+
     <div class="card">
       <div class="card-title">Join-Link für Studierende</div>
       <div class="join-url-row">

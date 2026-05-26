@@ -115,6 +115,22 @@ async function createSession() {
   const laengenParsed = laengenRaw.split(',').map(s => Math.max(1, Math.min(20, parseInt(s.trim()) || 4)));
   const perioden_laenge_jahre = laengenParsed.length === 1 ? laengenParsed[0] : laengenParsed;
 
+  const LERNZIEL_DEFS = [
+    { id: 'saldo', kpi: 'saldo_bip_pct', label: 'Haushaltssaldo',   operator: '>=' },
+    { id: 'schuld', kpi: 'schuldenquote', label: 'Schuldenquote',    operator: '<=' },
+    { id: 'gini',   kpi: 'gini',          label: 'Gini-Koeffizient', operator: '<=' },
+    { id: 'co2',    kpi: 'co2_kumulat',   label: 'CO₂-Kumulat',     operator: '<=' },
+    { id: 'bip',    kpi: 'bip',           label: 'BIP',              operator: '>=' },
+  ];
+  const lernziele = LERNZIEL_DEFS
+    .filter(d => document.getElementById(`lz-${d.id}`)?.checked)
+    .map(d => ({
+      kpi:      d.kpi,
+      operator: d.operator,
+      wert:     parseFloat(document.getElementById(`lz-${d.id}-wert`)?.value) || 0,
+      label:    d.label,
+    }));
+
   if (teams.length === 0) {
     errorEl.textContent = 'Mindestens ein Team hinzufügen.'; return;
   }
@@ -135,6 +151,7 @@ async function createSession() {
         sandbox:             sandboxOn,
         min_teilnahme_quote: 0.5,
         perioden_laenge_jahre,
+        lernziele,
       }),
     });
 
@@ -202,6 +219,14 @@ function startDashboard(sessionId, token, joinUrl, meta) {
   );
 
   document.getElementById('btn-refresh').addEventListener('click', () => pollDashboard(sessionId, token));
+
+  // Debriefing-Link setzen
+  const debriefBase = location.origin + location.pathname.replace('admin.html', '');
+  const debriefEl   = document.getElementById('debriefing-link');
+  if (debriefEl) {
+    debriefEl.href = `${debriefBase}debriefing.html?session=${sessionId}`;
+    document.getElementById('debriefing-bar').style.display = '';
+  }
 
   // CSV-Upload im laufenden Dashboard
   setupCsvUpload('csv-drop-zone-dash', 'csv-file-input-dash', 'csv-status-dash', async matrikeln => {
@@ -685,6 +710,13 @@ if (SESSION_ID && ADMIN_TOKEN) {
   document.getElementById('btn-refresh').addEventListener('click', () =>
     pollDashboard(SESSION_ID, ADMIN_TOKEN)
   );
+
+  // Debriefing-Link
+  const debriefEl2 = document.getElementById('debriefing-link');
+  if (debriefEl2) {
+    debriefEl2.href = `${origin}debriefing.html?session=${SESSION_ID}`;
+    document.getElementById('debriefing-bar').style.display = '';
+  }
 
   pollDashboard(SESSION_ID, ADMIN_TOKEN);
   pollInterval = setInterval(() => pollDashboard(SESSION_ID, ADMIN_TOKEN), 5000);

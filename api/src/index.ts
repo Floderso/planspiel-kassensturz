@@ -52,6 +52,13 @@ type Member = {
   joined_at: string;
 };
 
+type Lernziel = {
+  kpi:      string;
+  operator: '<' | '>' | '<=' | '>=';
+  wert:     number;
+  label:    string;
+};
+
 type SchockEvent = {
   periode:     number;
   id:          string;
@@ -78,6 +85,7 @@ type SessionData = {
   members: Member[];
   teams: Record<string, TeamState>;
   schocks: SchockEvent[];      // externe Schockereignisse je Periode (Admin-gesetzt)
+  lernziele: Lernziel[];      // Lernziele der Session (Admin-gesetzt)
   perioden_laenge_jahre: number | number[];  // Länge je Periode in Jahren (Zahl oder Array)
 };
 
@@ -155,6 +163,7 @@ app.post('/api/sessions', async (c) => {
     matrikelnummern:     [],
     members:             [],
     schocks:             [],
+    lernziele:           Array.isArray(body.lernziele) ? (body.lernziele as Lernziel[]) : [],
     created_at:          now,
     expires_at:          new Date(Date.now() + 86400_000).toISOString(),
     teams:               {},
@@ -443,6 +452,35 @@ app.put('/api/sessions/:id/schocks', async (c) => {
 });
 
 /**
+ * PUT /api/sessions/:id/lernziele?token=...
+ * Setzt die Lernziele der Session (Admin only).
+ *
+ * Body: { lernziele: Lernziel[] }
+ */
+app.put('/api/sessions/:id/lernziele', async (c) => {
+  const session = await getSession(c.env.SESSIONS, c.req.param('id'));
+  if (!session) return c.json({ error: 'Session nicht gefunden' }, 404);
+  if (!requireToken(session, c.req.query('token'))) {
+    return c.json({ error: 'Nicht autorisiert' }, 403);
+  }
+
+  const { lernziele } = await c.req.json<{ lernziele: Lernziel[] }>();
+  if (!Array.isArray(lernziele)) {
+    return c.json({ error: 'lernziele muss ein Array sein' }, 400);
+  }
+
+  const validOps = ['<', '>', '<=', '>='];
+  session.lernziele = lernziele.filter(z =>
+    typeof z.kpi === 'string' &&
+    validOps.includes(z.operator) &&
+    typeof z.wert === 'number' &&
+    typeof z.label === 'string'
+  );
+  await putSession(c.env.SESSIONS, session);
+  return c.json({ ok: true, count: session.lernziele.length });
+});
+
+/**
  * GET /api/sessions/:id/results
  * Parameter aller Teams — Frontend berechnet KPIs client-seitig.
  */
@@ -456,11 +494,14 @@ app.get('/api/sessions/:id/results', async (c) => {
   }
 
   return c.json({
-    session_id:      session.id,
-    name:            session.name,
-    perioden_anzahl: session.perioden_anzahl,
-    team_names:      session.team_names,
-    teams:           results,
+    session_id:            session.id,
+    name:                  session.name,
+    perioden_anzahl:       session.perioden_anzahl,
+    perioden_laenge_jahre: session.perioden_laenge_jahre ?? 4,
+    team_names:            session.team_names,
+    teams:                 results,
+    schocks:               session.schocks ?? [],
+    lernziele:             session.lernziele ?? [],
   });
 });
 
