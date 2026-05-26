@@ -181,18 +181,21 @@ function renderSessionBar() {
 function renderPeriodNav() {
   const container  = document.getElementById('period-steps');
   const n          = state.kurs_konfig.perioden_anzahl;
-  const lockedCount = state.perioden.filter(p => p.locked).length;
+  const lockedCount     = state.perioden.filter(p => p.locked).length;
+  const teacherFreigabe = state.kurs_konfig.perioden_freigegeben ?? state.kurs_konfig.perioden_anzahl;
   container.innerHTML = '';
   for (let i = 0; i < n; i++) {
     const p        = state.perioden[i];
-    const isFuture = i > lockedCount; // nur abgeschlossene + aktuelle Periode zugänglich
+    const isFuture = i > lockedCount || i >= teacherFreigabe;
     const btn      = document.createElement('button');
     btn.className  = 'period-step'
       + (i === state.current_periode ? ' active' : '')
       + (p.locked   ? ' locked' : '')
       + (isFuture   ? ' future' : '');
     btn.disabled   = isFuture;
-    if (isFuture) btn.title = 'Erst verfügbar nach Abschluss der aktuellen Periode';
+    if (isFuture) btn.title = i >= teacherFreigabe
+      ? 'Noch nicht von der Lehrperson freigegeben'
+      : 'Erst verfügbar nach Abschluss der aktuellen Periode';
     const entry = pfad[i];
     btn.innerHTML = `<span class="step-num">${i + 1}</span>
       <span class="step-label">${entry.label}</span>
@@ -540,8 +543,9 @@ function renderCo2Panel(z, abl) {
 // ── Navigation & Locking ──────────────────────────────────────────────────────
 
 function navigatePeriode(idx) {
-  const lockedCount = state.perioden.filter(p => p.locked).length;
-  if (idx > lockedCount) return; // Zugriff auf zukünftige Perioden verhindern
+  const lockedCount     = state.perioden.filter(p => p.locked).length;
+  const teacherFreigabe = state.kurs_konfig.perioden_freigegeben ?? state.kurs_konfig.perioden_anzahl;
+  if (idx > lockedCount || idx >= teacherFreigabe) return;
   state.current_periode = idx;
   saveState(state);
   renderAll();
@@ -755,9 +759,18 @@ async function apiPollSession() {
       }
     }
 
-    // current_periode nach Sync validieren
+    // Perioden-Freigabe vom Admin übernehmen
+    const remoteFreigabe = session.perioden_freigegeben ?? session.perioden_anzahl;
+    const localFreigabe  = state.kurs_konfig.perioden_freigegeben ?? state.kurs_konfig.perioden_anzahl;
+    if (remoteFreigabe !== localFreigabe) {
+      state.kurs_konfig.perioden_freigegeben = remoteFreigabe;
+      changed = true;
+    }
+
+    // current_periode nach Sync validieren (eigene Fortschritte + Lehrer-Freigabe)
     const lockedAfterSync = state.perioden.filter(p => p.locked).length;
-    const maxPeriode      = Math.min(lockedAfterSync, state.kurs_konfig.perioden_anzahl - 1);
+    const teacherGate     = state.kurs_konfig.perioden_freigegeben ?? state.kurs_konfig.perioden_anzahl;
+    const maxPeriode      = Math.min(lockedAfterSync, teacherGate - 1, state.kurs_konfig.perioden_anzahl - 1);
     if (state.current_periode > maxPeriode) {
       state.current_periode = maxPeriode;
       changed = true;
@@ -805,9 +818,10 @@ if (URL_SESSION_ID && !URL_TEAM) {
     state.session_id = URL_SESSION_ID;
     if (URL_TEAM)   state.team_id = URL_TEAM;
   }
-  // current_periode auf erste offene Periode setzen (falls gespeicherter Wert ungültig)
-  const lockedOnLoad = state.perioden.filter(p => p.locked).length;
-  const maxAllowed   = Math.min(lockedOnLoad, state.kurs_konfig.perioden_anzahl - 1);
+  // current_periode auf erste offene Periode setzen (Fortschritte + Lehrer-Freigabe)
+  const lockedOnLoad    = state.perioden.filter(p => p.locked).length;
+  const teacherOnLoad   = state.kurs_konfig.perioden_freigegeben ?? state.kurs_konfig.perioden_anzahl;
+  const maxAllowed      = Math.min(lockedOnLoad, teacherOnLoad - 1, state.kurs_konfig.perioden_anzahl - 1);
   if (state.current_periode > maxAllowed) state.current_periode = maxAllowed;
   saveState(state);
   renderAll();

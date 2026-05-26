@@ -86,6 +86,7 @@ type SessionData = {
   teams: Record<string, TeamState>;
   schocks: SchockEvent[];      // externe Schockereignisse je Periode (Admin-gesetzt)
   lernziele: Lernziel[];      // Lernziele der Session (Admin-gesetzt)
+  perioden_freigegeben: number;              // Anzahl freigegebener Perioden (Lehrperson-Steuerung)
   perioden_laenge_jahre: number | number[];  // Länge je Periode in Jahren (Zahl oder Array)
 };
 
@@ -163,10 +164,11 @@ app.post('/api/sessions', async (c) => {
     matrikelnummern:     [],
     members:             [],
     schocks:             [],
-    lernziele:           Array.isArray(body.lernziele) ? (body.lernziele as Lernziel[]) : [],
-    created_at:          now,
-    expires_at:          new Date(Date.now() + 86400_000).toISOString(),
-    teams:               {},
+    lernziele:            Array.isArray(body.lernziele) ? (body.lernziele as Lernziel[]) : [],
+    perioden_freigegeben: 1,
+    created_at:           now,
+    expires_at:           new Date(Date.now() + 86400_000).toISOString(),
+    teams:                {},
   };
 
   await putSession(c.env.SESSIONS, session);
@@ -478,6 +480,37 @@ app.put('/api/sessions/:id/lernziele', async (c) => {
   );
   await putSession(c.env.SESSIONS, session);
   return c.json({ ok: true, count: session.lernziele.length });
+});
+
+/**
+ * PUT /api/sessions/:id/freigabe?token=...
+ * Setzt die Anzahl freigegebener Perioden (Admin only).
+ * Studierende können keine Periode spielen, deren Index ≥ perioden_freigegeben ist.
+ *
+ * Body: { perioden_freigegeben: number }
+ */
+app.put('/api/sessions/:id/freigabe', async (c) => {
+  const session = await getSession(c.env.SESSIONS, c.req.param('id'));
+  if (!session) return c.json({ error: 'Session nicht gefunden' }, 404);
+  if (!requireToken(session, c.req.query('token'))) {
+    return c.json({ error: 'Nicht autorisiert' }, 403);
+  }
+
+  const { perioden_freigegeben } = await c.req.json<{ perioden_freigegeben: number }>();
+  if (
+    typeof perioden_freigegeben !== 'number' ||
+    !Number.isInteger(perioden_freigegeben) ||
+    perioden_freigegeben < 1 ||
+    perioden_freigegeben > session.perioden_anzahl
+  ) {
+    return c.json({
+      error: `perioden_freigegeben muss zwischen 1 und ${session.perioden_anzahl} liegen`,
+    }, 400);
+  }
+
+  session.perioden_freigegeben = perioden_freigegeben;
+  await putSession(c.env.SESSIONS, session);
+  return c.json({ ok: true, perioden_freigegeben });
 });
 
 /**

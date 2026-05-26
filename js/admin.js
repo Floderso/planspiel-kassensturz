@@ -350,6 +350,9 @@ function renderDashboard(session) {
     tbody.appendChild(tr);
   }
 
+  // Freigabe-Panel bei jedem Poll aktualisieren
+  renderFreigabePanel(session);
+
   // Schock-Panel einmalig initialisieren (Fehler dürfen Tabelle nicht blockieren)
   if (!schockPanelReady) {
     try {
@@ -509,6 +512,70 @@ async function adminToggleLock(teamName, periodeIdx, locked, konfig) {
   } catch (err) {
     console.error('adminToggleLock:', err);
     alert('Netzwerkfehler beim Ändern des Perioden-Status.');
+  }
+}
+
+// ── Perioden-Freigabe ─────────────────────────────────────────────────────────
+
+function renderFreigabePanel(session) {
+  const steps   = document.getElementById('freigabe-steps');
+  const nextBtn = document.getElementById('btn-freigabe-next');
+  const allBtn  = document.getElementById('btn-freigabe-all');
+  if (!steps || !nextBtn || !allBtn) return;
+
+  const n       = session.perioden_anzahl ?? 5;
+  const current = session.perioden_freigegeben ?? 1;
+
+  // Perioden-Indikatoren rendern
+  steps.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const div = document.createElement('div');
+    div.className = 'freigabe-step' + (i < current ? ' released' : '');
+    div.textContent = i + 1;
+    div.title = i < current ? `Periode ${i + 1} — freigegeben` : `Periode ${i + 1} — gesperrt`;
+    steps.appendChild(div);
+  }
+
+  // Buttons klonen um alte Listener zu entfernen
+  const newNext = nextBtn.cloneNode(true);
+  const newAll  = allBtn.cloneNode(true);
+  nextBtn.parentNode.replaceChild(newNext, nextBtn);
+  allBtn.parentNode.replaceChild(newAll, allBtn);
+
+  const allDone = current >= n;
+  newNext.disabled = allDone;
+  newAll.disabled  = allDone;
+  newNext.textContent = allDone
+    ? 'Alle Perioden freigegeben'
+    : `Nächste Periode freigeben (→ ${current + 1}/${n})`;
+
+  newNext.addEventListener('click', () => setFreigabe(Math.min(current + 1, n)));
+  newAll.addEventListener('click',  () => setFreigabe(n));
+}
+
+async function setFreigabe(n) {
+  const msgEl = document.getElementById('freigabe-msg');
+  if (msgEl) { msgEl.textContent = ''; }
+  try {
+    const res = await fetch(
+      `${API_BASE}/sessions/${currentSessionId}/freigabe?token=${currentToken}`,
+      {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ perioden_freigegeben: n }),
+      }
+    );
+    const data = await res.json();
+    if (!res.ok) {
+      if (msgEl) { msgEl.style.color = 'var(--bad)'; msgEl.textContent = 'Fehler: ' + (data.error ?? res.statusText); }
+      return;
+    }
+    // Sofort neu laden damit Panel und Tabelle aktuell sind
+    await pollDashboard(currentSessionId, currentToken);
+    if (msgEl) { msgEl.style.color = 'var(--good)'; msgEl.textContent = `✓ ${n} Periode(n) freigegeben`; }
+  } catch (err) {
+    console.error('setFreigabe:', err);
+    if (msgEl) { msgEl.style.color = 'var(--bad)'; msgEl.textContent = 'Netzwerkfehler'; }
   }
 }
 
