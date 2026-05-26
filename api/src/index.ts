@@ -371,6 +371,41 @@ app.post('/api/sessions/:id/teams/:team/vote', async (c) => {
 });
 
 /**
+ * PUT /api/sessions/:id/teams/:team/lock?token=...
+ * Admin setzt den locked-Status einer einzelnen Periode direkt.
+ *
+ * Body: { periode_idx: number, locked: boolean }
+ */
+app.put('/api/sessions/:id/teams/:team/lock', async (c) => {
+  const session = await getSession(c.env.SESSIONS, c.req.param('id'));
+  if (!session) return c.json({ error: 'Session nicht gefunden' }, 404);
+  if (!requireToken(session, c.req.query('token'))) {
+    return c.json({ error: 'Nicht autorisiert' }, 403);
+  }
+
+  const teamName = decodeURIComponent(c.req.param('team'));
+  if (!session.team_names.includes(teamName)) {
+    return c.json({ error: 'Ungültiges Team' }, 400);
+  }
+  if (!session.teams[teamName]) {
+    return c.json({ error: 'Team hat noch keine Daten' }, 400);
+  }
+
+  const { periode_idx, locked } = await c.req.json<{ periode_idx: number; locked: boolean }>();
+  if (typeof periode_idx !== 'number' || !Number.isInteger(periode_idx) || periode_idx < 0) {
+    return c.json({ error: 'periode_idx muss eine nicht-negative Ganzzahl sein' }, 400);
+  }
+
+  const periode = session.teams[teamName].perioden[periode_idx];
+  if (!periode) return c.json({ error: 'Ungültiger Perioden-Index' }, 400);
+
+  periode.locked = locked === true;
+  session.teams[teamName].last_updated = new Date().toISOString();
+  await putSession(c.env.SESSIONS, session);
+  return c.json({ ok: true, locked: periode.locked });
+});
+
+/**
  * PUT /api/sessions/:id/schocks?token=...
  * Setzt die Schockereignisse der Session (Admin only).
  * Teams erhalten die Schocks beim nächsten Polling-Zyklus (GET /sessions/:id).

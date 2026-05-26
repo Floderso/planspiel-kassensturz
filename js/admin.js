@@ -369,10 +369,16 @@ function openTeamDetail(teamName, session, konfig) {
     const isActive  = (i === lockedCount) && !isLocked;
     const hasParams = isLocked || isActive;
 
-    const statusHtml = isLocked
-      ? '<span class="period-badge done">✓ Gesperrt</span>'
+    const lockBtnHtml = isLocked
+      ? `<button class="btn-lock-toggle unlock" data-lock-btn="${i}" data-to-locked="false">Freischalten</button>`
       : isActive
-        ? '<span class="period-badge">Aktiv</span>'
+        ? `<button class="btn-lock-toggle lock" data-lock-btn="${i}" data-to-locked="true">Sperren</button>`
+        : '';
+
+    const statusHtml = isLocked
+      ? `<span class="period-badge done">✓ Gesperrt</span>${lockBtnHtml}`
+      : isActive
+        ? `<span class="period-badge">Aktiv</span>${lockBtnHtml}`
         : `<span style="color:var(--muted);font-size:11px">—</span>`;
 
     const schock = (session.schocks ?? []).find(s => s.periode === i);
@@ -425,7 +431,51 @@ function openTeamDetail(teamName, session, konfig) {
     <p style="font-size:11px;color:var(--muted);margin-top:10px">
       Aktive Periode ist blau markiert. Schock-Effekte sind in der Simulation eingerechnet.
     </p>`;
+
+  // Lock/Freischalten-Buttons verdrahten
+  content.querySelectorAll('[data-lock-btn]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const idx      = parseInt(btn.dataset.lockBtn);
+      const toLocked = btn.dataset.toLocked === 'true';
+      btn.disabled    = true;
+      btn.textContent = '…';
+      await adminToggleLock(teamName, idx, toLocked, konfig);
+    });
+  });
+
   modal.style.display = 'flex';
+}
+
+// ── Admin-Perioden-Lock ───────────────────────────────────────────────────────
+
+async function adminToggleLock(teamName, periodeIdx, locked, konfig) {
+  try {
+    const res = await fetch(
+      `${API_BASE}/sessions/${currentSessionId}/teams/${encodeURIComponent(teamName)}/lock?token=${currentToken}`,
+      {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ periode_idx: periodeIdx, locked }),
+      }
+    );
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert('Fehler: ' + (data.error ?? res.statusText));
+      return;
+    }
+    // Dashboard + Modal mit frischen Daten neu rendern
+    const freshRes = await fetch(`${API_BASE}/sessions/${currentSessionId}/admin?token=${currentToken}`);
+    if (!freshRes.ok) return;
+    const freshSession = await freshRes.json();
+    renderDashboard(freshSession);
+    openTeamDetail(teamName, freshSession, {
+      ...konfig,
+      schocks: freshSession.schocks ?? [],
+    });
+  } catch (err) {
+    console.error('adminToggleLock:', err);
+    alert('Netzwerkfehler beim Ändern des Perioden-Status.');
+  }
 }
 
 // ── Schock-Verwaltung ─────────────────────────────────────────────────────────
