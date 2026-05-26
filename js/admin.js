@@ -294,6 +294,23 @@ function renderDashboard(session) {
     } catch (_) {}
   }
 
+  // Join-URL immer aus echten Session-Daten aufbauen (korrekt auch nach Reload)
+  const laengenParam2 = Array.isArray(session.perioden_laenge_jahre)
+    ? session.perioden_laenge_jahre.join(',')
+    : String(session.perioden_laenge_jahre ?? 4);
+  const adminOrigin  = location.origin + location.pathname.replace('admin.html', '');
+  const freshJoinUrl = `${adminOrigin}index.html?session=${session.id}`
+    + `&perioden=${session.perioden_anzahl}`
+    + `&teams=${session.team_groesse}`
+    + `&sandbox=${session.sandbox}`
+    + `&name=${encodeURIComponent(session.name)}`
+    + `&laengen=${laengenParam2}`;
+  if (joinUrlGlobal !== freshJoinUrl) {
+    joinUrlGlobal = freshJoinUrl;
+    const joinDisplay = document.getElementById('join-url-display');
+    if (joinDisplay) joinDisplay.textContent = freshJoinUrl;
+  }
+
   // Beste Werte je KPI ermitteln (für grüne Hervorhebung)
   const kpiValues = Object.values(teamKpis);
   const bestSaldo = kpiValues.length ? Math.max(...kpiValues.map(k => k.saldo)) : null;
@@ -768,11 +785,9 @@ if (SESSION_ID && ADMIN_TOKEN) {
     if (e.target === e.currentTarget) e.currentTarget.style.display = 'none';
   });
 
-  const origin   = location.origin + location.pathname.replace('admin.html', '');
-  const joinUrl  = `${origin}index.html?session=${SESSION_ID}`;
-  document.getElementById('join-url-display').textContent = joinUrl;
+  document.getElementById('join-url-display').textContent = 'Lade …';
   document.getElementById('btn-copy-join').addEventListener('click', () =>
-    copyToClipboard(joinUrl, document.getElementById('btn-copy-join'))
+    copyToClipboard(joinUrlGlobal || '', document.getElementById('btn-copy-join'))
   );
   document.getElementById('btn-refresh').addEventListener('click', () =>
     pollDashboard(SESSION_ID, ADMIN_TOKEN)

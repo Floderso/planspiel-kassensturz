@@ -747,6 +747,36 @@ async function apiPollSession() {
       }
     }
 
+    // Kern-Konfiguration vom Server übernehmen (Server ist immer die Wahrheit)
+    if (session.perioden_anzahl && session.perioden_anzahl !== state.kurs_konfig.perioden_anzahl) {
+      state.kurs_konfig.perioden_anzahl = session.perioden_anzahl;
+      // Perioden-Array auf korrekte Länge bringen
+      while (state.perioden.length < session.perioden_anzahl) {
+        state.perioden.push({
+          idx:    state.perioden.length,
+          locked: false,
+          params: { ...PRESETS.status_quo, invest_impuls: 0 },
+          votes:  0,
+        });
+      }
+      if (state.perioden.length > session.perioden_anzahl) {
+        state.perioden = state.perioden.slice(0, session.perioden_anzahl);
+      }
+      changed = true;
+    }
+    if (session.team_groesse && session.team_groesse !== state.kurs_konfig.team_groesse) {
+      state.kurs_konfig.team_groesse = session.team_groesse;
+      changed = true;
+    }
+    if (session.perioden_laenge_jahre != null) {
+      const remoteL = JSON.stringify(session.perioden_laenge_jahre);
+      const localL  = JSON.stringify(state.kurs_konfig.perioden_laenge_jahre ?? 4);
+      if (remoteL !== localL) {
+        state.kurs_konfig.perioden_laenge_jahre = session.perioden_laenge_jahre;
+        changed = true;
+      }
+    }
+
     // Andere Teams: locked-Status synchronisieren (nur true→true, nicht unlock)
     for (const [teamName, teamState] of Object.entries(session.teams)) {
       if (teamName === state.team_id) continue;
