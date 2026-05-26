@@ -556,26 +556,34 @@ function navigatePeriode(idx) {
   renderAll();
 }
 
+function copyParamsToNext(fromIdx) {
+  const toIdx = fromIdx + 1;
+  if (toIdx >= state.kurs_konfig.perioden_anzahl) return;
+  const toP = state.perioden[toIdx];
+  if (!toP.locked) toP.params = { ...state.perioden[fromIdx].params };
+}
+
 async function lockPeriode() {
-  const p = state.perioden[state.current_periode];
+  const p   = state.perioden[state.current_periode];
+  const idx = state.current_periode;
   if (p.locked) return;
 
   // Online-Modus mit Abstimmung: Stimme ans Backend senden
   if (URL_SESSION_ID && !state.sandbox) {
     const btn = document.getElementById('btn-commit');
     if (btn) { btn.disabled = true; btn.textContent = 'Stimme wird gezählt …'; }
-    const result = await apiVote(state.current_periode);
+    const result = await apiVote(idx);
     if (result) {
       p.votes  = result.votes ?? p.votes;
       p.locked = result.locked ?? false;
       if (p.locked) {
-        const next = state.current_periode + 1;
+        copyParamsToNext(idx);
+        const next = idx + 1;
         if (next < state.kurs_konfig.perioden_anzahl) state.current_periode = next;
       }
       saveState(state);
       renderAll();
     } else {
-      // API nicht erreichbar — Button wieder freigeben
       if (btn) { btn.disabled = false; renderControls(); }
     }
     return;
@@ -584,7 +592,8 @@ async function lockPeriode() {
   // Offline / Sandbox-Modus: sofort sperren
   p.votes  = state.kurs_konfig.team_groesse;
   p.locked = true;
-  const next = state.current_periode + 1;
+  copyParamsToNext(idx);
+  const next = idx + 1;
   if (next < state.kurs_konfig.perioden_anzahl) state.current_periode = next;
   saveState(state);
   renderAll();
@@ -761,8 +770,12 @@ async function apiPollSession() {
       for (const remotePeriod of ownState.perioden) {
         const local = state.perioden[remotePeriod.idx];
         if (!local) continue;
-        if (remotePeriod.locked !== local.locked) {
-          local.locked = remotePeriod.locked;
+        if (remotePeriod.locked && !local.locked) {
+          local.locked = true;
+          copyParamsToNext(remotePeriod.idx); // Params in nächste Periode übertragen
+          changed = true;
+        } else if (!remotePeriod.locked && local.locked) {
+          local.locked = false;
           changed = true;
         }
         if (remotePeriod.votes !== undefined && remotePeriod.votes !== local.votes) {
