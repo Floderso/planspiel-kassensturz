@@ -57,7 +57,12 @@ function defaultState(konfig = KURS_KONFIG_DEFAULT) {
 function loadState() {
   try {
     const raw = localStorage.getItem(LS_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      // Gespeicherten State verwerfen wenn Session-ID nicht übereinstimmt
+      if (URL_SESSION_ID && saved.session_id !== URL_SESSION_ID) return defaultState();
+      return saved;
+    }
   } catch (_) {}
   return defaultState();
 }
@@ -551,23 +556,38 @@ function navigatePeriode(idx) {
   renderAll();
 }
 
-function lockPeriode() {
+async function lockPeriode() {
   const p = state.perioden[state.current_periode];
   if (p.locked) return;
 
-  const minVotes = Math.ceil(
-    state.kurs_konfig.team_groesse * state.kurs_konfig.min_teilnahme_quote
-  );
-  p.votes = state.kurs_konfig.team_groesse; // Im Offline-Modus: sofort voll
-  if (state.sandbox || p.votes >= minVotes) {
-    p.locked = true;
-    const next = state.current_periode + 1;
-    if (next < state.kurs_konfig.perioden_anzahl) {
-      state.current_periode = next;
+  // Online-Modus mit Abstimmung: Stimme ans Backend senden
+  if (URL_SESSION_ID && !state.sandbox) {
+    const btn = document.getElementById('btn-commit');
+    if (btn) { btn.disabled = true; btn.textContent = 'Stimme wird gezählt …'; }
+    const result = await apiVote(state.current_periode);
+    if (result) {
+      p.votes  = result.votes ?? p.votes;
+      p.locked = result.locked ?? false;
+      if (p.locked) {
+        const next = state.current_periode + 1;
+        if (next < state.kurs_konfig.perioden_anzahl) state.current_periode = next;
+      }
+      saveState(state);
+      renderAll();
+    } else {
+      // API nicht erreichbar — Button wieder freigeben
+      if (btn) { btn.disabled = false; renderControls(); }
     }
-    saveState(state);
-    renderAll();
+    return;
   }
+
+  // Offline / Sandbox-Modus: sofort sperren
+  p.votes  = state.kurs_konfig.team_groesse;
+  p.locked = true;
+  const next = state.current_periode + 1;
+  if (next < state.kurs_konfig.perioden_anzahl) state.current_periode = next;
+  saveState(state);
+  renderAll();
 }
 
 // ── Reset / Settings ──────────────────────────────────────────────────────────
@@ -735,13 +755,18 @@ async function apiPollSession() {
     // Andere Teams: locked-Status übernehmen, wenn sich etwas geändert hat
     let changed = false;
 
-    // Eigenes Team: locked-Status vom Server übernehmen (Admin-Override-Support)
+    // Eigenes Team: locked + votes vom Server übernehmen (Admin-Override + Vote-Sync)
     const ownState = session.teams[state.team_id];
     if (ownState) {
       for (const remotePeriod of ownState.perioden) {
         const local = state.perioden[remotePeriod.idx];
-        if (local && remotePeriod.locked !== local.locked) {
+        if (!local) continue;
+        if (remotePeriod.locked !== local.locked) {
           local.locked = remotePeriod.locked;
+          changed = true;
+        }
+        if (remotePeriod.votes !== undefined && remotePeriod.votes !== local.votes) {
+          local.votes = remotePeriod.votes;
           changed = true;
         }
       }
