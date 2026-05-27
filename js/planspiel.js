@@ -187,7 +187,8 @@ function renderPeriodNav() {
   const container  = document.getElementById('period-steps');
   const n          = state.kurs_konfig.perioden_anzahl;
   const lockedCount     = state.perioden.filter(p => p.locked).length;
-  const teacherFreigabe = state.kurs_konfig.perioden_freigegeben ?? state.kurs_konfig.perioden_anzahl;
+  const teacherFreigabe = state.kurs_konfig.perioden_freigegeben
+    ?? (URL_SESSION_ID ? 1 : state.kurs_konfig.perioden_anzahl);
   container.innerHTML = '';
   for (let i = 0; i < n; i++) {
     const p        = state.perioden[i];
@@ -549,7 +550,8 @@ function renderCo2Panel(z, abl) {
 
 function navigatePeriode(idx) {
   const lockedCount     = state.perioden.filter(p => p.locked).length;
-  const teacherFreigabe = state.kurs_konfig.perioden_freigegeben ?? state.kurs_konfig.perioden_anzahl;
+  const teacherFreigabe = state.kurs_konfig.perioden_freigegeben
+    ?? (URL_SESSION_ID ? 1 : state.kurs_konfig.perioden_anzahl);
   if (idx > lockedCount || idx >= teacherFreigabe) return;
   state.current_periode = idx;
   saveState(state);
@@ -872,6 +874,7 @@ async function apiPollSession() {
 // Polling starten (nur mit aktiver Session, nicht im Sandbox-Modus)
 function startPolling() {
   if (!URL_SESSION_ID || state.sandbox) return;
+  apiPollSession(); // sofort beim Start, nicht erst nach 5 Sek.
   setInterval(apiPollSession, 5000);
 }
 
@@ -888,7 +891,8 @@ if (URL_SESSION_ID && !URL_TEAM) {
   }
   // current_periode auf erste offene Periode setzen (Fortschritte + Lehrer-Freigabe)
   const lockedOnLoad    = state.perioden.filter(p => p.locked).length;
-  const teacherOnLoad   = state.kurs_konfig.perioden_freigegeben ?? state.kurs_konfig.perioden_anzahl;
+  const teacherOnLoad   = state.kurs_konfig.perioden_freigegeben
+    ?? (URL_SESSION_ID ? 1 : state.kurs_konfig.perioden_anzahl);
   const maxAllowed      = Math.min(lockedOnLoad, teacherOnLoad - 1, state.kurs_konfig.perioden_anzahl - 1);
   if (state.current_periode > maxAllowed) state.current_periode = maxAllowed;
   saveState(state);
