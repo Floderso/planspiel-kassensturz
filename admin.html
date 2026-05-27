@@ -623,8 +623,13 @@
       <div class="join-url-row">
         <span id="join-url-display"></span>
         <button class="btn-copy" id="btn-copy-join">Kopieren</button>
+        <button class="btn-copy" id="btn-show-qr">QR-Code</button>
       </div>
-      <div class="hint">Diesen Link per Moodle, E-Mail oder Beamer weitergeben.</div>
+      <div id="qr-container" style="display:none;margin-top:14px;text-align:center">
+        <img id="qr-img" src="" alt="QR-Code" style="width:180px;height:180px;border:1px solid var(--border);border-radius:6px">
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">Auf Beamer zeigen oder Screenshot machen</div>
+      </div>
+      <div class="hint" style="margin-top:8px">Diesen Link per Moodle, E-Mail oder Beamer weitergeben.</div>
     </div>
 
     <!-- ── Perioden-Freigabe ── -->

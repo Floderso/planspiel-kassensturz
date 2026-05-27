@@ -220,6 +220,15 @@ function startDashboard(sessionId, token, joinUrl, meta) {
 
   document.getElementById('btn-refresh').addEventListener('click', () => pollDashboard(sessionId, token));
 
+  document.getElementById('btn-show-qr')?.addEventListener('click', () => {
+    const container = document.getElementById('qr-container');
+    const img       = document.getElementById('qr-img');
+    if (!container || !img) return;
+    if (container.style.display !== 'none') { container.style.display = 'none'; return; }
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinUrlGlobal)}`;
+    container.style.display = '';
+  });
+
   // Debriefing-Link setzen
   const debriefBase = location.origin + location.pathname.replace('admin.html', '');
   const debriefEl   = document.getElementById('debriefing-link');
@@ -382,7 +391,7 @@ function renderDashboard(session) {
 
   const expires = new Date(session.expires_at);
   document.getElementById('header-expires').textContent =
-    'Läuft ab: ' + expires.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    'Läuft ab: ' + expires.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
   document.getElementById('last-updated').textContent =
     'Zuletzt aktualisiert: ' + new Date().toLocaleTimeString('de-DE');
 }
@@ -792,6 +801,15 @@ if (SESSION_ID && ADMIN_TOKEN) {
   document.getElementById('btn-refresh').addEventListener('click', () =>
     pollDashboard(SESSION_ID, ADMIN_TOKEN)
   );
+
+  document.getElementById('btn-show-qr')?.addEventListener('click', () => {
+    const container = document.getElementById('qr-container');
+    const img       = document.getElementById('qr-img');
+    if (!container || !img) return;
+    if (container.style.display !== 'none') { container.style.display = 'none'; return; }
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinUrlGlobal)}`;
+    container.style.display = '';
+  });
 
   // Debriefing-Link
   const debriefEl2 = document.getElementById('debriefing-link');

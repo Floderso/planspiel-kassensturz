@@ -106,9 +106,11 @@ async function getSession(kv: KVNamespace, id: string): Promise<SessionData | nu
   return JSON.parse(raw) as SessionData;
 }
 
+const SESSION_TTL = 14 * 24 * 3600; // 14 Tage
+
 async function putSession(kv: KVNamespace, session: SessionData): Promise<void> {
   await kv.put(`session:${session.id}`, JSON.stringify(session), {
-    expirationTtl: 86400,
+    expirationTtl: SESSION_TTL,
   });
 }
 
@@ -167,7 +169,7 @@ app.post('/api/sessions', async (c) => {
     lernziele:            Array.isArray(body.lernziele) ? (body.lernziele as Lernziel[]) : [],
     perioden_freigegeben: 1,
     created_at:           now,
-    expires_at:           new Date(Date.now() + 86400_000).toISOString(),
+    expires_at:           new Date(Date.now() + SESSION_TTL * 1000).toISOString(),
     teams:                {},
   };
 
