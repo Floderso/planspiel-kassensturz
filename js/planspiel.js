@@ -187,8 +187,7 @@ function renderPeriodNav() {
   const container  = document.getElementById('period-steps');
   const n          = state.kurs_konfig.perioden_anzahl;
   const lockedCount     = state.perioden.filter(p => p.locked).length;
-  const teacherFreigabe = state.kurs_konfig.perioden_freigegeben
-    ?? (URL_SESSION_ID ? 1 : state.kurs_konfig.perioden_anzahl);
+  const teacherFreigabe = getTeacherFreigabe();
   container.innerHTML = '';
   for (let i = 0; i < n; i++) {
     const p        = state.perioden[i];
@@ -272,14 +271,19 @@ function renderControls() {
   }
 
   // Commit button
-  const commitArea = document.createElement('div');
+  const commitArea   = document.createElement('div');
   commitArea.className = 'commit-area';
-  const totalVotes = state.kurs_konfig.team_groesse;
+  const totalVotes   = state.kurs_konfig.team_groesse;
   const currentVotes = p.votes;
+  const notReleased  = state.current_periode >= getTeacherFreigabe();
+  const btnDisabled  = locked || notReleased;
+  const btnLabel     = locked      ? '🔒 Periode gesperrt'
+                     : notReleased ? '⏳ Noch nicht freigegeben'
+                     :               'Periode abschließen';
   commitArea.innerHTML = `
-    <button id="btn-commit" class="btn-commit ${locked ? 'locked' : ''}" ${locked ? 'disabled' : ''}>
-      ${locked ? '🔒 Periode gesperrt' : 'Periode abschließen'}
-      ${!locked ? `<small>${currentVotes} / ${totalVotes} Stimmen</small>` : ''}
+    <button id="btn-commit" class="btn-commit ${locked ? 'locked' : ''}" ${btnDisabled ? 'disabled' : ''}>
+      ${btnLabel}
+      ${!btnDisabled ? `<small>${currentVotes} / ${totalVotes} Stimmen</small>` : ''}
     </button>
     ${state.sandbox ? '<div class="sandbox-note">Sandbox — kein Scoring</div>' : ''}`;
   container.appendChild(commitArea);
@@ -550,12 +554,15 @@ function renderCo2Panel(z, abl) {
 
 function navigatePeriode(idx) {
   const lockedCount     = state.perioden.filter(p => p.locked).length;
-  const teacherFreigabe = state.kurs_konfig.perioden_freigegeben
-    ?? (URL_SESSION_ID ? 1 : state.kurs_konfig.perioden_anzahl);
-  if (idx > lockedCount || idx >= teacherFreigabe) return;
+  if (idx > lockedCount || idx >= getTeacherFreigabe()) return;
   state.current_periode = idx;
   saveState(state);
   renderAll();
+}
+
+function getTeacherFreigabe() {
+  return state.kurs_konfig.perioden_freigegeben
+    ?? (URL_SESSION_ID ? 1 : state.kurs_konfig.perioden_anzahl);
 }
 
 function copyParamsToNext(fromIdx) {
@@ -569,6 +576,7 @@ async function lockPeriode() {
   const p   = state.perioden[state.current_periode];
   const idx = state.current_periode;
   if (p.locked) return;
+  if (idx >= getTeacherFreigabe()) return; // Periode noch nicht vom Lehrer freigegeben
 
   // Online-Modus mit Abstimmung: Stimme ans Backend senden
   if (URL_SESSION_ID && !state.sandbox) {
@@ -581,7 +589,10 @@ async function lockPeriode() {
       if (p.locked) {
         copyParamsToNext(idx);
         const next = idx + 1;
-        if (next < state.kurs_konfig.perioden_anzahl) state.current_periode = next;
+        // Nur zur nächsten Periode wechseln wenn Lehrer sie freigegeben hat
+        if (next < state.kurs_konfig.perioden_anzahl && next < getTeacherFreigabe()) {
+          state.current_periode = next;
+        }
       }
       saveState(state);
       renderAll();
@@ -596,7 +607,9 @@ async function lockPeriode() {
   p.locked = true;
   copyParamsToNext(idx);
   const next = idx + 1;
-  if (next < state.kurs_konfig.perioden_anzahl) state.current_periode = next;
+  if (next < state.kurs_konfig.perioden_anzahl && next < getTeacherFreigabe()) {
+    state.current_periode = next;
+  }
   saveState(state);
   renderAll();
 }
@@ -891,8 +904,7 @@ if (URL_SESSION_ID && !URL_TEAM) {
   }
   // current_periode auf erste offene Periode setzen (Fortschritte + Lehrer-Freigabe)
   const lockedOnLoad    = state.perioden.filter(p => p.locked).length;
-  const teacherOnLoad   = state.kurs_konfig.perioden_freigegeben
-    ?? (URL_SESSION_ID ? 1 : state.kurs_konfig.perioden_anzahl);
+  const teacherOnLoad   = getTeacherFreigabe();
   const maxAllowed      = Math.min(lockedOnLoad, teacherOnLoad - 1, state.kurs_konfig.perioden_anzahl - 1);
   if (state.current_periode > maxAllowed) state.current_periode = maxAllowed;
   saveState(state);
