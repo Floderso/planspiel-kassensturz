@@ -397,7 +397,7 @@
       color: var(--ink-2);
     }
     .history-table .active-row td { background: var(--accent-lt); }
-    .history-table .schock-row td:first-child::after { content: ' ⚡'; }
+    .history-table .schock-row td:first-child::after { content: ' (Schock)'; font-size: 9px; color: #92400E; }
 
     /* Fiskal Panel */
     .fiskal-row {
@@ -604,7 +604,7 @@
   <div id="bar-kurs-name" style="color:#9CA3AF;font-size:11px;display:none;"></div>
   <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
     <div id="sandbox-badge" title="Sandbox-Modus: kein Scoring, kein Lock">Sandbox</div>
-    <button id="btn-reset">↺ Reset</button>
+    <button id="btn-reset">Zurücksetzen</button>
     <a href="demo.html" style="color:#6B7280;font-size:11px;text-decoration:none;margin-left:4px;border-left:1px solid #374151;padding-left:10px" title="Zur Übersicht">← Übersicht</a>
   </div>
 </header>
@@ -612,7 +612,7 @@
 <!-- ── Period Navigator ── -->
 <nav id="period-nav">
   <div id="period-steps"></div>
-  <div id="deadline-badge" class="deadline-badge" style="display:none">⏱ 48 h</div>
+  <div id="deadline-badge" class="deadline-badge" style="display:none">48 h</div>
 </nav>
 
 <!-- ── Lernziele-Bar ── -->

@@ -63,7 +63,7 @@
     .cmp-table tr:last-child td { border-bottom: none; }
     .cmp-table tbody tr:hover td { background: var(--surface-2); }
     .kpi-best { font-weight: 600; color: var(--good); }
-    .kpi-best::after { content: ' ★'; font-size: 9px; opacity: .8; }
+    .kpi-best::after { content: ' *'; font-size: 9px; opacity: .8; }
     .period-badge { background: var(--accent-lt); color: var(--accent); padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; white-space: nowrap; }
     .period-badge.done { background: var(--good-bg); color: var(--good); }
     .feedback-cell { color: var(--ink-2); font-size: 11px; max-width: 220px; line-height: 1.4; }
@@ -113,7 +113,7 @@
 
     <div class="card">
       <div class="card-title">Ergebnisvergleich aller Teams</div>
-      <div class="card-sub">KPI-Werte der letzten gespeicherten Periode. ★ = bester Wert im Kurs.</div>
+      <div class="card-sub">KPI-Werte der letzten gespeicherten Periode. * = bester Wert im Kurs.</div>
       <div style="overflow-x:auto">
         <table class="cmp-table">
           <thead>

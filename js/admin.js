@@ -38,7 +38,7 @@ function randomToken(len = 12) {
 function copyToClipboard(text, btn) {
   navigator.clipboard.writeText(text).then(() => {
     const orig = btn.textContent;
-    btn.textContent = '✓ Kopiert';
+    btn.textContent = 'Kopiert';
     setTimeout(() => { btn.textContent = orig; }, 1500);
   });
 }
@@ -358,7 +358,7 @@ function renderDashboard(session) {
         <span class="period-badge ${allDone ? 'done' : ''}">
           ${lockedN}/${session.perioden_anzahl}
         </span>
-        ${allDone ? ' <span class="status-chip done">✓ Fertig</span>' : ''}
+        ${allDone ? ' <span class="status-chip done">Fertig</span>' : ''}
       </td>
       <td class="${cls(kpi?.saldo, bestSaldo)}">
         ${kpi ? (kpi.saldo >= 0 ? '+' : '') + kpi.saldo.toFixed(0) + ' Mrd.' : '—'}
@@ -439,14 +439,14 @@ function openTeamDetail(teamName, session, konfig) {
         : '';
 
     const statusHtml = isLocked
-      ? `<span class="period-badge done">✓ Gesperrt</span>${lockBtnHtml}`
+      ? `<span class="period-badge done">Gesperrt</span>${lockBtnHtml}`
       : isActive
         ? `<span class="period-badge">Aktiv</span>${lockBtnHtml}`
         : `<span style="color:var(--muted);font-size:11px">—</span>`;
 
     const schock = (session.schocks ?? []).find(s => s.periode === i);
     const schockHtml = schock
-      ? `<span title="${esc(schock.beschreibung)}" style="color:#92400E;font-size:11px">⚡ ${esc(schock.name)}</span>`
+      ? `<span title="${esc(schock.beschreibung)}" style="color:#92400E;font-size:11px">${esc(schock.name)}</span>`
       : '<span style="color:var(--muted)">—</span>';
 
     if (!hasParams) {
@@ -598,7 +598,7 @@ async function setFreigabe(n) {
     }
     // Sofort neu laden damit Panel und Tabelle aktuell sind
     await pollDashboard(currentSessionId, currentToken);
-    if (msgEl) { msgEl.style.color = 'var(--good)'; msgEl.textContent = `✓ ${n} Periode(n) freigegeben`; }
+    if (msgEl) { msgEl.style.color = 'var(--good)'; msgEl.textContent = `${n} Periode(n) freigegeben`; }
   } catch (err) {
     console.error('setFreigabe:', err);
     if (msgEl) { msgEl.style.color = 'var(--bad)'; msgEl.textContent = 'Netzwerkfehler'; }
@@ -621,7 +621,7 @@ function renderSchockPanel(session) {
 
   const byTyp = (typ) => SCHOCK_BIBLIOTHEK.filter(s => s.typ === typ);
   const opts  = (typ, sel) => byTyp(typ).map(s =>
-    `<option value="${s.id}"${s.id === sel ? ' selected' : ''}>${'⚡'.repeat(s.staerke)} ${s.name}</option>`
+    `<option value="${s.id}"${s.id === sel ? ' selected' : ''}>${s.name} (Stärke ${s.staerke})</option>`
   ).join('');
 
   let html = '';
@@ -694,7 +694,7 @@ function renderSchockPanel(session) {
       const data = await res.json();
       if (res.ok) {
         statusEl.style.color = 'var(--good)';
-        statusEl.textContent = `✓ ${data.count} Schock(s) gespeichert — Teams erhalten Update in ~5 Sek.`;
+        statusEl.textContent = `${data.count} Schock(s) gespeichert — Teams erhalten Update in ~5 Sek.`;
       } else {
         statusEl.style.color = 'var(--bad)';
         statusEl.textContent = 'Fehler: ' + (data.error ?? res.statusText);
@@ -747,7 +747,7 @@ function setupCsvUpload(dropZoneId, fileInputId, statusId, onParsed) {
         return;
       }
       status.className = '';
-      status.textContent = `✓ ${matrikeln.length} Matrikelnummern geladen.`;
+      status.textContent = `${matrikeln.length} Matrikelnummern geladen.`;
       onParsed(matrikeln);
     };
     reader.readAsText(file, 'UTF-8');
@@ -763,7 +763,7 @@ async function uploadMatrikeln(sessionId, token, matrikeln, statusEl) {
     });
     const data = await res.json();
     if (res.ok) {
-      statusEl.textContent = `✓ ${data.count} Matrikelnummern gespeichert.`;
+      statusEl.textContent = `${data.count} Matrikelnummern gespeichert.`;
     } else {
       statusEl.className   = 'error';
       statusEl.textContent = 'Fehler: ' + (data.error ?? res.statusText);

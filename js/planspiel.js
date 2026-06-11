@@ -204,8 +204,7 @@ function renderPeriodNav() {
     const entry = pfad[i];
     btn.innerHTML = `<span class="step-num">${i + 1}</span>
       <span class="step-label">${entry.label}</span>
-      ${p.locked  ? '<span class="lock-icon">🔒</span>' : ''}
-      ${isFuture  ? '<span class="lock-icon" style="opacity:.5">⏳</span>' : ''}`;
+      ${p.locked  ? '<span class="lock-icon">gesperrt</span>' : ''}`;
     if (!isFuture) btn.addEventListener('click', () => navigatePeriode(i));
     container.appendChild(btn);
   }
@@ -277,8 +276,8 @@ function renderControls() {
   const currentVotes = p.votes;
   const notReleased  = state.current_periode >= getTeacherFreigabe();
   const btnDisabled  = locked || notReleased;
-  const btnLabel     = locked      ? '🔒 Periode gesperrt'
-                     : notReleased ? '⏳ Noch nicht freigegeben'
+  const btnLabel     = locked      ? 'Periode gesperrt'
+                     : notReleased ? 'Noch nicht freigegeben'
                      :               'Periode abschließen';
   commitArea.innerHTML = `
     <button id="btn-commit" class="btn-commit ${locked ? 'locked' : ''}" ${btnDisabled ? 'disabled' : ''}>
@@ -347,7 +346,7 @@ function renderLernzieleBar(r, z) {
   const bwg = bewerteLernziele(r, z, lernziele);
   bar.style.display = '';
   bar.innerHTML = `
-    <span class="lz-bar-title">🎯 Lernziele ${bwg.erreicht}/${bwg.total}</span>
+    <span class="lz-bar-title">Lernziele ${bwg.erreicht}/${bwg.total}</span>
     ${bwg.details.map(d => `
       <span class="lz-chip ${d.erreicht ? 'ok' : 'nok'}" title="${d.erreicht ? 'Erreicht' : 'Noch nicht erreicht'}">
         ${d.erreicht ? '✓' : '✗'} ${d.label}
@@ -420,7 +419,7 @@ function renderHistoryTable() {
     const r = entry.result, z = entry.zustand;
     const active = entry.periode === state.current_periode;
     html += `<tr class="${active ? 'active-row' : ''}${entry.schock ? ' schock-row' : ''}">
-      <td>${entry.label}${entry.schock ? ' ⚡' : ''}</td>
+      <td>${entry.label}</td>
       <td class="${r.saldo >= 0 ? 'good' : 'bad'}">${fmt.mrd(r.saldo)}</td>
       <td>${fmt.pct(z.schuldenquote)}</td>
       <td>${fmt.comma3(r.gini)}</td>
@@ -521,8 +520,8 @@ function renderDomarPanel(z, abl) {
     </div>
     <div class="domar-verdict ${stable ? 'good' : 'bad'}">
       ${stable
-        ? '✓ Schulden automatisch stabil (r − g < 0)'
-        : '⚠ Primärüberschuss erforderlich (r − g > 0)'}
+        ? 'Schulden automatisch stabil (r − g < 0)'
+        : 'Primärüberschuss erforderlich (r − g > 0)'}
     </div>
     <div class="domar-ref">Domar (1944) Rev.Econ.Stat. · Blanchard (2019) AEA Presidential Address</div>`;
 }
