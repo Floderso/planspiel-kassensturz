@@ -21,8 +21,35 @@ const FORMEL_QUELLEN_EST = {
     formel: 'T(z) / z',
     ref:    '§ 2 Abs. 5 EStG',
     note:   'Durchschnittssteuersatz = Gesamtsteuer / Gesamteinkommen; stets ≤ Grenzsteuersatz'
+  },
+  estHaushalt: {
+    formel: 'T_HH = s × T(brutto × q / s)  mit q = zvE-Quote, s = Splitting-Faktor',
+    ref:    '§§ 26, 32a Abs. 5 EStG (Splitting) · Destatis ESt-Statistik (zvE vs. Bruttoeinkünfte) · Mikrozensus 2024',
+    note:   'q ≈ 0,79: Werbungskosten, Vorsorgeaufwendungen, Sonderausgaben senken das zvE unter das Brutto. ' +
+            's ≈ 1,6 Tarifeinheiten je Haushalt: ~17 Mio. Einpersonen- + ~24 Mio. Mehrpersonen-HH (Splitting) von 41 Mio.'
   }
 };
+
+// ── Haushaltsebene ──────────────────────────────────────────────────────────
+// Die DEZILE-Daten sind Haushalts-Bruttoeinkommen. Der Tarif gilt aber je
+// Steuerpflichtigem (bzw. Splitting-Paar) auf das zu versteuernde Einkommen.
+// Kalibrierung: ESt-Aufkommen bei Status-quo-Parametern ≈ BMF-Ist
+// (Lohnsteuer + veranlagte ESt 2024: ~330 Mrd. € ohne Kapitalerträge).
+const ZVE_QUOTE        = 0.79; // zvE / Haushaltsbrutto (Destatis ESt-Statistik)
+const SPLITTING_FAKTOR = 1.6;  // Tarifeinheiten je Haushalt (Mikrozensus 2024)
+
+// Einkommensteuer eines Haushalts auf Arbeits-/Gesamteinkommen 'brutto'
+function estHaushalt(brutto, freibetrag, eingang, spitze, grenze) {
+  return SPLITTING_FAKTOR
+    * estTarif(brutto * ZVE_QUOTE / SPLITTING_FAKTOR, freibetrag, eingang, spitze, grenze);
+}
+
+// Grenzbelastung eines zusätzlichen Euro Haushaltsbrutto:
+// d/dB [s·T(B·q/s)] = q · T'(B·q/s)
+function grenzsteuersatzHaushalt(brutto, freibetrag, eingang, spitze, grenze) {
+  return ZVE_QUOTE
+    * grenzsteuersatz(brutto * ZVE_QUOTE / SPLITTING_FAKTOR, freibetrag, eingang, spitze, grenze);
+}
 
 
 // Basis-Grenzwerte 2025; werden beim Ändern von Freibetrag/Spitze/Grenze skaliert.
@@ -33,32 +60,33 @@ function estTarif(einkommen, freibetrag, eingang, spitze, grenze) {
   if (einkommen <= freibetrag) return 0;
   const zve = einkommen - freibetrag;
 
-  // Status-Quo-Grenzwerte (relativ zum Freibetrag)
-  // Zone 2: 12.085–17.005 (4.921 € breit), Zone 3: 17.006–66.760 (49.755 € breit)
-  // Zone 4: 66.761–277.825 (211.065 € breit), Zone 5: ab 277.826
+  // Status-Quo-Grenzwerte 2025 (relativ zum Freibetrag; § 32a Abs. 1 EStG 2025)
+  // Zone 2: 12.097–17.443 (5.347 € breit), Zone 3: 17.444–68.480 (51.037 € breit)
+  // Zone 4: 68.481–277.825 (209.345 € breit), Zone 5: ab 277.826
   // Wir skalieren Zone 4/5-Grenze auf 'grenze' und Zone 2/3-Grenzwerte proportional.
-  const sq_z2 = 4921;   // Breite Zone 2 (SQ)
-  const sq_z3 = 49755;  // Breite Zone 3 (SQ)
-  const sq_z4 = 211065; // Breite Zone 4 (SQ)
-  const sq_total = sq_z2 + sq_z3 + sq_z4; // = 265741 ≈ 277826 - 12084 - 1
+  const sq_z2 = 5347;   // Breite Zone 2 (SQ 2025)
+  const sq_z3 = 51037;  // Breite Zone 3 (SQ 2025)
+  const sq_z4 = 209345; // Breite Zone 4 (SQ 2025)
+  const sq_total = sq_z2 + sq_z3 + sq_z4; // = 265729 = 277825 - 12096
   const scale = (grenze - freibetrag) / sq_total;
   const g2 = sq_z2 * scale; // Breite Zone 2 skaliert
   const g3 = sq_z3 * scale; // Breite Zone 3 skaliert
 
   // Eingangssatz beeinflusst Zone 2 (Progressionszone)
   // Spitzensatz gilt ab Zone 5 (=grenze)
-  // Zone 4 (42%-Äquivalent) interpolieren wir als (eingang*0.1 + spitze*0.9) - typisch DE
-  const satz4 = Math.min(spitze, eingang * 0.05 + spitze * 0.95) / 100;
+  // Zone 4: Interpolation so gewichtet, dass SQ (14 %, 45 %) exakt die
+  // gesetzlichen 42 % ergibt: 42 = 14×(3/31) + 45×(28/31)
+  const satz4 = Math.min(spitze, eingang * (3 / 31) + spitze * (28 / 31)) / 100;
 
   // Marginalsteuersatz-Grenzen (keine Sprünge an Zonengrenzen):
   // Zone 2: r0 → rm  (Eingangssatz → Zwischensatz)
   // Zone 3: rm → r4  (Zwischensatz → Zone-4-Satz, kontinuierlich)
   // Zone 4: r4 (konstant)  Zone 5: r5 = spitze/100
-  // rm = r0 + (r4 - r0) * 0.344  — entspricht § 32a-Verhältnis (SQ: ~23,6 %)
+  // rm = r0 + (r4 - r0) × 0.35607 — § 32a 2025: Grenzsatz am Zone-2-Ende = 23,97 %
   const r0 = eingang / 100;
   const r4 = satz4;
   const r5 = spitze / 100;
-  const rm = r0 + (r4 - r0) * 0.344;
+  const rm = r0 + (r4 - r0) * 0.35607;
   const g4 = sq_z4 * scale;
 
   // Integral der stückweise linearen Grenzsteuerrate: ∫₀ˣ [a + (b−a)·t/w] dt
@@ -85,13 +113,13 @@ function estTarif(einkommen, freibetrag, eingang, spitze, grenze) {
 function grenzsteuersatz(einkommen, freibetrag, eingang, spitze, grenze) {
   if (einkommen <= freibetrag) return 0;
   const zve = einkommen - freibetrag;
-  const scale = (grenze - freibetrag) / 265741;
-  const g2 = 4921 * scale;
-  const g3 = 49755 * scale;
-  const g4 = 211065 * scale;
+  const scale = (grenze - freibetrag) / 265729;
+  const g2 = 5347 * scale;
+  const g3 = 51037 * scale;
+  const g4 = 209345 * scale;
   const r0 = eingang / 100;
-  const r4 = Math.min(spitze, eingang * 0.05 + spitze * 0.95) / 100;
-  const rm = r0 + (r4 - r0) * 0.344; // kontinuierlich: Zone-2-Ende = Zone-3-Start
+  const r4 = Math.min(spitze, eingang * (3 / 31) + spitze * (28 / 31)) / 100;
+  const rm = r0 + (r4 - r0) * 0.35607; // kontinuierlich: Zone-2-Ende = Zone-3-Start (SQ: 23,97 %)
 
   if (zve <= g2)           return r0 + (rm - r0) * zve / g2;
   if (zve <= g2 + g3)      return rm + (r4 - rm) * (zve - g2) / g3;
@@ -105,4 +133,4 @@ function effSteuersatz(einkommen, freibetrag, eingang, spitze, grenze) {
   return estTarif(einkommen, freibetrag, eingang, spitze, grenze) / einkommen;
 }
 
-export { estTarif, grenzsteuersatz, effSteuersatz, FORMEL_QUELLEN_EST };
+export { estTarif, grenzsteuersatz, effSteuersatz, estHaushalt, grenzsteuersatzHaushalt, ZVE_QUOTE, SPLITTING_FAKTOR, FORMEL_QUELLEN_EST };

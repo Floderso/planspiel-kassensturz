@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC-BY-4.0
 // Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
 import { DEZILE, ELAST, BASIS_MAKRO, STAATSAUSGABEN, PRESETS, BASIS_AUFKOMMEN, ADMIN_QUOTE, AUSGABEN_TOTAL, BGE_LABOR_EFF, PERIOD_STATE_0 } from '../data.js';
-import { estTarif, grenzsteuersatz } from './einkommensteuer.js';
+import { estHaushalt, grenzsteuersatzHaushalt } from './einkommensteuer.js';
 import { berechneGini, berechneMedianGewichtet, berechnePalma, berechneDezilDelta, berechneNettoSQ } from './verteilung.js';
 
 // ═══════════════════════════════════════════════════════
@@ -83,8 +83,10 @@ function berechne(params, zustand = null) {
     : STAATSAUSGABEN.zinsen;
 
   // ---------- 1. ARBEITSANGEBOT-REAKTION pro Dezil ----------
-  // Basisgrenzsteuersatz-Vergleich zum Status Quo
-  const sqGrenze = dez => grenzsteuersatz(dez.brutto*(1-dez.kapital), 12084, 14, 45, 277826);
+  // Basisgrenzsteuersatz-Vergleich zum Status Quo — identische Parameterquelle wie
+  // berechneNettoSQ (PRESETS.status_quo), damit bei SQ-Parametern labor_factor exakt 1 ist
+  const SQ = PRESETS.status_quo;
+  const sqGrenze = dez => grenzsteuersatzHaushalt(dez.brutto*(1-dez.kapital), SQ.freibetrag, SQ.eingang, SQ.spitze, SQ.grenze);
 
   // BGE-Arbeitsangebotseffekt (Substitutionseffekt: höherer Reservationslohn)
   // Quellen: RWI 2024 (bis −30 % bei 1.500 €), DIW Pilot 2024 (−2 % kurzfristig, n=107),
@@ -93,7 +95,7 @@ function berechne(params, zustand = null) {
   const bge_labor_scale = Math.min(1.67, (params.bge || 0) / 1200);
 
   const dezile = DEZILE.map((d, idx) => {
-    const gs_neu = grenzsteuersatz(d.brutto * (1-d.kapital), params.freibetrag, params.eingang, params.spitze, params.grenze);
+    const gs_neu = grenzsteuersatzHaushalt(d.brutto * (1-d.kapital), params.freibetrag, params.eingang, params.spitze, params.grenze);
     const gs_sq = sqGrenze(d);
     const delta_nettolohn = (1 - gs_neu) - (1 - gs_sq);
 
@@ -126,11 +128,11 @@ function berechne(params, zustand = null) {
   for (const d of dezile) {
     const arbeit = d.brutto_adj * (1 - d.kapital);
     const kapital = d.brutto_adj * d.kapital;
-    const est_arbeit = estTarif(arbeit, params.freibetrag, params.eingang, params.spitze, params.grenze);
+    const est_arbeit = estHaushalt(arbeit, params.freibetrag, params.eingang, params.spitze, params.grenze);
     let est_kap;
     if (params.synthetisch) {
       // Alle Einkünfte zusammen besteuern
-      const total = estTarif(d.brutto_adj, params.freibetrag, params.eingang, params.spitze, params.grenze);
+      const total = estHaushalt(d.brutto_adj, params.freibetrag, params.eingang, params.spitze, params.grenze);
       const est_kap_sy = total - est_arbeit;
       est_kap = Math.max(0, est_kap_sy);
     } else {
@@ -168,7 +170,8 @@ function berechne(params, zustand = null) {
     mwst_auf += mwst_d * d.anzahl / 1000;
   }
   // R08: VAT-Gap-Korrekturfaktor (EU-Kommission / CASE VAT Gap 2024: DE ~3,7 % des theoretischen Aufkommens ungehoben)
-  mwst_auf *= 0.963;
+  // Basis-Korrektur: Dezil-Konsum erfasst nur ~60 % der MwSt-Basis (Staat, Wohnungsbau, befreite Sektoren — s. data.js)
+  mwst_auf *= 0.963 * BASIS_MAKRO.mwst_basis_faktor;
 
   // ---------- 5. CO2 ----------
   const co2_factor = 1 + ELAST.co2 * ((params.co2 - 55) / 100);
@@ -178,8 +181,10 @@ function berechne(params, zustand = null) {
 
   // ---------- 6. VERMÖGEN / ERBSCHAFT / BODEN ----------
   const erb_satz_eff = params.erb * (params.betriebs ? 0.3 : 0.9) / 100;
-  const erb_auf = BASIS_MAKRO.erb_masse * 0.6 * erb_satz_eff
-                + BASIS_MAKRO.erb_masse * 0.4 * Math.min(params.erb, 15) / 100 * 0.5;
+  // erb_stpfl_quote: persönliche Freibeträge (§ 16 ErbStG) stellen den Großteil der Erbmasse steuerfrei
+  const erb_auf = (BASIS_MAKRO.erb_masse * 0.6 * erb_satz_eff
+                + BASIS_MAKRO.erb_masse * 0.4 * Math.min(params.erb, 15) / 100 * 0.5)
+                * BASIS_MAKRO.erb_stpfl_quote;
   const boden_auf = BASIS_MAKRO.boden_wert * params.boden / 100;
   const verm_auf  = BASIS_MAKRO.verm_basis  * params.verm  / 100;
 
@@ -361,7 +366,7 @@ function berechne(params, zustand = null) {
   const metr = dezile.map((d, i) => {
     const brutto = d.brutto_adj;
     const arbeit = brutto * (1 - d.kapital);
-    const gs_est = grenzsteuersatz(arbeit, params.freibetrag, params.eingang, params.spitze, params.grenze);
+    const gs_est = grenzsteuersatzHaushalt(arbeit, params.freibetrag, params.eingang, params.spitze, params.grenze);
     // K3: Separate BBG für KV/PV (62.100 €) und RV/AL (params.bbg).
     // RV+AL Grenzbelastung fällt weg sobald Arbeitseinkommen ≥ RV-BBG
     const bbg_rv_m = params.bbg ?? 90000;
@@ -383,7 +388,7 @@ function berechne(params, zustand = null) {
   // Korrekt: ∑ 0.5 × ε × gs_i² / (1−gs_i) × Lohnsumme_i  (Harberger-Dreieck je Dezil)
   const dwl = dezile.reduce((a, d) => {
     const arbeit_dwl = d.brutto_adj * (1 - d.kapital);
-    const gs = grenzsteuersatz(arbeit_dwl, params.freibetrag, params.eingang, params.spitze, params.grenze);
+    const gs = grenzsteuersatzHaushalt(arbeit_dwl, params.freibetrag, params.eingang, params.spitze, params.grenze);
     const lohnsumme_d = arbeit_dwl * d.anzahl / 1000; // Mrd.
     return a + 0.5 * ELAST.labor_supply * (gs * gs) / Math.max(0.01, 1 - gs) * lohnsumme_d;
   }, 0);

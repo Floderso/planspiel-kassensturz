@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC-BY-4.0
 // Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
 import { DEZILE, PRESETS, ELAST, BASIS_MAKRO } from '../data.js';
-import { estTarif } from './einkommensteuer.js';
+import { estHaushalt } from './einkommensteuer.js';
 
 // ═══════════════════════════════════════════════════════
 // KASSENSTURZ · Verteilungsmetriken & Dezilberechnung
@@ -148,10 +148,15 @@ function berechneNettoSQ(d) {
   const brutto = d.brutto;
   const arbeit_sq = brutto * (1 - d.kapital);
   const kapital_sq = brutto * d.kapital;
-  const est = estTarif(arbeit_sq, sq.freibetrag, sq.eingang, sq.spitze, sq.grenze)
+  const est = estHaushalt(arbeit_sq, sq.freibetrag, sq.eingang, sq.spitze, sq.grenze)
             + kapital_sq * sq.abgeltung / 100;
-  const sv = Math.min(arbeit_sq, 90600) * (18.6 + 2.6) / 100 * 0.5   // RV-BBG 2025: 90.600 €
-           + Math.min(arbeit_sq, 66150) * (16.3 + 3.6) / 100 * 0.5;  // KV-BBG 2025: 66.150 €
+  // SV exakt wie berechneDezilDelta bei SQ-Parametern — die SQ-Referenz muss
+  // dasselbe Modell mit denselben BBG-Konventionen sein, sonst sind die
+  // Δ-Werte schon bei unveränderten Parametern ungleich null.
+  const bbg_rv_sq = sq.bbg ?? 90000;
+  const bbg_kv_sq = Math.round(bbg_rv_sq * (BASIS_MAKRO.kv_bbg_kv_sq / 90000));
+  const sv = Math.min(arbeit_sq, bbg_rv_sq) * (sq.rv + sq.alpf * 0.42) / 100 * 0.5
+           + Math.min(arbeit_sq, bbg_kv_sq) * (sq.kv + sq.alpf * 0.58) / 100 * 0.5;
   const vornetto = brutto - est - sv;
   const konsum = vornetto * d.konsum;
   const mwst = konsum * (0.7 * sq.mwst / (100 + sq.mwst) + 0.3 * sq.mwst_erm / (100 + sq.mwst_erm));

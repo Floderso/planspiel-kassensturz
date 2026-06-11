@@ -34,7 +34,13 @@ const STAATSAUSGABEN = {
   infrastruktur: 120,
   verwaltung:    140,
   zinsen:         30,  // Bund 2025: 30,2 Mrd. € (Finanzplan des Bundes 2025–2029, Abbildung 4)
-  sonstiges:     140
+  sonstiges:     140,
+  // Gegenposten: staatliche Einnahmen, die das Modell nicht als Steuer/SV abbildet
+  // (Gebühren, Verkäufe, Vermögenseinkommen, Bundesbankgewinn; Destatis VGR 2024:
+  // ~290 Mrd. € sonstige Einnahmen, hier anteilig für den modellierten Sektor).
+  // Kalibriert so, dass der Status-quo-Saldo dem VGR-Finanzierungssaldo entspricht
+  // (Destatis 2024: −118,8 Mrd. € = −2,7 % BIP).
+  sonstige_einnahmen: -120
 };
 const AUSGABEN_TOTAL = Object.values(STAATSAUSGABEN).reduce((a,b)=>a+b,0);
 
@@ -69,6 +75,13 @@ const BASIS_MAKRO = {
   boden_wert:        5000,  // Bodenwert Deutschland gesamt, Mrd. €
   verm_basis:        3500,  // Steuerpflichtiges Vermögen > 2 Mio €, Mrd. €
   lohnsumme_sv:      1750,  // Sozialversicherungspflichtige Lohnsumme, Mrd. €
+  mwst_basis_faktor: 1.68,  // MwSt-Basis-Korrektur: Dezil-Konsumbasis (~1,37 Bio. €) erfasst nur ~60 % der
+                            // tatsächlichen MwSt-Basis — privater Konsum lt. VGR 2,14 Bio. € plus nicht-
+                            // vorsteuerabzugsfähige Käufe von Staat, Wohnungsbau und befreiten Sektoren.
+                            // Kalibriert auf BMF-Ist 2024: USt+EUSt ≈ 290 Mrd. €
+  erb_stpfl_quote:   0.45,  // Anteil der Erbmasse, der nach persönlichen Freibeträgen (§ 16 ErbStG:
+                            // 400–500 T€ je Kind/Ehegatte) steuerpflichtig bleibt. Kalibriert auf
+                            // ErbSt-Ist ~12 Mrd. €/Jahr (BMF 2024; Destatis ErbSt-Statistik)
   rv_ausgaben_sq:     430,  // RV-Gesamtausgaben inkl. Bundeszuschuss (Status quo), Mrd. €
   kv_bbg_kv_sq:     66150,  // Beitragsbemessungsgrenze KV/PV 2025, € p.a. (GKV-Beitragsbemessungsgrenze 2025)
   kv_bbg_frei_bonus:   18,  // Aufkommensgewinn kv_bbg_frei bei kv=16,3 %, Mrd. €
@@ -786,7 +799,6 @@ const ZUKUNFTS_SZENARIEN = [
   {
     id: 'demografie_baseline',
     name: 'Demografie-Baseline',
-    icon: '📊',
     beschreibung: 'Status-quo-Politik — aber steigende Rentenlasten durch die Baby-Boomer-Rentenwelle erhöhen die Staatsausgaben automatisch.',
     quelle: 'Destatis 14. Bev.-Vorausberechnung 2021 · DRV Rentenbericht 2024',
     perioden_params: Array.from({ length: 5 }, () => ({ ...PRESETS.status_quo })),
@@ -794,7 +806,6 @@ const ZUKUNFTS_SZENARIEN = [
   {
     id: 'klimatransformation',
     name: 'Klimatransformation 2045',
-    icon: '🌱',
     beschreibung: 'Stufenweise steigende CO₂-Preise (BEHG-Pfad) — Weg zur Klimaneutralität, aber steigende Haushaltsspannungen.',
     quelle: 'PIK Klimaneutralpfad 2045 · Agora Energiewende 2024 · BEHG § 10-Fortschreibung',
     perioden_params: [55, 80, 120, 180, 250].map(co2 => ({ ...PRESETS.status_quo, co2 })),
@@ -802,7 +813,6 @@ const ZUKUNFTS_SZENARIEN = [
   {
     id: 'fiskalkonsolidierung',
     name: 'Fiskalische Konsolidierung',
-    icon: '💶',
     beschreibung: 'Moderate Steuererhöhungen und Ausgabendisziplin — Ziel: Schuldenquote unter 60 % BIP bis 2037.',
     quelle: 'Bundesbank Monatsbericht Jan 2025 · SVR Jahresgutachten 2024/25',
     perioden_params: Array.from({ length: 5 }, () => ({ ...PRESETS.status_quo, spitze: 47, erb: 28, co2: 65 })),
@@ -810,7 +820,6 @@ const ZUKUNFTS_SZENARIEN = [
   {
     id: 'investitionsschub',
     name: 'Investitionsschub (SVR)',
-    icon: '🏗️',
     beschreibung: 'Frontgeladene öffentliche Investitionen — kurzfristig höheres Defizit, langfristig BIP-Wachstumsbonus durch Fiskalmultiplikator.',
     quelle: 'SVR Jahresgutachten 2024/25 "Wirtschaftliche Wende" · KfW Research 2024 · Gechert/Heimberger (2022)',
     perioden_params: [60, 60, 30, 0, 0].map(invest_impuls => ({ ...PRESETS.status_quo, invest_impuls })),

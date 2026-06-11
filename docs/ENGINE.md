@@ -62,10 +62,25 @@ sodass verschiedene Reformszenarien abgebildet werden können.
 - `spitze` — Spitzensteuersatz in % (z. B. 45)
 - `grenze` — Einkommensgrenze für den Spitzensteuersatz in € (z. B. 277.826)
 
+Bei den gesetzlichen Status-quo-Parametern reproduziert der Tarif die amtliche
+Formel des § 32a EStG 2025 mit < 1 % Abweichung (siehe `tests/einkommensteuer.test.js`).
+
 #### `grenzsteuersatz(einkommen, ...) → Rate`
 
 Gibt den marginalen Steuersatz an einem Einkommenspunkt zurück. Wird für
 Arbeitsangebots-Elastizitäten in `berechne.js` verwendet.
+
+#### `estHaushalt(brutto, ...)` / `grenzsteuersatzHaushalt(brutto, ...)`
+
+Die DEZILE-Daten sind **Haushalts**-Bruttoeinkommen, der Tarif gilt aber je
+Steuerpflichtigem auf das zu versteuernde Einkommen. Die Haushaltsfunktionen
+rechnen um: `T_HH = s × T(brutto × q / s)` mit zvE-Quote `q = 0,79`
+(Werbungskosten, Vorsorgeaufwendungen, Sonderausgaben; Destatis ESt-Statistik)
+und Splitting-Faktor `s = 1,6` Tarifeinheiten je Haushalt (§§ 26, 32a Abs. 5 EStG;
+Mikrozensus 2024). Damit liegt das ESt-Aufkommen bei Status-quo-Parametern in der
+amtlichen Größenordnung (~350 Mrd. € inkl. Kapitalerträge). Alle Engine-Module
+(Aufkommen, Arbeitsangebot, METR, DWL, SQ-Referenz) verwenden durchgängig die
+Haushaltsfunktionen.
 
 ---
 
