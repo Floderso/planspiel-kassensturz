@@ -57,6 +57,21 @@ npx serve .
 
 Das Planspiel läuft vollständig ohne Backend — State wird in `localStorage` gespeichert.
 
+## Tests
+
+```bash
+npm test    # node --test, keine Abhängigkeiten nötig
+```
+
+Die Testsuite (`tests/`) prüft die Engine:
+
+- **einkommensteuer.test.js** — Formeltarif gegen § 32a EStG 2025 (amtliche Formel, Zonengrenzen, Stetigkeit, Progression)
+- **verteilung.test.js** — Gini, Palma, gewichteter Median (Skaleninvarianz, Pigou-Dalton-Richtung)
+- **berechne.test.js** — Invarianten über alle Presets und Slider-Extreme; komparative Statik (Vorzeichen aller Reaktionen)
+- **transition.test.js** — DICE-Klimaschaden, HANK-Multiplikator, Schuldendynamik, Schocks, Domar/S2/GGI
+- **regression.test.js** — fixierter Status-quo-Pfad; bei bewussten Modelländerungen Referenzwerte aktualisieren
+- **kalibrierung.test.js** — Aufkommen je Steuerart vs. amtliche Ist-Werte (BMF/Destatis 2024)
+
 ## Kurskonfiguration per URL
 
 Lehrpersonen können die Konfiguration per URL-Parameter setzen:
