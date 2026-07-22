@@ -10,6 +10,18 @@ import { KURS_KONFIG_DEFAULT, SCHOCK_BIBLIOTHEK } from './data.js';
 
 const API_BASE = 'https://planspiel-api.aramisda2.workers.dev/api';
 
+// ── Komplexitätsstufe ─────────────────────────────────────────────────────────
+// Lebt nur clientseitig (URL-Parameter der join_url, kein Backend-Feld) — analog
+// zu perioden/teams/sandbox. Lokal je Session gemerkt, damit die join_url auch
+// nach einem Dashboard-Reload die gewählte Stufe behält.
+function levelStorageKey(sessionId) { return `kassensturz_level_${sessionId}`; }
+function saveLevel(sessionId, level) {
+  try { localStorage.setItem(levelStorageKey(sessionId), level); } catch (_) {}
+}
+function loadLevel(sessionId) {
+  try { return localStorage.getItem(levelStorageKey(sessionId)) ?? 'fortgeschritten'; } catch (_) { return 'fortgeschritten'; }
+}
+
 /** HTML-Sonderzeichen escapen — verhindert XSS durch User-Daten in innerHTML */
 function esc(str) {
   return String(str ?? '')
@@ -109,6 +121,7 @@ async function createSession() {
   const name     = document.getElementById('f-name').value.trim() || 'Planspiel';
   const perioden = Math.max(1, Math.min(12, +document.getElementById('f-perioden').value || 5));
   const groesse  = Math.max(1, Math.min(50, +document.getElementById('f-groesse').value || 4));
+  const level    = document.getElementById('f-level')?.value || 'fortgeschritten';
   const teams    = getTeamNames();
 
   const laengenRaw    = (document.getElementById('f-laengen')?.value ?? '4').trim();
@@ -157,6 +170,7 @@ async function createSession() {
 
     if (!res.ok) { throw new Error(await res.text()); }
     const data = await res.json();
+    saveLevel(data.session_id, level);
 
     // Admin-URL mit Token in URL schreiben und Dashboard laden
     const newUrl = new URL(location.href);
@@ -177,7 +191,7 @@ async function createSession() {
     const laengenParam = Array.isArray(perioden_laenge_jahre)
       ? perioden_laenge_jahre.join(',')
       : String(perioden_laenge_jahre);
-    const join_url = `${origin}index.html?session=${data.session_id}&perioden=${perioden}&teams=${groesse}&sandbox=${sandboxOn}&name=${encodeURIComponent(name)}&laengen=${laengenParam}`;
+    const join_url = `${origin}index.html?session=${data.session_id}&perioden=${perioden}&teams=${groesse}&sandbox=${sandboxOn}&name=${encodeURIComponent(name)}&laengen=${laengenParam}&level=${level}`;
 
     startDashboard(data.session_id, data.admin_token, join_url, { name, perioden, groesse, teams });
   } catch (e) {
@@ -313,7 +327,8 @@ function renderDashboard(session) {
     + `&teams=${session.team_groesse}`
     + `&sandbox=${session.sandbox}`
     + `&name=${encodeURIComponent(session.name)}`
-    + `&laengen=${laengenParam2}`;
+    + `&laengen=${laengenParam2}`
+    + `&level=${loadLevel(session.id)}`;
   if (joinUrlGlobal !== freshJoinUrl) {
     joinUrlGlobal = freshJoinUrl;
     const joinDisplay = document.getElementById('join-url-display');

@@ -112,7 +112,7 @@
       text-transform: uppercase;
       letter-spacing: .4px;
     }
-    input[type="text"], input[type="number"] {
+    input[type="text"], input[type="number"], select {
       padding: 8px 10px;
       border: 1px solid var(--border);
       border-radius: var(--radius);
@@ -123,7 +123,7 @@
       outline: none;
       width: 100%;
     }
-    input:focus { border-color: var(--accent); }
+    input:focus, select:focus { border-color: var(--accent); }
     .hint { font-size: 11px; color: var(--muted); }
 
     /* Team-Liste */
@@ -520,6 +520,16 @@
       <div class="form-group">
         <label for="f-groesse">Spieler je Team</label>
         <input id="f-groesse" type="number" value="4" min="1" max="50">
+      </div>
+
+      <div class="form-group">
+        <label for="f-level">Komplexitätsstufe</label>
+        <select id="f-level">
+          <option value="einsteiger">Einsteiger — Kernsteuern (ESt, MwSt, CO₂, KSt)</option>
+          <option value="fortgeschritten" selected>Fortgeschritten — + Sozialversicherung, Vermögen, Transfers, BGE</option>
+          <option value="experte">Experte — + Verbrauchsteuern, Rentenreform, GKV-Strukturreform</option>
+        </select>
+        <span class="hint">Steuert, welche Regler-Module den Studierenden angezeigt werden.</span>
       </div>
 
       <div class="form-group full">

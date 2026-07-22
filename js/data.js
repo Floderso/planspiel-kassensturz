@@ -715,6 +715,7 @@ const KURS_KONFIG_DEFAULT = {
   min_teilnahme_quote:   0.5,  // Mindestanteil Teammitglieder für Lock (0–1)
   team_groesse:          4,    // Spieler je Team
   sandbox:               true, // Sandbox-Modus: kein Scoring, kein Lock
+  komplexitaet:  'fortgeschritten', // 'einsteiger' | 'fortgeschritten' | 'experte' — steuert sichtbare Modul-Stufen (MOD_DEFS.level)
   schocks:               [],   // Schock-Events [{id, periode}] — vom Lehrpersonal gesetzt
   ziele:                 [],   // Lehrspezifische Zielformulierungen
 };

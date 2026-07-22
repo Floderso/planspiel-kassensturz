@@ -86,6 +86,7 @@ Lehrpersonen können die Konfiguration per URL-Parameter setzen:
 | `teams` | Spieler je Team (1–50) | 4 |
 | `sandbox` | `false` = echter Abstimmungsmodus | `true` |
 | `name` | Kursname in der Session-Bar | — |
+| `level` | Komplexitätsstufe: `einsteiger` \| `fortgeschritten` \| `experte` | `fortgeschritten` |
 | `session` | Backend-Session-ID (Phase 2b) | — |
 
 ## Multi-Team-Betrieb (mit Backend)
