@@ -8,7 +8,8 @@ import { simulierePfad } from './rechner/transition.js';
 import { berechneAbgeleitet, CO2_BUDGET_DE } from './rechner/abgeleitet.js';
 import { berechneRente } from './rechner/rente.js';
 import { PRESETS, KURS_KONFIG_DEFAULT, SCHOCK_BIBLIOTHEK, TOOLTIPS } from './data.js';
-import { bewerteLernziele } from './feedback.js';
+import { bewerteLernziele, erzeugeKausalketten } from './feedback.js';
+import { waehleMedienspiegel, berechneWaehlerstimmung } from './rechner/medienspiegel.js';
 
 // ── URL-Konfiguration ─────────────────────────────────────────────────────────
 // Lehrpersonen können die Kurskonfiguration per URL-Parameter setzen:
@@ -30,6 +31,11 @@ function parseUrlKonfig() {
     const parts = p.get('laengen').split(',').map(s => Math.max(1, Math.min(20, parseInt(s) || 4)));
     konfig.perioden_laenge_jahre = parts.length === 1 ? parts[0] : parts;
   }
+  if (p.has('werkzeuge')) {
+    try {
+      konfig.perioden_werkzeuge = JSON.parse(p.get('werkzeuge'));
+    } catch (_) {}
+  }
   return konfig;
 }
 
@@ -50,6 +56,10 @@ function defaultState(konfig = KURS_KONFIG_DEFAULT) {
     session_id:      URL_SESSION_ID,
     kurs_konfig:     mergedKonfig,
     current_periode: 0,
+    watchlist:       ['saldo', 'waehler', 'gini', 'schuldenquote'],
+    active_widgets:      [], // Standardmäßig leer für eine ruhige, aufgeräumte Startseite
+    show_ressort_cards:  false, // Ministerien-Karten standardmäßig eingeklappt
+    watchlist_collapsed: false,
     perioden:        Array.from({ length: mergedKonfig.perioden_anzahl }, (_, i) => ({
       idx:    i,
       locked: false,
@@ -66,6 +76,15 @@ function loadState() {
       const saved = JSON.parse(raw);
       // Gespeicherten State verwerfen wenn Session-ID nicht übereinstimmt
       if (URL_SESSION_ID && saved.session_id !== URL_SESSION_ID) return defaultState();
+      if (!saved.watchlist || !Array.isArray(saved.watchlist)) {
+        saved.watchlist = ['saldo', 'waehler', 'gini', 'schuldenquote'];
+      }
+      if (!saved.active_widgets || !Array.isArray(saved.active_widgets)) {
+        saved.active_widgets = [];
+      }
+      if (typeof saved.show_ressort_cards !== 'boolean') saved.show_ressort_cards = false;
+      if (typeof saved.watchlist_collapsed !== 'boolean') saved.watchlist_collapsed = false;
+      saved._fromLocalStorage = true;
       return saved;
     }
   } catch (_) {}
@@ -493,17 +512,225 @@ const SLIDER_SECTIONS = [
   },
 ];
 
-// ── Hauptrenderer ─────────────────────────────────────────────────────────────
+// ── Digitales Leitmedium: Ressort- & Watchlist-Konfiguration ─────────────────
 
 let state, pfad;
+let activeDossier = null;
+let activeAnalysisTab = 'media';
+
+const RESSORT_DEFS = {
+  finanzen: {
+    id: 'finanzen',
+    name: 'Finanzen & Steuern',
+    icon: '',
+    color: '#2563EB',
+    tag: 'Bundesministerium der Finanzen (BMF)',
+    title: 'Einkommensteuer, Progression & Vermögen',
+    sections: ['est', 'verm'],
+    context: 'Das Finanzministerium steuert das primäre Steueraufkommen des Bundes. Anpassungen des Spitzensteuersatzes und der Progression wirken auf das Arbeitsangebot (Saez/Chetty Elastizität ε = 0,20) und die Steuergerechtigkeit.',
+    getHeadline: (p) => {
+      if (p.spitze > 47) return 'Steuerprogression verschärft: Reichensteuer im Fokus';
+      if (p.freibetrag > 13000) return 'Grundfreibetrag angehoben: Bürger spürbar entlastet';
+      if (p.verm > 0) return 'Vermögensteuer reaktiviert: Umverteilungsdebatte entflammt';
+      return 'Debatte um Spitzensteuer und Freibetrag (§ 32a EStG)';
+    },
+    getTeaser: () => 'Finanzministerium prüft das Steueraufkommen und Reaktionen der Spitzenverdiener auf Steuersatzänderungen.',
+    getSummary: (p) => [
+      `Spitze: ${p.spitze}%`,
+      `Freibetrag: ${Number(p.freibetrag).toLocaleString('de-DE')} €`,
+      p.verm > 0 ? `VermSt: ${p.verm}%` : null,
+      p.erb > 0 ? `ErbSt: ${p.erb}%` : null
+    ].filter(Boolean)
+  },
+  soziales: {
+    id: 'soziales',
+    name: 'Arbeit, Soziales & Renten',
+    icon: '',
+    color: '#0D9488',
+    tag: 'Bundesministerium für Arbeit und Soziales (BMAS)',
+    title: 'Bürgergeld, Grundsicherung & Rentenreform',
+    sections: ['transfers', 'sv', 'bge', 'renten_ctrl'],
+    context: 'Sozialtransfers an einkommensschwache Haushalte stützen den privaten Konsum unmittelbar über hohe marginale Konsumneigungen (HANK-Multiplikator). Zugleich muss der Lohnabstand gewahrt bleiben.',
+    getHeadline: (p) => {
+      if (p.bge > 0) return `Bedingungsloses Grundeinkommen (${p.bge} €) sorgt für Paradigmenwechsel`;
+      if (p.bg > 620) return 'Bürgergeld-Erhöhung: Sozialverbände feiern, Opposition warnt';
+      if (p.bg < 500) return 'Bürgergeld-Kürzung: Arbeitsanreize versus Armutsrisiko';
+      return 'Bürgergeld und Kindergrundsicherung auf dem Prüfstand';
+    },
+    getTeaser: () => 'Sozialverbände fordern verlässliche Mindestsicherung bei anhaltendem Inflationsdruck.',
+    getSummary: (p) => [
+      p.bge > 0 ? `BGE: ${p.bge} €` : `Bürgergeld: ${p.bg} €`,
+      `Kindergeld: ${p.kg} €`,
+      `RV: ${p.rv}%`,
+      `KV: ${p.kv}%`
+    ].filter(Boolean)
+  },
+  klima: {
+    id: 'klima',
+    name: 'Klima & Transformation',
+    icon: '',
+    color: '#16A34A',
+    tag: 'Ministerium für Wirtschaft & Klimaschutz (BMWK)',
+    title: 'CO₂-Preispfad & soziales Klimageld',
+    sections: ['co2'],
+    context: 'Ein steigender CO₂-Preis setzt marktwirtschaftliche Anreize zur Dekarbonisierung. Die Rückvergütung als pauschales Klimageld entlastet untere Einkommen überproportional und sichert die Akzeptanz (SRU / MCC 2024).',
+    getHeadline: (p) => {
+      if (p.co2 >= 100 && p.klimageld) return `CO₂-Preis klettert auf ${p.co2} €: Klimageld federt Preisschock ab`;
+      if (p.co2 >= 90 && !p.klimageld) return `Hoher CO₂-Preis (${p.co2} €) ohne Klimageld: Verbraucher protestieren`;
+      if (p.klimageld) return 'Klimageld-Auszahlung beschlossen: Pauschale Bürgerentlastung';
+      return `CO₂-Preis bei ${p.co2} €/t: Pfad zur Klimaneutralität`;
+    },
+    getTeaser: () => 'Wirtschaft und Umweltverbände streiten über Tempo der CO₂-Bepreisung und Rückvergütung.',
+    getSummary: (p) => [
+      `CO₂: ${p.co2} €/t`,
+      p.klimageld ? 'Klimageld: Aktiv' : 'Klimageld: Inaktiv'
+    ]
+  },
+  wirtschaft: {
+    id: 'wirtschaft',
+    name: 'Wirtschaft & Standort',
+    icon: '',
+    color: '#EA580C',
+    tag: 'Bundesministerium für Wirtschaft & Standort (BMWK)',
+    title: 'Unternehmenssteuern, Konsum & Investitionen',
+    sections: ['kst', 'mwst', 'invest', 'kleine'],
+    context: 'Die Körperschaftsteuer bestimmt die Attraktivität des Investitionsstandorts (SVR / Gechert-Heimberger). Öffentliche Investitionen wirken mit einem Multiplikator von 1,2–1,4 auf das BIP.',
+    getHeadline: (p) => {
+      if (p.invest_impuls > 20) return `Investitions-Boom: Bund mobilisiert +${p.invest_impuls} Mrd. € für Infrastruktur`;
+      if (p.kst <= 12) return `Standort-Offensive: KSt auf ${p.kst} % gesenkt`;
+      if (p.mwst > 20) return `Mehrwertsteuer auf ${p.mwst} % erhöht: Fiskus profitiert, Handel klagt`;
+      return 'Standortwettbewerb und Investitionsbedarf der Industrie';
+    },
+    getTeaser: () => 'Industrieverbände fordern verlässliche Rahmenbedingungen und Erneuerung der Infrastruktur.',
+    getSummary: (p) => [
+      `KSt: ${p.kst}%`,
+      `MwSt: ${p.mwst}%`,
+      `Invest-Impuls: ${p.invest_impuls >= 0 ? '+' : ''}${p.invest_impuls || 0} Mrd.`
+    ]
+  }
+};
+
+const WATCHLIST_CATALOG = {
+  saldo: {
+    id: 'saldo',
+    label: 'Haushaltssaldo',
+    sub: 'Art. 109 GG (Bremse: -0,35 %)',
+    calc: (r, z, p, prevR) => {
+      const val = `${r.saldo >= 0 ? '+' : ''}${r.saldo.toFixed(0)} Mrd. €`;
+      const d = prevR ? r.saldo - prevR.saldo : null;
+      const deltaStr = d !== null ? `${d >= 0 ? '+' : ''}${d.toFixed(0)} Mrd.` : '—';
+      const isOk = r.saldo_bip_pct >= -0.35;
+      return { val, delta: deltaStr, status: isOk ? 'Konform' : 'Defizit', statusCls: isOk ? 'good' : 'bad' };
+    }
+  },
+  waehler: {
+    id: 'waehler',
+    label: 'Sonntagsfrage',
+    sub: 'Wählerzustimmung Bund',
+    calc: (r, z, p, prevR, prevZ, stimmung, prevStimmung) => {
+      const val = `${Math.round(stimmung?.gesamt ?? 48)} %`;
+      const d = prevStimmung ? (stimmung?.gesamt ?? 48) - prevStimmung.gesamt : null;
+      const deltaStr = d !== null ? `${d >= 0 ? '+' : ''}${d.toFixed(1)} PP` : '—';
+      const isOk = (stimmung?.gesamt ?? 48) >= 50;
+      return { val, delta: deltaStr, status: isOk ? 'Mehrheit' : 'Unter 50%', statusCls: isOk ? 'good' : 'warn' };
+    }
+  },
+  gini: {
+    id: 'gini',
+    label: 'Gini-Ungleichheit',
+    sub: 'Nettoeinkommen (0 = gleich)',
+    calc: (r, z, p, prevR) => {
+      const val = r.gini.toFixed(3);
+      const d = prevR ? r.gini - prevR.gini : null;
+      const deltaStr = d !== null ? `${d >= 0 ? '+' : ''}${d.toFixed(3)}` : '—';
+      const isOk = r.gini <= 0.285;
+      return { val, delta: deltaStr, status: isOk ? 'Niedrig' : 'Erhöht', statusCls: isOk ? 'good' : 'warn' };
+    }
+  },
+  schuldenquote: {
+    id: 'schuldenquote',
+    label: 'Schuldenstand',
+    sub: 'Maastricht-Grenze: 60 % BIP',
+    calc: (r, z, p, prevR, prevZ) => {
+      const val = `${z.schuldenquote.toFixed(1)} %`;
+      const d = prevZ ? z.schuldenquote - prevZ.schuldenquote : null;
+      const deltaStr = d !== null ? `${d >= 0 ? '+' : ''}${d.toFixed(1)} PP` : '—';
+      const isOk = z.schuldenquote <= 60;
+      return { val, delta: deltaStr, status: isOk ? 'Maastricht OK' : 'Über 60%', statusCls: isOk ? 'good' : 'bad' };
+    }
+  },
+  co2_budget: {
+    id: 'co2_budget',
+    label: 'Restliches CO₂-Budget',
+    sub: 'Pariser 1,5°C-Pfad bis 2050',
+    calc: (r, z, p, prevR, prevZ) => {
+      const rest = Math.max(0, Math.round(6600 - z.co2_kumulat));
+      const val = `${rest.toLocaleString('de-DE')} Mt`;
+      const d = prevZ ? z.co2_kumulat - prevZ.co2_kumulat : null;
+      const deltaStr = d !== null ? `-${Math.round(d)} Mt` : '—';
+      const isOk = rest > 2000;
+      return { val, delta: deltaStr, status: isOk ? 'Ausreichend' : 'Kritisch', statusCls: isOk ? 'good' : 'bad' };
+    }
+  },
+  bip: {
+    id: 'bip',
+    label: 'Bruttoinlandsprodukt',
+    sub: 'Wirtschaftskraft nominal',
+    calc: (r, z, p, prevR, prevZ) => {
+      const val = `${Math.round(z.bip).toLocaleString('de-DE')} Mrd. €`;
+      const d = prevZ ? z.bip - prevZ.bip : null;
+      const deltaStr = d !== null ? `${d >= 0 ? '+' : ''}${Math.round(d)} Mrd.` : '—';
+      const isOk = !prevZ || z.bip >= prevZ.bip;
+      return { val, delta: deltaStr, status: isOk ? 'Wachstum' : 'Rückgang', statusCls: isOk ? 'good' : 'bad' };
+    }
+  },
+  armut: {
+    id: 'armut',
+    label: 'Armutsrisikoquote',
+    sub: 'Unter 60 % Median-Netto',
+    calc: (r, z, p, prevR) => {
+      const val = `${(r.armutsrisiko * 100).toFixed(1)} %`;
+      const d = prevR ? (r.armutsrisiko - prevR.armutsrisiko) * 100 : null;
+      const deltaStr = d !== null ? `${d >= 0 ? '+' : ''}${d.toFixed(1)} PP` : '—';
+      const isOk = r.armutsrisiko <= 0.15;
+      return { val, delta: deltaStr, status: isOk ? 'Gering' : 'Erhöht', statusCls: isOk ? 'good' : 'warn' };
+    }
+  }
+};
+
+function countRessortDiffs(ressortKey, params, baseParams) {
+  const def = RESSORT_DEFS[ressortKey];
+  if (!def) return 0;
+  const sections = SLIDER_SECTIONS.filter(s => def.sections.includes(s.id));
+  const keys = sections.flatMap(s => s.sliders.map(sl => sl.key));
+  let count = 0;
+  for (const k of keys) {
+    if (params[k] !== undefined && baseParams[k] !== undefined) {
+      if (typeof params[k] === 'boolean') {
+        if (params[k] !== baseParams[k]) count++;
+      } else if (Math.abs(Number(params[k]) - Number(baseParams[k])) > 0.001) {
+        count++;
+      }
+    }
+  }
+  return count;
+}
+
+// ── Hauptrenderer ─────────────────────────────────────────────────────────────
 
 function renderAll() {
   pfad = simulate(state);
   renderPeriodNav();
   renderSessionBar();
   renderShockBanner();
-  renderControls();
+  renderWatchlist();
+  renderNewsFrontpage();
   renderResults();
+  renderCommitBar();
+  if (activeDossier) {
+    renderDossierSliders(activeDossier);
+    updateDossierImpactStrip();
+  }
 }
 
 function renderSessionBar() {
@@ -560,39 +787,397 @@ function renderShockBanner() {
   }
 }
 
-function renderControls() {
-  const container = document.getElementById('controls-sections');
-  const p         = state.perioden[state.current_periode];
-  const locked    = p.locked;
-  const levelCode = getLevelCode();
+// ── 1. Persönliche Watchlist ──────────────────────────────────────────────────
+
+function renderWatchlist() {
+  const container = document.getElementById('watchlist-chips');
+  if (!container) return;
+
+  const curIdx = state.current_periode;
+  const entry = pfad[curIdx];
+  const r = entry.result;
+  const z = entry.zustand;
+  const p = state.perioden[curIdx];
+
+  const prevEntry = curIdx > 0 ? pfad[curIdx - 1] : null;
+  const prevR = prevEntry?.result ?? null;
+  const prevZ = prevEntry?.zustand ?? null;
+
+  const curParams = p.params;
+  const prevParams = curIdx > 0 ? state.perioden[curIdx - 1].params : PRESETS.status_quo;
+
+  const stimmung = berechneWaehlerstimmung(curParams, r, z, prevParams, prevZ, entry.schock);
+  const prevStimmung = prevEntry ? berechneWaehlerstimmung(prevParams, prevR, prevZ, PRESETS.status_quo, null, prevEntry.schock) : null;
+
+  const bar = document.getElementById('watchlist-bar');
+  const toggleBtn = document.getElementById('btn-toggle-watchlist');
+  if (bar) {
+    bar.classList.toggle('collapsed', !!state.watchlist_collapsed);
+  }
+  if (toggleBtn) {
+    toggleBtn.textContent = state.watchlist_collapsed ? '▼ Ausklappen' : '▲ Einklappen';
+  }
+
+  const pinnedKeys = state.watchlist || ['saldo', 'waehler', 'gini', 'schuldenquote'];
+  container.innerHTML = pinnedKeys.map(key => {
+    const cat = WATCHLIST_CATALOG[key];
+    if (!cat) return '';
+    const res = cat.calc(r, z, curParams, prevR, prevZ, stimmung, prevStimmung);
+    return `
+      <div class="watchlist-card">
+        <div class="w-card-label">${esc(cat.label)}</div>
+        <div class="w-card-val-row">
+          <span class="w-card-val">${esc(res.val)}</span>
+          ${res.delta !== '—' ? `<span class="w-card-delta ${res.delta.startsWith('+') ? 'good' : 'bad'}">${esc(res.delta)}</span>` : ''}
+        </div>
+        <div class="w-card-sub" style="display:flex; justify-content:space-between; align-items:center;">
+          <span>${esc(cat.sub)}</span>
+          <span style="font-weight:600; color:var(--${res.statusCls}); font-size:9.5px;">${esc(res.status)}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openWatchlistModal() {
+  const backdrop = document.getElementById('watchlist-modal-backdrop');
+  const listEl = document.getElementById('watchlist-options-list');
+  if (!backdrop || !listEl) return;
+
+  const currentPinned = new Set(state.watchlist || ['saldo', 'waehler', 'gini', 'schuldenquote']);
+
+  listEl.innerHTML = Object.values(WATCHLIST_CATALOG).map(item => `
+    <label class="watchlist-option-item">
+      <div>
+        <div style="font-weight:600; font-size:12px; color:var(--ink);">${esc(item.label)}</div>
+        <div style="font-size:10.5px; color:var(--muted);">${esc(item.sub)}</div>
+      </div>
+      <input type="checkbox" data-watch-key="${item.id}" ${currentPinned.has(item.id) ? 'checked' : ''} style="width:16px; height:16px; accent-color:var(--accent);">
+    </label>
+  `).join('');
+
+  listEl.querySelectorAll('input').forEach(chk => {
+    chk.onchange = () => {
+      const key = chk.dataset.watchKey;
+      if (chk.checked) {
+        if (!state.watchlist.includes(key)) state.watchlist.push(key);
+      } else {
+        state.watchlist = state.watchlist.filter(k => k !== key);
+      }
+      saveState(state);
+      renderWatchlist();
+    };
+  });
+
+  backdrop.style.display = 'flex';
+}
+
+function closeWatchlistModal() {
+  const backdrop = document.getElementById('watchlist-modal-backdrop');
+  if (backdrop) backdrop.style.display = 'none';
+  saveState(state);
+  renderWatchlist();
+}
+
+// ── 2. Redaktionelle Frontpage & Didaktisches Scaffolding ─────────────────────
+
+function istRessortAktiv(ressortKey, periodeIdx = state.current_periode) {
+  const pw = state.kurs_konfig?.perioden_werkzeuge;
+  if (!pw) return true;
+  const allowed = pw[periodeIdx] || pw[String(periodeIdx)];
+  if (!allowed || !Array.isArray(allowed)) return true;
+  return allowed.includes(ressortKey);
+}
+
+function showLockedRessortNotice(ressortKey) {
+  const def = RESSORT_DEFS[ressortKey];
+  const curP = state.current_periode + 1;
+  const totalP = state.kurs_konfig?.perioden_anzahl || 5;
+
+  const pw = state.kurs_konfig?.perioden_werkzeuge;
+  let nextActive = null;
+  if (pw) {
+    for (let i = state.current_periode + 1; i < totalP; i++) {
+      const allowed = pw[i] || pw[String(i)];
+      if (Array.isArray(allowed) && allowed.includes(ressortKey)) {
+        nextActive = i + 1;
+        break;
+      }
+    }
+  }
+
+  const modal = document.getElementById('locked-ressort-modal');
+  const titleEl = document.getElementById('locked-ressort-title');
+  const textEl = document.getElementById('locked-ressort-text');
+
+  if (titleEl) {
+    titleEl.textContent = `${def.icon} ${def.name} vorübergehend nicht verfügbar`;
+  }
+  if (textEl) {
+    textEl.innerHTML = `
+      <p style="margin-bottom:10px;">
+        Die Lehrperson hat für <strong>Periode ${curP}</strong> den Fokus auf die anderen Handlungsfelder gelegt, um eine schrittweise didaktische Erarbeitung (Scaffolding) zu ermöglichen.
+      </p>
+      <p style="margin-bottom:10px; color:var(--muted);">
+        Dieses Ministerium steht in der aktuellen Kabinettssitzung nicht zur Disposition. Die Hebel verbleiben auf ihrem bisherigen Stand.
+      </p>
+      ${nextActive ? `<p style="color:var(--accent); font-weight:600; margin-top:8px;">Geplante Freischaltung: ab Periode ${nextActive}.</p>` : ''}
+    `;
+  }
+  if (modal) modal.style.display = 'flex';
+}
+
+function ermittleHeroStory(state, entry) {
+  const r = entry.result;
+  const schock = entry.schock;
+
+  let candidate = null;
+
+  if (schock) {
+    candidate = {
+      badge: `Schock-Ereignis · Periode ${state.current_periode + 1}`,
+      headline: `${schock.name}: Kabinett unter Krisendruck`,
+      lead: `${schock.beschreibung} Gewerkschaften und Wirtschaftsverbände fordern sofortige staatliche Interventionen, um Produktion und Arbeitsplätze zu sichern.`,
+      targetRessort: schock.typ === 'energie' ? 'klima' : 'wirtschaft',
+      ctaText: 'Krisen-Dossier öffnen & Hebel anpassen →',
+      hint: 'Dringender Handlungsbedarf durch aktiven Schock'
+    };
+  } else if (r.saldo_bip_pct < -0.35) {
+    candidate = {
+      badge: `Verfassungsstreit · Periode ${state.current_periode + 1}`,
+      headline: `Haushaltsloch reißt Schuldenbremse um ${Math.abs(Math.round(r.saldo))} Mrd. Euro`,
+      lead: `Der Bundesrechnungshof mahnt die verfassungsrechtliche Obergrenze nach Art. 109 GG an. Im Kabinett entbrennt ein heftiger Streit zwischen Ausgabenkürzungen und Mehreinnahmen.`,
+      targetRessort: 'finanzen',
+      ctaText: 'Finanz-Dossier öffnen & konsolidieren →',
+      hint: 'Schuldenbremse aktuell verfehlt'
+    };
+  } else if (r.gini > 0.29) {
+    candidate = {
+      badge: `Soziale Lage · Periode ${state.current_periode + 1}`,
+      headline: 'Warnung vor Verteilungskonflikt: Reallöhne unter Druck',
+      lead: 'Die Ungleichheit der verfügbaren Nettoeinkommen nimmt zu. Sozialverbände mahnen eine Stärkung der Mindestsicherung an, während Ökonomen zielgerichtete Entlastungen fordern.',
+      targetRessort: 'soziales',
+      ctaText: 'Sozial-Dossier öffnen & justieren →',
+      hint: 'Ungleichheit über Richtwert'
+    };
+  } else {
+    candidate = {
+      badge: `Koalitionsbericht · Periode ${state.current_periode + 1}`,
+      headline: 'Kabinett berät über Reformagenda: Weichenstellungen für die Legislatur',
+      lead: 'Zwischen ökologischer Transformation, solider Haushaltsführung und Standortwettbewerb: Die Regierungskoalition berät über die zentralen politischen Schwerpunkte der kommenden 4 Jahre.',
+      targetRessort: 'wirtschaft',
+      ctaText: 'Dossier öffnen & Schwerpunkte setzen →',
+      hint: 'Reguläre Gesetzgebung'
+    };
+  }
+
+  // Didaktische Werkzeug-Freigabe berücksichtigen:
+  if (!istRessortAktiv(candidate.targetRessort)) {
+    const fallbackActive = ['finanzen', 'soziales', 'klima', 'wirtschaft'].find(k => istRessortAktiv(k));
+    if (fallbackActive) {
+      candidate.targetRessort = fallbackActive;
+      candidate.ctaText = `${RESSORT_DEFS[fallbackActive].name}-Dossier öffnen →`;
+    }
+  }
+
+  return candidate;
+}
+
+function renderNewsFrontpage() {
+  const entry = pfad[state.current_periode];
+  const p = state.perioden[state.current_periode];
+  const story = ermittleHeroStory(state, entry);
+
+  // Hero Story
+  const badgeEl = document.getElementById('hero-badge');
+  const dateEl = document.getElementById('hero-date');
+  const headEl = document.getElementById('hero-headline');
+  const leadEl = document.getElementById('hero-lead');
+  const ctaBtn = document.getElementById('btn-hero-action');
+  const hintEl = document.getElementById('hero-context-hint');
+
+  if (badgeEl) badgeEl.textContent = story.badge;
+  if (dateEl) dateEl.textContent = `Legislatur ${entry.label}`;
+  if (headEl) headEl.textContent = story.headline;
+  if (leadEl) leadEl.textContent = story.lead;
+  if (hintEl) hintEl.textContent = story.hint;
+  if (ctaBtn) {
+    ctaBtn.textContent = story.ctaText;
+    ctaBtn.onclick = () => {
+      if (istRessortAktiv(story.targetRessort)) {
+        openDossier(story.targetRessort);
+      } else {
+        showLockedRessortNotice(story.targetRessort);
+      }
+    };
+  }
+
+  const ressortKeys = ['finanzen', 'soziales', 'klima', 'wirtschaft'];
+
+  // 1. Ressort-Submenü befüllen
+  const menuDropdown = document.getElementById('ressort-menu-dropdown');
+  if (menuDropdown) {
+    menuDropdown.innerHTML = ressortKeys.map(key => {
+      const def = RESSORT_DEFS[key];
+      const aktiv = istRessortAktiv(key);
+      const diffs = countRessortDiffs(key, p.params, PRESETS.status_quo);
+      const badgeText = !aktiv
+        ? 'Gesperrt'
+        : (diffs === 0 ? 'Status Quo' : `${diffs} Reformen`);
+      return `
+        <div class="submenu-item ${!aktiv ? 'item-locked' : ''}" data-ressort-choice="${key}">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-weight:600; color:${def.color};">${esc(def.name)}</span>
+          </div>
+          <span class="ressort-badge ${!aktiv ? 'badge-locked' : (diffs > 0 ? 'reformed' : '')}" style="font-size:10px; padding:2px 6px;">
+            ${esc(badgeText)}
+          </span>
+        </div>
+      `;
+    }).join('');
+
+    menuDropdown.querySelectorAll('[data-ressort-choice]').forEach(item => {
+      item.onclick = (e) => {
+        e.stopPropagation();
+        menuDropdown.classList.remove('open');
+        document.getElementById('wrap-ressort-menu')?.classList.remove('open');
+        const rKey = item.dataset.ressortChoice;
+        if (istRessortAktiv(rKey)) {
+          openDossier(rKey);
+        } else {
+          showLockedRessortNotice(rKey);
+        }
+      };
+    });
+  }
+
+  // 2. Ressort Grid Toggle Button & Grid Status
+  const toggleGridBtn = document.getElementById('btn-toggle-ressorts-grid');
+  const grid = document.getElementById('ressorts-grid');
+  if (toggleGridBtn && grid) {
+    grid.style.display = state.show_ressort_cards ? 'grid' : 'none';
+    toggleGridBtn.textContent = state.show_ressort_cards
+      ? 'Ministerien-Karten ausblenden'
+      : 'Alle 4 Ministerien-Karten einblenden';
+  }
+
+  // 3. 4 Ressort Kacheln
+  if (!grid) return;
+
+  grid.innerHTML = ressortKeys.map(key => {
+    const def = RESSORT_DEFS[key];
+    const aktiv = istRessortAktiv(key);
+    const diffs = countRessortDiffs(key, p.params, PRESETS.status_quo);
+    const badgeText = !aktiv
+      ? `Nicht im Kabinettsauftrag (P${state.current_periode + 1})`
+      : (diffs === 0 ? 'Status Quo' : `${diffs} Reformen aktiv`);
+    const headline = def.getHeadline(p.params);
+    const teaser = !aktiv
+      ? `Dieses Ressort ist in Periode ${state.current_periode + 1} durch die Lehrperson gesperrt (didaktischer Fokus).`
+      : def.getTeaser();
+    const summaryChips = def.getSummary(p.params);
+
+    return `
+      <div class="ressort-card ${!aktiv ? 'locked-ressort' : ''}" style="--ressort-color:${def.color}" data-ressort="${key}">
+        <div class="ressort-head">
+          <div class="ressort-name-wrap">
+            <span class="ressort-title">${esc(def.name)}</span>
+          </div>
+          <span class="ressort-badge ${!aktiv ? 'badge-locked' : (diffs > 0 ? 'reformed' : '')}">${esc(badgeText)}</span>
+        </div>
+        <div class="ressort-teaser-headline font-serif-news" style="${!aktiv ? 'color:var(--muted);' : ''}">${esc(headline)}</div>
+        <div class="ressort-teaser-text" style="${!aktiv ? 'font-style:italic;' : ''}">${esc(teaser)}</div>
+        <div class="ressort-params-summary" style="${!aktiv ? 'opacity:0.6;' : ''}">
+          ${summaryChips.map(c => `<span>${esc(c)}</span>`).join('<span style="opacity:.4">·</span>')}
+        </div>
+        <button class="ressort-cta-btn ${!aktiv ? 'btn-locked' : ''}" type="button">
+          <span>${aktiv ? 'Dossier bearbeiten' : 'Gesperrt durch Lehrperson'}</span>
+          <span>${aktiv ? '→' : 'Info'}</span>
+        </button>
+      </div>
+    `;
+  }).join('');
+
+  grid.querySelectorAll('.ressort-card').forEach(card => {
+    const key = card.dataset.ressort;
+    card.onclick = () => {
+      if (istRessortAktiv(key)) {
+        openDossier(key);
+      } else {
+        showLockedRessortNotice(key);
+      }
+    };
+  });
+}
+
+// ── 3. Fokus-Dossier (Slide-Over Drawer) ───────────────────────────────────────
+
+function openDossier(ressortKey) {
+  if (!istRessortAktiv(ressortKey)) {
+    showLockedRessortNotice(ressortKey);
+    return;
+  }
+  const def = RESSORT_DEFS[ressortKey];
+  if (!def) return;
+  activeDossier = ressortKey;
+
+  const tagEl = document.getElementById('dossier-tag');
+  const titleEl = document.getElementById('dossier-title');
+  const ctxEl = document.getElementById('dossier-context');
+
+  if (tagEl) tagEl.textContent = def.tag;
+  if (titleEl) titleEl.textContent = def.title;
+  if (ctxEl) ctxEl.textContent = def.context;
+
+  renderDossierSliders(ressortKey);
+  updateDossierImpactStrip();
+
+  const backdrop = document.getElementById('dossier-backdrop');
+  if (backdrop) {
+    backdrop.style.display = 'flex';
+    requestAnimationFrame(() => backdrop.classList.add('open'));
+  }
+}
+
+function closeDossier() {
+  const backdrop = document.getElementById('dossier-backdrop');
+  if (backdrop) {
+    backdrop.classList.remove('open');
+    setTimeout(() => { backdrop.style.display = 'none'; }, 220);
+  }
+  activeDossier = null;
+  renderAll();
+}
+
+function renderDossierSliders(ressortKey) {
+  const container = document.getElementById('dossier-sliders-container');
+  if (!container) return;
   container.innerHTML = '';
 
-  for (const section of SLIDER_SECTIONS) {
-    if (LEVEL_ORDER[section.level] > LEVEL_ORDER[levelCode]) continue;
+  const def = RESSORT_DEFS[ressortKey];
+  const p = state.perioden[state.current_periode];
+  const locked = p.locked;
+  const levelCode = getLevelCode();
+
+  for (const secId of def.sections) {
+    const section = SLIDER_SECTIONS.find(s => s.id === secId);
+    if (!section || LEVEL_ORDER[section.level] > LEVEL_ORDER[levelCode]) continue;
 
     const div = document.createElement('div');
     div.className = 'ctrl-section';
     div.innerHTML = `
-      <div class="ctrl-section-header" data-section="${section.id}">
+      <div class="ctrl-section-header" style="background:var(--surface-2); border-radius:4px; padding:7px 10px; margin-bottom:6px;">
         <span class="ctrl-dot" style="background:${section.color}"></span>
-        <span class="ctrl-section-label">${section.label}</span>
+        <span class="ctrl-section-label" style="font-weight:600; font-size:12px;">${section.label}</span>
         <span class="tier-badge ${section.level}">${LEVEL_LABEL[section.level]}</span>
-        <span class="ctrl-chevron">›</span>
       </div>
-      <div class="ctrl-section-body" id="sect-${section.id}">
+      <div class="ctrl-section-body">
         ${section.sliders.map(sl => buildSlider(sl, p.params, locked)).join('')}
-      </div>`;
+      </div>
+    `;
     container.appendChild(div);
 
-    // Toggle
-    div.querySelector('.ctrl-section-header').addEventListener('click', () => {
-      const body = div.querySelector('.ctrl-section-body');
-      body.classList.toggle('collapsed');
-      div.querySelector('.ctrl-chevron').textContent =
-        body.classList.contains('collapsed') ? '›' : '‹';
-    });
-
-    // Slider/Toggle-Events
+    // Event-Listener
     for (const sl of section.sliders) {
       const input = div.querySelector(`input[data-key="${sl.key}"]`);
       if (!input) continue;
@@ -602,46 +1187,151 @@ function renderControls() {
           p.params[sl.key] = input.checked;
           saveState(state);
           pfad = simulate(state);
-          renderResults();
-          renderPeriodNav();
+          renderWatchlist();
+          renderNewsFrontpage();
+          updateDossierImpactStrip();
+          renderCommitBar();
         });
-        continue;
+      } else {
+        const valEl = div.querySelector(`[data-val="${sl.key}"]`);
+        input.addEventListener('input', () => {
+          const v = parseFloat(input.value);
+          p.params[sl.key] = v;
+          if (valEl) valEl.textContent = formatSliderVal(sl, v);
+          saveState(state);
+          pfad = simulate(state);
+          renderWatchlist();
+          renderNewsFrontpage();
+          updateDossierImpactStrip();
+          renderCommitBar();
+        });
       }
-
-      const valEl = div.querySelector(`[data-val="${sl.key}"]`);
-      input.addEventListener('input', () => {
-        const v = parseFloat(input.value);
-        p.params[sl.key] = v;
-        valEl.textContent = formatSliderVal(sl, v);
-        saveState(state);
-        pfad = simulate(state);
-        renderResults();
-        renderPeriodNav();
-      });
     }
   }
+}
 
-  // Commit button
-  const commitArea   = document.createElement('div');
-  commitArea.className = 'commit-area';
-  const totalVotes   = state.kurs_konfig.team_groesse;
-  const currentVotes = p.votes;
-  const notReleased  = state.current_periode >= getTeacherFreigabe();
-  const btnDisabled  = locked || notReleased;
-  const btnLabel     = locked      ? 'Periode gesperrt'
-                     : notReleased ? 'Noch nicht freigegeben'
-                     :               'Periode abschließen';
-  commitArea.innerHTML = `
-    <button id="btn-commit" class="btn-commit ${locked ? 'locked' : ''}" ${btnDisabled ? 'disabled' : ''}>
-      ${btnLabel}
-      ${!btnDisabled ? `<small>${currentVotes} / ${totalVotes} Stimmen</small>` : ''}
-    </button>
-    ${state.sandbox ? '<div class="sandbox-note">Sandbox — kein Scoring</div>' : ''}`;
-  container.appendChild(commitArea);
+function updateDossierImpactStrip() {
+  const curIdx = state.current_periode;
+  const entry = pfad[curIdx];
+  const r = entry.result;
+  const z = entry.zustand;
+  const p = state.perioden[curIdx];
+  const prevEntry = curIdx > 0 ? pfad[curIdx - 1] : null;
 
-  if (!locked) {
-    document.getElementById('btn-commit').addEventListener('click', lockPeriode);
+  const stimmung = berechneWaehlerstimmung(p.params, r, z, prevEntry?.params ?? PRESETS.status_quo, prevEntry?.zustand ?? null, entry.schock);
+
+  const saldoEl = document.getElementById('dossier-impact-saldo');
+  const waehlerEl = document.getElementById('dossier-impact-waehler');
+  const giniEl = document.getElementById('dossier-impact-gini');
+
+  if (saldoEl) {
+    saldoEl.textContent = `${r.saldo >= 0 ? '+' : ''}${r.saldo.toFixed(0)} Mrd. € (${r.saldo_bip_pct.toFixed(2)} %)`;
+    saldoEl.style.color = r.saldo_bip_pct >= -0.35 ? 'var(--good)' : 'var(--bad)';
   }
+  if (waehlerEl) {
+    waehlerEl.textContent = `${Math.round(stimmung?.gesamt ?? 48)} %`;
+    waehlerEl.style.color = (stimmung?.gesamt ?? 48) >= 50 ? 'var(--good)' : 'var(--warn)';
+  }
+  if (giniEl) {
+    giniEl.textContent = r.gini.toFixed(3);
+    giniEl.style.color = r.gini <= 0.285 ? 'var(--good)' : 'var(--ink)';
+  }
+}
+
+// ── 4. Modulare Auswertungen & Hamburger-Submenüs ─────────────────────────────
+
+const RECOMMENDED_WIDGETS = ['explainer', 'barometer', 'verteilung'];
+
+function renderActiveWidgets() {
+  const active = state.active_widgets || [];
+
+  // 1. Zähler aktualisieren
+  const countEl = document.getElementById('active-widgets-count');
+  if (countEl) {
+    countEl.textContent = `${active.length} Grafik${active.length === 1 ? '' : 'en'} aktiv`;
+  }
+
+  // 2. Checkboxen im Hamburger-Menü abgleichen
+  document.querySelectorAll('#analysis-menu-dropdown .submenu-item[data-widget]').forEach(item => {
+    const wId = item.dataset.widget;
+    item.classList.toggle('active', active.includes(wId));
+  });
+
+  // 3. Leerer Zustand ein-/ausblenden
+  const emptyState = document.getElementById('empty-widgets-state');
+  if (emptyState) {
+    emptyState.style.display = active.length === 0 ? 'block' : 'none';
+  }
+
+  // 4. Einzelne Widget-Panels steuern
+  document.querySelectorAll('.widget-panel[data-widget-id]').forEach(panel => {
+    const wId = panel.dataset.widgetId;
+    const isVisible = active.includes(wId);
+    panel.style.display = isVisible ? 'block' : 'none';
+  });
+
+  // Spezifische Re-Renders für sichtbare Komponenten anstoßen
+  if (active.includes('history')) {
+    renderHistoryChart();
+  }
+}
+
+function toggleWidget(widgetId) {
+  if (!Array.isArray(state.active_widgets)) state.active_widgets = [];
+  if (state.active_widgets.includes(widgetId)) {
+    state.active_widgets = state.active_widgets.filter(id => id !== widgetId);
+  } else {
+    state.active_widgets.push(widgetId);
+  }
+  saveState(state);
+  renderResults();
+}
+
+// ── 5. Sticky Bottom Action Bar ───────────────────────────────────────────────
+
+function renderCommitBar() {
+  const curIdx = state.current_periode;
+  const p = state.perioden[curIdx];
+  const r = pfad[curIdx].result;
+  const locked = p.locked;
+
+  const totalDiffs = ['finanzen', 'soziales', 'klima', 'wirtschaft'].reduce((sum, k) => sum + countRessortDiffs(k, p.params, PRESETS.status_quo), 0);
+
+  const summaryEl = document.getElementById('commit-summary-text');
+  if (summaryEl) {
+    summaryEl.innerHTML = `
+      <strong>Periode ${curIdx + 1} / ${state.kurs_konfig.perioden_anzahl}</strong>
+      <span style="color:var(--muted)">·</span> Saldo: <strong>${r.saldo >= 0 ? '+' : ''}${r.saldo.toFixed(0)} Mrd. €</strong>
+      <span style="color:var(--muted)">·</span> ${locked ? '<span style="color:#F59E0B">Periode gesperrt</span>' : `${totalDiffs} Hebel reformiert`}
+    `;
+  }
+
+  const slot = document.getElementById('commit-area-slot');
+  if (slot) {
+    const totalVotes   = state.kurs_konfig.team_groesse;
+    const currentVotes = p.votes;
+    const notReleased  = curIdx >= getTeacherFreigabe();
+    const btnDisabled  = locked || notReleased;
+    const btnLabel     = locked      ? 'Periode gesperrt'
+                       : notReleased ? 'Noch nicht freigegeben'
+                       :               'Periode abschließen';
+
+    slot.innerHTML = `
+      <button id="btn-commit" class="btn-commit ${locked ? 'locked' : ''}" ${btnDisabled ? 'disabled' : ''} style="padding:7px 16px; margin:0; font-size:12px;">
+        ${btnLabel}
+        ${!btnDisabled ? `<small>(${currentVotes}/${totalVotes})</small>` : ''}
+      </button>
+      ${state.sandbox ? '<span style="font-size:10px; color:#9CA3AF; margin-left:6px;">(Sandbox)</span>' : ''}
+    `;
+
+    if (!locked) {
+      document.getElementById('btn-commit')?.addEventListener('click', lockPeriode);
+    }
+  }
+}
+
+function renderControls() {
+  renderCommitBar();
 }
 
 function buildSlider(sl, params, locked) {
@@ -698,16 +1388,124 @@ function renderResults() {
   const abl   = berechneAbgeleitet(r, z);
   const sqR   = pfad[0].result; // Status-quo-Vergleich = Periode 0
 
+  renderWatchlist();
+  renderNewsFrontpage();
+  renderCommitBar();
   renderKpiStrip(r, z, abl, sqR);
   renderLernzieleBar(r, z);
-  renderHistoryChart();
-  renderHistoryTable();
-  renderFiskalPanel(r, z, abl);
-  renderVerteilungChart(r);
-  renderHankPanel(r, abl);
-  renderDomarPanel(z, abl);
-  renderCo2Panel(z, abl);
-  renderRenteGkvPanels(r, state.perioden[state.current_periode].params);
+
+  // Selektives Rendern nur der aktiven Widgets (spart Performance und hält Ansicht aufgeräumt)
+  const active = state.active_widgets || [];
+  if (active.includes('explainer'))  renderExplainer(entry, r, z);
+  if (active.includes('barometer') || active.includes('presse')) renderMedienspiegel(entry, r, z);
+  if (active.includes('history')) {
+    renderHistoryChart();
+    renderHistoryTable();
+  }
+  if (active.includes('fiskal'))    renderFiskalPanel(r, z, abl);
+  if (active.includes('domar'))     renderDomarPanel(z, abl);
+  if (active.includes('verteilung')) renderVerteilungChart(r);
+  if (active.includes('hank'))      renderHankPanel(r, abl);
+  if (active.includes('co2budget')) renderCo2Panel(z, abl);
+  if (active.includes('rente') || active.includes('gkv')) {
+    renderRenteGkvPanels(r, state.perioden[state.current_periode].params);
+  }
+
+  renderActiveWidgets();
+}
+
+function esc(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function renderExplainer(entry, r, z) {
+  const panel = document.getElementById('explainer-panel');
+  const listEl = document.getElementById('explainer-cards');
+  const countEl = document.getElementById('explainer-count');
+  if (!panel || !listEl) return;
+
+  const curParams = state.perioden[state.current_periode].params;
+  const refParams = state.current_periode > 0
+    ? state.perioden[state.current_periode - 1].params
+    : PRESETS.status_quo;
+  const refZustand = state.current_periode > 0
+    ? pfad[state.current_periode - 1].zustand
+    : null;
+
+  const cards = erzeugeKausalketten(curParams, r, z, refParams, refZustand, entry.schock);
+
+  if (countEl) {
+    countEl.textContent = `${cards.length} ${cards.length === 1 ? 'Erkenntnis' : 'Erkenntnisse'}`;
+  }
+
+  listEl.innerHTML = cards.map(c => `
+    <div class="explainer-card tone-${c.tone}">
+      <div class="explainer-card-head">
+        <span class="explainer-card-title">${esc(c.title)}</span>
+        <span class="explainer-mechanism">${esc(c.mechanism)}</span>
+        ${c.kpiBadge ? `<span class="explainer-badge badge-${c.tone}">${esc(c.kpiBadge)}</span>` : ''}
+      </div>
+      <div class="explainer-card-text">${esc(c.text)}</div>
+    </div>
+  `).join('');
+}
+
+function renderMedienspiegel(entry, r, z) {
+  const panel = document.getElementById('medienspiegel-panel');
+  if (!panel) return;
+
+  const curParams = state.perioden[state.current_periode].params;
+  const refParams = state.current_periode > 0
+    ? state.perioden[state.current_periode - 1].params
+    : PRESETS.status_quo;
+  const refZustand = state.current_periode > 0
+    ? pfad[state.current_periode - 1].zustand
+    : null;
+
+  const { stimmung, artikel } = waehleMedienspiegel(curParams, r, z, refParams, refZustand, entry.schock, 2);
+
+  // Wählerbarometer aktualisieren
+  const gesamtEl = document.getElementById('waehler-gesamt');
+  const deltaEl  = document.getElementById('waehler-delta');
+  const statusEl = document.getElementById('waehler-status');
+  const fillEl   = document.getElementById('waehler-fill');
+  const anEl     = document.getElementById('waehler-an');
+  const wiEl     = document.getElementById('waehler-wi');
+  const klEl     = document.getElementById('waehler-kl');
+
+  if (gesamtEl) gesamtEl.textContent = `${stimmung.gesamt} %`;
+  if (deltaEl) {
+    deltaEl.textContent = (stimmung.delta >= 0 ? '+' : '') + stimmung.delta + ' PP';
+    deltaEl.className = `barometer-delta ${deltaClass(stimmung.delta, 'up')}`;
+  }
+  if (statusEl) {
+    const statusLabels = { sehr_hoch: 'Sehr hoch', solide: 'Solide', angeschlagen: 'Angeschlagen', kritisch: 'Kritisch' };
+    statusEl.textContent = statusLabels[stimmung.status] || 'Solide';
+    statusEl.className = `barometer-status badge-${stimmung.status}`;
+  }
+  if (fillEl) fillEl.style.width = `${stimmung.gesamt}%`;
+  if (anEl) anEl.textContent = `${stimmung.gruppen.arbeitnehmer} %`;
+  if (wiEl) wiEl.textContent = `${stimmung.gruppen.wirtschaft} %`;
+  if (klEl) klEl.textContent = `${stimmung.gruppen.klima} %`;
+
+  // Presseartikel aktualisieren
+  const listEl = document.getElementById('presse-articles');
+  if (listEl) {
+    listEl.innerHTML = artikel.map(a => `
+      <div class="presse-card">
+        <div class="presse-meta">
+          <span class="presse-outlet">${esc(a.outlet)}</span>
+        </div>
+        <div class="presse-headline">${esc(a.headline)}</div>
+        <div class="presse-body">${esc(a.body)}</div>
+        ${a.quote ? `<div class="presse-quote">${esc(a.quote)}</div>` : ''}
+      </div>
+    `).join('');
+  }
 }
 
 function renderLernzieleBar(r, z) {
@@ -728,6 +1526,7 @@ function renderLernzieleBar(r, z) {
 
 function renderKpiStrip(r, z, abl, sqR) {
   const strip = document.getElementById('kpi-strip');
+  if (!strip) return;
   const upto  = pfad.slice(0, state.current_periode + 1);
   const kpis = [
     {
@@ -1161,9 +1960,16 @@ async function showTeamPicker() {
       // State mit Team-Info initialisieren
       state = defaultState();
       state.team_id = team;
-      saveState(state);
-      renderAll();
-      startPolling();
+      // Server-State wiederherstellen (falls Team bereits Entscheidungen hat,
+      // z. B. bei Rejoin nach Cache-Verlust im Semesterbetrieb)
+      apiRestoreState().then(restored => {
+        if (restored) {
+          console.info('[Kassensturz] State vom Server wiederhergestellt (Rejoin).');
+        }
+        saveState(state);
+        renderAll();
+        startPolling();
+      });
     } catch (_) {
       loadEl.textContent  = '';
       errorEl.textContent = 'Netzwerkfehler — bitte erneut versuchen.';
@@ -1191,6 +1997,66 @@ async function apiPushState() {
     });
   } catch (_) {
     // Netzwerkfehler ignorieren — localStorage-State bleibt gültig
+  }
+}
+
+/**
+ * State-Recovery: Beim ersten Laden ohne localStorage den Server-State
+ * (Parameter, locked, votes) für das eigene Team wiederherstellen.
+ * Verhindert das Überschreiben gespeicherter Entscheidungen bei
+ * Gerätewechsel oder gelöschtem Browser-Cache (Semesterbetrieb).
+ * @returns {boolean} true wenn Server-State erfolgreich wiederhergestellt wurde
+ */
+async function apiRestoreState() {
+  if (!URL_SESSION_ID || !state.team_id) return false;
+  try {
+    const res = await fetch(`${API_BASE}/sessions/${URL_SESSION_ID}`);
+    if (!res.ok) return false;
+    const session = await res.json();
+    const ownState = session.teams[state.team_id];
+    if (!ownState || !ownState.perioden || ownState.perioden.length === 0) return false;
+
+    let restored = false;
+    for (const remotePeriod of ownState.perioden) {
+      const local = state.perioden[remotePeriod.idx];
+      if (!local) continue;
+      // Parameter vom Server übernehmen (Kernstück der Recovery)
+      if (remotePeriod.params && typeof remotePeriod.params === 'object') {
+        local.params = { ...local.params, ...remotePeriod.params };
+        restored = true;
+      }
+      // locked + votes synchronisieren
+      if (remotePeriod.locked) {
+        local.locked = true;
+        copyParamsToNext(remotePeriod.idx);
+      }
+      if (remotePeriod.votes !== undefined) local.votes = remotePeriod.votes;
+    }
+
+    // Kurs-Konfiguration vom Server übernehmen
+    if (session.perioden_freigegeben != null) {
+      state.kurs_konfig.perioden_freigegeben = session.perioden_freigegeben;
+    }
+    if (session.perioden_anzahl) {
+      state.kurs_konfig.perioden_anzahl = session.perioden_anzahl;
+    }
+    if (session.perioden_laenge_jahre != null) {
+      state.kurs_konfig.perioden_laenge_jahre = session.perioden_laenge_jahre;
+    }
+    if (session.schocks) state.kurs_konfig.schocks = session.schocks;
+    if (session.lernziele) state.kurs_konfig.lernziele = session.lernziele;
+    if (session.perioden_werkzeuge) state.kurs_konfig.perioden_werkzeuge = session.perioden_werkzeuge;
+
+    // current_periode auf erste offene Periode setzen
+    if (restored) {
+      const lockedCount = state.perioden.filter(p => p.locked).length;
+      const teacherGate = state.kurs_konfig.perioden_freigegeben ?? state.kurs_konfig.perioden_anzahl;
+      state.current_periode = Math.min(lockedCount, teacherGate - 1, state.kurs_konfig.perioden_anzahl - 1);
+    }
+
+    return restored;
+  } catch (_) {
+    return false;
   }
 }
 
@@ -1228,11 +2094,25 @@ async function apiPollSession() {
         if (!local) continue;
         if (remotePeriod.locked && !local.locked) {
           local.locked = true;
+          // Params der gerade gesperrten Periode vom Server übernehmen
+          if (remotePeriod.params && typeof remotePeriod.params === 'object') {
+            local.params = { ...local.params, ...remotePeriod.params };
+          }
           copyParamsToNext(remotePeriod.idx); // Params in nächste Periode übertragen
           changed = true;
         } else if (!remotePeriod.locked && local.locked) {
           local.locked = false;
           changed = true;
+        }
+        // Params gesperrter Perioden immer vom Server synchronisieren
+        // (Teammitglieder sehen die gleichen abgeschlossenen Entscheidungen)
+        if (local.locked && remotePeriod.params && typeof remotePeriod.params === 'object') {
+          const remoteJson = JSON.stringify(remotePeriod.params);
+          const localJson  = JSON.stringify(local.params);
+          if (remoteJson !== localJson) {
+            local.params = { ...local.params, ...remotePeriod.params };
+            changed = true;
+          }
         }
         if (remotePeriod.votes !== undefined && remotePeriod.votes !== local.votes) {
           local.votes = remotePeriod.votes;
@@ -1316,6 +2196,14 @@ async function apiPollSession() {
       changed = true;
     }
 
+    // Werkzeuge / Scaffolding vom Admin übernehmen
+    const remoteWerkzeuge = JSON.stringify(session.perioden_werkzeuge ?? null);
+    const localWerkzeuge  = JSON.stringify(state.kurs_konfig.perioden_werkzeuge ?? null);
+    if (remoteWerkzeuge !== localWerkzeuge) {
+      state.kurs_konfig.perioden_werkzeuge = session.perioden_werkzeuge ?? null;
+      changed = true;
+    }
+
     if (changed) {
       saveState(state);
       renderAll();
@@ -1332,6 +2220,123 @@ function startPolling() {
   setInterval(apiPollSession, 5000);
 }
 
+function setupNewsroomEvents() {
+  // Watchlist Ein-/Ausklappen
+  document.getElementById('btn-toggle-watchlist')?.addEventListener('click', () => {
+    state.watchlist_collapsed = !state.watchlist_collapsed;
+    saveState(state);
+    renderWatchlist();
+  });
+
+  // Kabinetts-Submenü (Ministerium konsultieren)
+  const btnRessort = document.getElementById('btn-ressort-menu');
+  const dropRessort = document.getElementById('ressort-menu-dropdown');
+  const wrapRessort = document.getElementById('wrap-ressort-menu');
+  btnRessort?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = dropRessort?.classList.contains('open');
+    document.getElementById('analysis-menu-dropdown')?.classList.remove('open');
+    document.getElementById('wrap-analysis-menu')?.classList.remove('open');
+    dropRessort?.classList.toggle('open', !isOpen);
+    wrapRessort?.classList.toggle('open', !isOpen);
+  });
+
+  // Toggle alle 4 Ministerien-Karten
+  document.getElementById('btn-toggle-ressorts-grid')?.addEventListener('click', () => {
+    state.show_ressort_cards = !state.show_ressort_cards;
+    saveState(state);
+    renderNewsFrontpage();
+  });
+
+  // Hamburger-Menü für Grafiken & Auswertungen
+  const btnAnalysis = document.getElementById('btn-analysis-menu');
+  const dropAnalysis = document.getElementById('analysis-menu-dropdown');
+  const wrapAnalysis = document.getElementById('wrap-analysis-menu');
+  btnAnalysis?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = dropAnalysis?.classList.contains('open');
+    dropRessort?.classList.remove('open');
+    wrapRessort?.classList.remove('open');
+    dropAnalysis?.classList.toggle('open', !isOpen);
+    wrapAnalysis?.classList.toggle('open', !isOpen);
+  });
+
+  // Klick außerhalb schließt beide Dropdowns
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#wrap-analysis-menu')) {
+      dropAnalysis?.classList.remove('open');
+      wrapAnalysis?.classList.remove('open');
+    }
+    if (!e.target.closest('#wrap-ressort-menu')) {
+      dropRessort?.classList.remove('open');
+      wrapRessort?.classList.remove('open');
+    }
+  });
+
+  // Widget Toggles im Dropdown-Menü
+  document.querySelectorAll('#analysis-menu-dropdown .submenu-item[data-widget]').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleWidget(item.dataset.widget);
+    });
+  });
+
+  // Entfernen-Buttons auf Widget-Karten
+  document.getElementById('active-widgets-container')?.addEventListener('click', (e) => {
+    const removeBtn = e.target.closest('[data-remove-widget]');
+    if (removeBtn) {
+      toggleWidget(removeBtn.dataset.removeWidget);
+    }
+  });
+
+  // Aktionen im Auswertungs-Menü
+  document.getElementById('btn-clear-all-widgets')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    state.active_widgets = [];
+    saveState(state);
+    renderResults();
+    dropAnalysis?.classList.remove('open');
+    wrapAnalysis?.classList.remove('open');
+  });
+
+  const applyRecommended = (e) => {
+    if (e) e.stopPropagation();
+    state.active_widgets = [...RECOMMENDED_WIDGETS];
+    saveState(state);
+    renderResults();
+    dropAnalysis?.classList.remove('open');
+    wrapAnalysis?.classList.remove('open');
+  };
+  document.getElementById('btn-recommended-widgets')?.addEventListener('click', applyRecommended);
+  document.getElementById('btn-empty-quickstart')?.addEventListener('click', applyRecommended);
+
+  // Dossier Drawer Schließen / Bestätigen
+  document.getElementById('btn-close-dossier')?.addEventListener('click', closeDossier);
+  document.getElementById('btn-apply-dossier')?.addEventListener('click', closeDossier);
+  document.getElementById('dossier-backdrop')?.addEventListener('click', (e) => {
+    if (e.target.id === 'dossier-backdrop') closeDossier();
+  });
+
+  // Watchlist Modal Öffnen / Schließen
+  document.getElementById('btn-edit-watchlist')?.addEventListener('click', openWatchlistModal);
+  document.getElementById('btn-close-watchlist-modal')?.addEventListener('click', closeWatchlistModal);
+  document.getElementById('btn-save-watchlist')?.addEventListener('click', closeWatchlistModal);
+  document.getElementById('watchlist-modal-backdrop')?.addEventListener('click', (e) => {
+    if (e.target.id === 'watchlist-modal-backdrop') closeWatchlistModal();
+  });
+
+  // Locked Ressort Modal Schließen
+  const closeLockedModal = () => {
+    const m = document.getElementById('locked-ressort-modal');
+    if (m) m.style.display = 'none';
+  };
+  document.getElementById('btn-close-locked-modal')?.addEventListener('click', closeLockedModal);
+  document.getElementById('btn-confirm-locked-modal')?.addEventListener('click', closeLockedModal);
+  document.getElementById('locked-ressort-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'locked-ressort-modal') closeLockedModal();
+  });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 if (URL_SESSION_ID && !URL_TEAM) {
@@ -1339,16 +2344,36 @@ if (URL_SESSION_ID && !URL_TEAM) {
   showTeamPicker();
 } else {
   state = loadState();
+  const hadLocalStorage = state._fromLocalStorage;
+  delete state._fromLocalStorage;  // Flag nicht persistieren
   if (URL_SESSION_ID) {
     state.session_id = URL_SESSION_ID;
     if (URL_TEAM)   state.team_id = URL_TEAM;
   }
-  // current_periode auf erste offene Periode setzen (Fortschritte + Lehrer-Freigabe)
-  const lockedOnLoad    = state.perioden.filter(p => p.locked).length;
-  const teacherOnLoad   = getTeacherFreigabe();
-  const maxAllowed      = Math.min(lockedOnLoad, teacherOnLoad - 1, state.kurs_konfig.perioden_anzahl - 1);
-  if (state.current_periode > maxAllowed) state.current_periode = maxAllowed;
-  saveState(state);
-  renderAll();
-  startPolling();
+
+  if (URL_SESSION_ID && !hadLocalStorage) {
+    // Kein localStorage vorhanden (neues Gerät, Cache gelöscht, Inkognito):
+    // Zuerst Server-State abrufen, um gespeicherte Entscheidungen wiederherzustellen.
+    // Erst danach speichern + pushen, damit nichts überschrieben wird.
+    apiRestoreState().then(restored => {
+      if (restored) {
+        console.info('[Kassensturz] State vom Server wiederhergestellt.');
+      }
+      saveState(state);
+      setupNewsroomEvents();
+      renderAll();
+      startPolling();
+    });
+  } else {
+    // localStorage vorhanden oder Offline-Modus: normal starten
+    // current_periode auf erste offene Periode setzen (Fortschritte + Lehrer-Freigabe)
+    const lockedOnLoad    = state.perioden.filter(p => p.locked).length;
+    const teacherOnLoad   = getTeacherFreigabe();
+    const maxAllowed      = Math.min(lockedOnLoad, teacherOnLoad - 1, state.kurs_konfig.perioden_anzahl - 1);
+    if (state.current_periode > maxAllowed) state.current_periode = maxAllowed;
+    saveState(state);
+    setupNewsroomEvents();
+    renderAll();
+    startPolling();
+  }
 }
