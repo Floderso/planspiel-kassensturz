@@ -1,3 +1,13 @@
 .DS_Store
 *.log
 node_modules/
+
+# Entwurfsmaterial mit lizenzierten Schriften (Fontshare-EULA verbietet
+# Weitergabe) — liegt lokal, gehoert nicht in die Git-Historie
+Designe idehen planspiel/
+
+# Cloudflare-Wrangler-Zwischenstaende
+.wrangler/
+
+# Bespoke-Stencil-Schriftdateien (Fontshare-EULA, siehe ui/fonts/README.md)
+makro-planspiel/ui/fonts/*.woff2
