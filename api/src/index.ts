@@ -88,6 +88,7 @@ type SessionData = {
   lernziele: Lernziel[];      // Lernziele der Session (Admin-gesetzt)
   perioden_freigegeben: number;              // Anzahl freigegebener Perioden (Lehrperson-Steuerung)
   perioden_laenge_jahre: number | number[];  // Länge je Periode in Jahren (Zahl oder Array)
+  perioden_werkzeuge?: Record<string, string[]>; // Freigegebene Ressorts je Periode (Admin-Scaffolding)
 };
 
 // ── Hilfsfunktionen ───────────────────────────────────────────────────────────
@@ -106,7 +107,7 @@ async function getSession(kv: KVNamespace, id: string): Promise<SessionData | nu
   return JSON.parse(raw) as SessionData;
 }
 
-const SESSION_TTL = 14 * 24 * 3600; // 14 Tage
+const SESSION_TTL = 180 * 24 * 3600; // 180 Tage (~1 Semester)
 
 async function putSession(kv: KVNamespace, session: SessionData): Promise<void> {
   await kv.put(`session:${session.id}`, JSON.stringify(session), {
@@ -168,6 +169,7 @@ app.post('/api/sessions', async (c) => {
     schocks:             [],
     lernziele:            Array.isArray(body.lernziele) ? (body.lernziele as Lernziel[]) : [],
     perioden_freigegeben: 1,
+    perioden_werkzeuge:   body.perioden_werkzeuge && typeof body.perioden_werkzeuge === 'object' ? body.perioden_werkzeuge : undefined,
     created_at:           now,
     expires_at:           new Date(Date.now() + SESSION_TTL * 1000).toISOString(),
     teams:                {},
@@ -182,7 +184,8 @@ app.post('/api/sessions', async (c) => {
   const laengenParam = Array.isArray(perioden_laenge_jahre)
     ? perioden_laenge_jahre.join(',')
     : String(perioden_laenge_jahre);
-  const baseParams  = `session=${id}&perioden=${session.perioden_anzahl}&teams=${session.team_groesse}&sandbox=${session.sandbox}&name=${encodeURIComponent(session.name)}&laengen=${laengenParam}`;
+  const werkzeugeParam = session.perioden_werkzeuge ? `&werkzeuge=${encodeURIComponent(JSON.stringify(session.perioden_werkzeuge))}` : '';
+  const baseParams  = `session=${id}&perioden=${session.perioden_anzahl}&teams=${session.team_groesse}&sandbox=${session.sandbox}&name=${encodeURIComponent(session.name)}&laengen=${laengenParam}${werkzeugeParam}`;
   const join_url    = `${origin}/planspiel-kassensturz/index.html?${baseParams}`;
   const admin_url   = `${origin}/planspiel-kassensturz/admin.html?session=${id}&token=${admin_token}`;
 
@@ -516,6 +519,29 @@ app.put('/api/sessions/:id/freigabe', async (c) => {
 });
 
 /**
+ * PUT /api/sessions/:id/werkzeuge?token=...
+ * Setzt die freigegebenen Werkzeuge / Ressorts je Periode (Admin only).
+ *
+ * Body: { perioden_werkzeuge: Record<string, string[]> }
+ */
+app.put('/api/sessions/:id/werkzeuge', async (c) => {
+  const session = await getSession(c.env.SESSIONS, c.req.param('id'));
+  if (!session) return c.json({ error: 'Session nicht gefunden' }, 404);
+  if (!requireToken(session, c.req.query('token'))) {
+    return c.json({ error: 'Nicht autorisiert' }, 403);
+  }
+
+  const { perioden_werkzeuge } = await c.req.json<{ perioden_werkzeuge: Record<string, string[]> }>();
+  if (!perioden_werkzeuge || typeof perioden_werkzeuge !== 'object') {
+    return c.json({ error: 'perioden_werkzeuge muss ein Objekt sein' }, 400);
+  }
+
+  session.perioden_werkzeuge = perioden_werkzeuge;
+  await putSession(c.env.SESSIONS, session);
+  return c.json({ ok: true, perioden_werkzeuge: session.perioden_werkzeuge });
+});
+
+/**
  * GET /api/sessions/:id/results
  * Parameter aller Teams — Frontend berechnet KPIs client-seitig.
  */
@@ -537,6 +563,7 @@ app.get('/api/sessions/:id/results', async (c) => {
     teams:                 results,
     schocks:               session.schocks ?? [],
     lernziele:             session.lernziele ?? [],
+    perioden_werkzeuge:    session.perioden_werkzeuge ?? null,
   });
 });
 
