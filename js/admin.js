@@ -79,6 +79,135 @@ function getTeamNames() {
     .filter(Boolean);
 }
 
+// ── Didaktisches Scaffolding (Werkzeug-Steuerung je Periode) ──────────────────
+
+const RESSORTS = [
+  { id: 'finanzen',   name: 'Finanzen & Steuern',      icon: '', color: '#2563EB' },
+  { id: 'soziales',   name: 'Arbeit & Soziales',       icon: '', color: '#0D9488' },
+  { id: 'klima',      name: 'Klima & Transformation',  icon: '', color: '#16A34A' },
+  { id: 'wirtschaft', name: 'Wirtschaft & Standort',   icon: '', color: '#EA580C' }
+];
+
+const SCAFFOLD_PRESETS = {
+  scaffolding: (n) => {
+    const m = {};
+    for (let i = 0; i < n; i++) {
+      if (i === 0) m[i] = ['finanzen'];
+      else if (i === 1) m[i] = ['finanzen', 'soziales'];
+      else if (i === 2) m[i] = ['finanzen', 'soziales', 'klima'];
+      else m[i] = ['finanzen', 'soziales', 'klima', 'wirtschaft'];
+    }
+    return m;
+  },
+  klima: (n) => {
+    const m = {};
+    for (let i = 0; i < n; i++) {
+      if (i <= 1) m[i] = ['finanzen', 'klima'];
+      else m[i] = ['finanzen', 'soziales', 'klima', 'wirtschaft'];
+    }
+    return m;
+  },
+  soziales: (n) => {
+    const m = {};
+    for (let i = 0; i < n; i++) {
+      if (i <= 1) m[i] = ['finanzen', 'soziales'];
+      else m[i] = ['finanzen', 'soziales', 'klima', 'wirtschaft'];
+    }
+    return m;
+  },
+  all: (n) => {
+    const m = {};
+    for (let i = 0; i < n; i++) {
+      m[i] = ['finanzen', 'soziales', 'klima', 'wirtschaft'];
+    }
+    return m;
+  }
+};
+
+let setupScaffoldState = SCAFFOLD_PRESETS.scaffolding(5);
+let dashScaffoldState = null;
+
+function renderScaffoldMatrix(containerId, stateMap, numPeriods, onChange) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  let html = `
+    <table class="scaffold-table">
+      <thead>
+        <tr>
+          <th>Periode</th>
+          ${RESSORTS.map(r => `<th style="color:${r.color}">${esc(r.name)}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  for (let i = 0; i < numPeriods; i++) {
+    const activeRessorts = stateMap[i] || stateMap[String(i)] || [];
+    html += `
+      <tr>
+        <td style="font-weight:600; text-align:left;">
+          Periode ${i + 1}
+        </td>
+        ${RESSORTS.map(r => {
+          const isActive = activeRessorts.includes(r.id);
+          return `
+            <td>
+              <div class="scaffold-cell-check ${isActive ? 'active' : 'inactive'}"
+                   data-periode="${i}" data-ressort="${r.id}" title="${isActive ? 'Klicken zum Sperren' : 'Klicken zum Freischalten'}">
+                <span>${isActive ? 'Aktiv' : 'Gesperrt'}</span>
+              </div>
+            </td>
+          `;
+        }).join('')}
+      </tr>
+    `;
+  }
+
+  html += `</tbody></table>`;
+  container.innerHTML = html;
+
+  container.querySelectorAll('.scaffold-cell-check').forEach(cell => {
+    cell.onclick = () => {
+      const pIdx = parseInt(cell.dataset.periode);
+      const rId = cell.dataset.ressort;
+      let list = stateMap[pIdx] || stateMap[String(pIdx)] || [];
+      if (list.includes(rId)) {
+        list = list.filter(id => id !== rId);
+      } else {
+        list = [...list, rId];
+      }
+      stateMap[pIdx] = list;
+      if (onChange) onChange(stateMap);
+      renderScaffoldMatrix(containerId, stateMap, numPeriods, onChange);
+    };
+  });
+}
+
+function wireScaffoldPresets(presetsContainerId, matrixContainerId, getState, setState, getNumPeriods) {
+  const container = document.getElementById(presetsContainerId);
+  if (!container) return;
+
+  container.querySelectorAll('.preset-pill').forEach(pill => {
+    pill.onclick = () => {
+      container.querySelectorAll('.preset-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+
+      const preset = pill.dataset.preset;
+      const n = getNumPeriods();
+      if (preset !== 'custom' && SCAFFOLD_PRESETS[preset]) {
+        const newState = SCAFFOLD_PRESETS[preset](n);
+        setState(newState);
+        renderScaffoldMatrix(matrixContainerId, newState, n, (updated) => {
+          setState(updated);
+          container.querySelectorAll('.preset-pill').forEach(p => p.classList.remove('active'));
+          container.querySelector('[data-preset="custom"]')?.classList.add('active');
+        });
+      }
+    };
+  });
+}
+
 function initSetup() {
   // Standard-Teams
   addTeam('Team A'); addTeam('Team B'); addTeam('Team C');
@@ -105,6 +234,40 @@ function initSetup() {
       document.getElementById('f-admin-token').value,
       document.getElementById('btn-copy-token')
     );
+  });
+
+  // Scaffolding Setup initialisieren
+  const getPeriodsCount = () => Math.max(1, Math.min(12, +document.getElementById('f-perioden').value || 5));
+  setupScaffoldState = SCAFFOLD_PRESETS.scaffolding(getPeriodsCount());
+
+  renderScaffoldMatrix('scaffold-matrix-setup', setupScaffoldState, getPeriodsCount(), (updated) => {
+    setupScaffoldState = updated;
+    document.querySelectorAll('#scaffold-presets-setup .preset-pill').forEach(p => p.classList.remove('active'));
+    document.querySelector('#scaffold-presets-setup [data-preset="custom"]')?.classList.add('active');
+  });
+
+  wireScaffoldPresets('scaffold-presets-setup', 'scaffold-matrix-setup',
+    () => setupScaffoldState,
+    (s) => { setupScaffoldState = s; },
+    getPeriodsCount
+  );
+
+  document.getElementById('f-perioden').addEventListener('input', () => {
+    const n = getPeriodsCount();
+    const activePill = document.querySelector('#scaffold-presets-setup .preset-pill.active');
+    const presetKey = activePill?.dataset.preset || 'scaffolding';
+    if (presetKey !== 'custom' && SCAFFOLD_PRESETS[presetKey]) {
+      setupScaffoldState = SCAFFOLD_PRESETS[presetKey](n);
+    } else {
+      for (let i = 0; i < n; i++) {
+        if (!setupScaffoldState[i]) setupScaffoldState[i] = ['finanzen', 'soziales', 'klima', 'wirtschaft'];
+      }
+    }
+    renderScaffoldMatrix('scaffold-matrix-setup', setupScaffoldState, n, (updated) => {
+      setupScaffoldState = updated;
+      document.querySelectorAll('#scaffold-presets-setup .preset-pill').forEach(p => p.classList.remove('active'));
+      document.querySelector('#scaffold-presets-setup [data-preset="custom"]')?.classList.add('active');
+    });
   });
 
   // CSV-Upload im Setup-Formular (wird nach Session-Erstellung hochgeladen)
@@ -165,6 +328,7 @@ async function createSession() {
         min_teilnahme_quote: 0.5,
         perioden_laenge_jahre,
         lernziele,
+        perioden_werkzeuge:  setupScaffoldState,
       }),
     });
 
@@ -191,7 +355,8 @@ async function createSession() {
     const laengenParam = Array.isArray(perioden_laenge_jahre)
       ? perioden_laenge_jahre.join(',')
       : String(perioden_laenge_jahre);
-    const join_url = `${origin}index.html?session=${data.session_id}&perioden=${perioden}&teams=${groesse}&sandbox=${sandboxOn}&name=${encodeURIComponent(name)}&laengen=${laengenParam}&level=${level}`;
+    const werkzeugeParam = encodeURIComponent(JSON.stringify(setupScaffoldState));
+    const join_url = `${origin}index.html?session=${data.session_id}&perioden=${perioden}&teams=${groesse}&sandbox=${sandboxOn}&name=${encodeURIComponent(name)}&laengen=${laengenParam}&level=${level}&werkzeuge=${werkzeugeParam}`;
 
     startDashboard(data.session_id, data.admin_token, join_url, { name, perioden, groesse, teams });
   } catch (e) {
@@ -322,13 +487,15 @@ function renderDashboard(session) {
     ? session.perioden_laenge_jahre.join(',')
     : String(session.perioden_laenge_jahre ?? 4);
   const adminOrigin  = location.origin + location.pathname.replace('admin.html', '');
+  const werkzeugeParam2 = session.perioden_werkzeuge ? `&werkzeuge=${encodeURIComponent(JSON.stringify(session.perioden_werkzeuge))}` : '';
   const freshJoinUrl = `${adminOrigin}index.html?session=${session.id}`
     + `&perioden=${session.perioden_anzahl}`
     + `&teams=${session.team_groesse}`
     + `&sandbox=${session.sandbox}`
     + `&name=${encodeURIComponent(session.name)}`
     + `&laengen=${laengenParam2}`
-    + `&level=${loadLevel(session.id)}`;
+    + `&level=${loadLevel(session.id)}`
+    + werkzeugeParam2;
   if (joinUrlGlobal !== freshJoinUrl) {
     joinUrlGlobal = freshJoinUrl;
     const joinDisplay = document.getElementById('join-url-display');
@@ -393,6 +560,13 @@ function renderDashboard(session) {
 
   // Freigabe-Panel bei jedem Poll aktualisieren
   renderFreigabePanel(session);
+
+  // Scaffolding-Steuerung aktualisieren
+  try {
+    renderScaffoldDashboard(session);
+  } catch (e) {
+    console.error('renderScaffoldDashboard:', e);
+  }
 
   // Schock-Panel einmalig initialisieren (Fehler dürfen Tabelle nicht blockieren)
   if (!schockPanelReady) {
@@ -721,6 +895,65 @@ function renderSchockPanel(session) {
       newBtn.disabled = false;
       newBtn.textContent = 'Schocks speichern';
     }
+  });
+}
+
+// ── Didaktisches Scaffolding im Dashboard ─────────────────────────────────────
+
+let dashScaffoldReady = false;
+
+function renderScaffoldDashboard(session) {
+  const panel = document.getElementById('scaffold-panel-dash');
+  if (!panel) return;
+
+  const n = session.perioden_anzahl ?? 5;
+  if (!dashScaffoldState) {
+    dashScaffoldState = session.perioden_werkzeuge || SCAFFOLD_PRESETS.scaffolding(n);
+  }
+
+  if (!dashScaffoldReady) {
+    wireScaffoldPresets('scaffold-presets-dash', 'scaffold-matrix-dash',
+      () => dashScaffoldState,
+      (s) => { dashScaffoldState = s; },
+      () => n
+    );
+
+    const saveBtn = document.getElementById('btn-save-scaffold');
+    const statusEl = document.getElementById('scaffold-status');
+    saveBtn?.addEventListener('click', async () => {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Speichere …';
+      statusEl.textContent = '';
+      try {
+        const res = await fetch(`${API_BASE}/sessions/${currentSessionId}/werkzeuge?token=${currentToken}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ perioden_werkzeuge: dashScaffoldState }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          statusEl.style.color = 'var(--good)';
+          statusEl.textContent = 'Werkzeug-Freigabe gespeichert — Teams erhalten Update in ~5 Sek.';
+        } else {
+          statusEl.style.color = 'var(--bad)';
+          statusEl.textContent = 'Fehler: ' + (data.error ?? res.statusText);
+        }
+      } catch (_) {
+        statusEl.style.color = 'var(--bad)';
+        statusEl.textContent = 'Netzwerkfehler';
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Werkzeug-Freigabe speichern';
+      }
+    });
+
+    dashScaffoldReady = true;
+  }
+
+  renderScaffoldMatrix('scaffold-matrix-dash', dashScaffoldState, n, (updated) => {
+    dashScaffoldState = updated;
+    document.querySelectorAll('#scaffold-presets-dash .preset-pill').forEach(p => p.classList.remove('active'));
+    document.querySelector('#scaffold-presets-dash [data-preset="custom"]')?.classList.add('active');
   });
 }
 
