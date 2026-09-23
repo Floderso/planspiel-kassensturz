@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<!-- AUSGEARBEITETER ENTWURF, bedienbar. Echte Engine. Der Rundenschluss ist
+     gesperrt, solange eine Mappe offen ist oder ein Einspruch steht. -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Der Verhandlungstisch — Entwurf</title>
+<link rel="stylesheet" href="../../css/schriften.css">
+<style>
+:root{
+  --filz:#3C4D46; --filz-tief:#33423C; --papier:#FBF8F0; --karton:#DECFAC;
+  --tinte:#161A16; --grau:#585F54; --zettel:#F3E483;
+  --fin:#17406B; --soz:#7D1C4B; --umw:#155A41; --wir:#7A3E0C;
+  /* Nebenton auf dem abgetoenten Feld der Mappe: #585F54 haelt dort nur
+     4,29:1. Gemessen nachgedunkelt auf 4,6:1. */
+  --grau-mappe:#545A50;
+  --gut:#125C36; --schlecht:#8E2418;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--filz);color:var(--papier);font-family:Inter,system-ui,sans-serif;
+  font-size:16px;line-height:1.42;font-variant-numeric:tabular-nums;
+  background-image:radial-gradient(circle at 18% 12%,rgba(255,255,255,.04),transparent 55%),
+                   radial-gradient(circle at 84% 80%,rgba(0,0,0,.16),transparent 55%)}
+:focus-visible{outline:3px solid var(--zettel);outline-offset:3px;border-radius:2px}
+
+.fahne{background:var(--papier);color:var(--tinte);font-size:13px;padding:7px 20px;font-weight:600}
+.fahne a{color:#17406B}
+
+.kopf{padding:17px 24px 13px;display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}
+.kopf h1{font-family:Newsreader,serif;font-size:28px;font-weight:500}
+#lage{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--zettel)}
+
+/* ── Die Mappen ─────────────────────────────────────────────────────────── */
+#tisch{padding:4px 24px 0;display:grid;gap:20px;align-items:start;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,268px),1fr));max-width:1500px;margin:0 auto}
+.mappe{background:var(--karton);color:var(--tinte);border-radius:2px 9px 2px 2px;
+  padding:0 0 12px;box-shadow:6px 8px 20px rgba(0,0,0,.36);position:relative;
+  display:flex;flex-direction:column}
+.mappe:nth-child(1){transform:rotate(-1deg)}.mappe:nth-child(2){transform:rotate(.8deg)}
+.mappe:nth-child(3){transform:rotate(-.5deg)}.mappe:nth-child(4){transform:rotate(1.1deg)}
+.reiter{position:absolute;top:-13px;right:15px;color:var(--papier);font-size:10px;
+  letter-spacing:.14em;text-transform:uppercase;padding:4px 11px 5px;border-radius:3px 3px 0 0;
+  font-weight:700}
+.m-fin .reiter{background:var(--fin)}.m-soz .reiter{background:var(--soz)}
+.m-umw .reiter{background:var(--umw)}.m-wir .reiter{background:var(--wir)}
+.mappe h2{font-size:15px;font-weight:700;padding:16px 14px 8px;border-bottom:2px solid rgba(0,0,0,.2)}
+.blatt{background:var(--papier);margin:9px 9px 0;padding:9px 10px;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.pos{display:grid;grid-template-columns:1fr auto;gap:2px 9px;align-items:baseline;
+  padding:3px 4px;margin:0 -4px;border-bottom:1px dotted #CFC8B4}
+.pos:last-child{border-bottom:0}
+.pos .n{font-size:12.5px;cursor:pointer}
+.pos .fn{font-size:.72em;vertical-align:super;line-height:0;color:var(--wir);
+  padding-left:.22em;text-decoration:none}
+.pos .fn:hover{text-decoration:underline}
+.pos .v{display:flex;align-items:baseline;gap:5px;white-space:nowrap}
+.feld{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;text-align:right;
+  color:var(--tinte);background:#F1ECDE;border:1px solid #C6BEA8;padding:2px 5px;width:5.3em;
+  font-variant-numeric:tabular-nums}
+.feld:hover{border-color:var(--tinte)}
+.feld:focus{outline:none;border-color:var(--fin);box-shadow:0 0 0 2px rgba(23,64,107,.28)}
+.klappe{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--tinte);
+  background:#F1ECDE;border:1px solid #C6BEA8;padding:2px 9px;cursor:pointer;width:5.3em}
+.klappe[aria-pressed="true"]{background:var(--umw);color:var(--papier);border-color:var(--umw)}
+.pos .eh{font-size:10.5px;color:var(--grau);min-width:3.6em;text-align:left}
+.pos.gefordert{background:#F3EAD0;box-shadow:-5px 0 0 var(--wir)}
+.pos .fehl{grid-column:1/-1;font-size:11px;color:var(--schlecht);font-weight:700;line-height:1.35}
+.pos[data-fehler="true"]{background:#F7E6E2;box-shadow:-5px 0 0 var(--schlecht)}
+
+.wacht{margin:10px 9px 0;padding:8px 10px 7px;background:rgba(0,0,0,.07);
+  display:grid;grid-template-columns:1fr auto;gap:1px 8px;align-items:baseline;font-size:11.5px}
+.wacht b{font-weight:700}
+.wacht .w{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;text-align:right}
+.wacht .w em{font-style:normal;font-size:10.5px;font-weight:400;color:var(--grau-mappe);font-family:Inter,sans-serif}
+.wacht .d{grid-column:1/-1;text-align:right;font-family:'JetBrains Mono',monospace;
+  font-size:11px;color:var(--grau-mappe)}
+.wacht[data-richtung="besser"] .d{color:var(--gut)}
+.wacht[data-richtung="schlechter"] .d{color:var(--schlecht)}
+
+.stand{margin:10px 9px 0;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+  padding:6px 9px;font-weight:700;text-align:center}
+.mappe[data-stand="gezeichnet"] .stand{background:var(--gut);color:var(--papier)}
+.mappe[data-stand="offen"] .stand{background:#8A6B12;color:var(--papier)}
+.mappe[data-stand="einspruch"] .stand{background:var(--schlecht);color:var(--papier)}
+.mappe[data-stand="gezeichnet"]{outline:3px solid var(--gut);outline-offset:-3px}
+.mappe[data-stand="einspruch"]{outline:3px solid var(--schlecht);outline-offset:-3px}
+.knoepfe{display:flex;gap:7px;margin:9px 9px 0}
+.knoepfe button{flex:1;font:inherit;font-size:12px;font-weight:600;padding:7px 5px;
+  border:1px solid var(--tinte);background:#F1ECDE;color:var(--tinte);cursor:pointer;border-radius:2px}
+.knoepfe button:hover{background:var(--papier)}
+.knoepfe .zeichnen[aria-pressed="true"]{background:var(--gut);color:var(--papier);border-color:var(--gut)}
+.knoepfe .einspruch[aria-pressed="true"]{background:var(--schlecht);color:var(--papier);
+  border-color:var(--schlecht)}
+
+/* ── Das gemeinsame Blatt ───────────────────────────────────────────────── */
+.mitte{background:var(--papier);color:var(--tinte);padding:21px 22px 22px;
+  box-shadow:0 12px 34px rgba(0,0,0,.42);max-width:1080px;margin:26px auto 0;position:relative}
+.mitte h2{font-family:Newsreader,serif;font-size:24px;font-weight:500;margin-bottom:2px}
+.mitte .bu{font-size:12.5px;color:var(--grau);margin-bottom:15px}
+#bilanz{display:grid;gap:15px;grid-template-columns:repeat(auto-fit,minmax(min(100%,152px),1fr));
+  border-top:2px solid var(--tinte);border-bottom:2px solid var(--tinte);padding:14px 0}
+.kz .n{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--grau)}
+.kz .v{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;letter-spacing:-.02em}
+.kz .v em{font-style:normal;font-size:11px;font-weight:400;color:var(--grau);font-family:Inter,sans-serif}
+.kz .d{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--grau)}
+.kz[data-richtung="besser"] .d{color:var(--gut)}
+.kz[data-richtung="schlechter"] .d{color:var(--schlecht)}
+
+#streit{margin-top:14px;font-size:14px;line-height:1.5;max-width:84ch;
+  border-left:4px solid var(--schlecht);padding:9px 12px;background:#F6E9E5}
+#streit[data-ok="true"]{border-left-color:var(--gut);background:#E6F1E9}
+
+h3{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--grau);
+  margin:18px 0 7px;border-top:1px solid #D5CEBC;padding-top:11px}
+#forderungen .f{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:baseline;
+  font-size:13px;padding:3px 0;border-bottom:1px dotted #D5CEBC}
+#forderungen .q{font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;
+  color:var(--papier);padding:2px 6px;border-radius:2px}
+.q-fin{background:var(--fin)}.q-soz{background:var(--soz)}
+.q-umw{background:var(--umw)}.q-wir{background:var(--wir)}
+#forderungen b{font-family:'JetBrains Mono',monospace;font-weight:700;white-space:nowrap}
+#forderungen .leer,#protokoll .leer,#vorjahre .leer{font-size:13px;color:var(--grau);font-style:italic}
+
+#unterschriften{display:flex;gap:22px;flex-wrap:wrap;margin-top:8px}
+.us{flex:1;min-width:116px}
+.us .line{border-bottom:1px solid var(--tinte);height:30px;font-family:Newsreader,serif;
+  font-style:italic;font-size:20px;padding-left:5px}
+.us[data-stand="gezeichnet"] .line{color:var(--gut)}
+.us[data-stand="einspruch"] .line{color:var(--schlecht);font-style:normal;font-weight:700}
+.us .l{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--grau);margin-top:4px}
+
+/* ── Unten ──────────────────────────────────────────────────────────────── */
+.unten{max-width:1080px;margin:22px auto 0;padding:0 24px;display:grid;gap:18px;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr))}
+.kasten{background:var(--filz-tief);border:1px solid #4F6058;padding:15px}
+.kasten h2{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--zettel);margin-bottom:10px}
+#abschluss{font:inherit;font-weight:700;font-size:15px;background:var(--zettel);color:#2B2605;
+  border:0;padding:11px 18px;cursor:pointer;width:100%;border-radius:2px}
+#abschluss:hover:not(:disabled){background:#F7EA9A}
+#abschluss:disabled{background:#56645C;color:#D6DED8;cursor:not-allowed}
+#sperre{font-size:12.5px;color:#C8D2CB;margin-top:9px;line-height:1.45}
+#protokoll{margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#C8D2CB}
+#protokoll .e{padding:2px 0}#protokoll b{color:var(--papier)}
+#protokoll .leer{color:#C8D2CB}
+#quellen-liste{list-style:none;display:grid;gap:13px}
+#quellen-liste li{display:grid;grid-template-columns:1.6em 1fr;gap:9px}
+#quellen-liste .nr{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--zettel);font-weight:700}
+#quellen-liste .betrifft{font-size:12px;font-weight:600;color:#EDF1EE}
+#quellen-liste .formel{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#C8D2CB;
+  margin-top:3px;line-height:1.5;word-break:break-word}
+#quellen-liste .ref{font-size:11.5px;color:#BCC8C0;margin-top:3px}
+#quellen-liste .note{font-size:11.5px;color:#B0BDB5;margin-top:2px;font-style:italic}
+
+.erklaer{max-width:1080px;margin:0 auto;padding:24px 24px 48px;display:grid;gap:20px;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,272px),1fr))}
+.erklaer h3{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--zettel);margin:0 0 5px;border:0;padding:0}
+.erklaer p{font-size:14px;color:#C8D2CB;max-width:56ch}
+.erklaer b{color:var(--papier)}
+</style>
+</head>
+<body>
+
+<p class="fahne">Ausgearbeiteter Entwurf — <b>bedienbar</b>, rechnet mit der echten Engine.
+  <a href="index.html">Zurück zur Übersicht der zehn Ansätze</a></p>
+
+<header class="kopf">
+  <h1>Der Verhandlungstisch</h1>
+  <p id="lage"></p>
+</header>
+
+<main id="tisch"></main>
+
+<section class="mitte" aria-labelledby="m-titel">
+  <h2 id="m-titel">Gemeinsames Blatt — Stand der Verhandlung</h2>
+  <p class="bu">Was gälte, wenn jetzt geschlossen würde. Verbindlich wird es erst mit der
+     vierten Unterschrift.</p>
+  <div id="bilanz"></div>
+  <p id="streit"></p>
+
+  <h3>Was auf dem Tisch liegt</h3>
+  <div id="forderungen"></div>
+
+  <h3>Unterschriften</h3>
+  <div id="unterschriften"></div>
+</section>
+
+<div class="unten">
+  <div class="kasten">
+    <h2>Sitzung schließen</h2>
+    <button type="button" id="abschluss"></button>
+    <p id="sperre"></p>
+    <div id="protokoll"></div>
+  </div>
+  <div class="kasten">
+    <h2 id="quellen">Woher die Zahlen kommen</h2>
+    <ol id="quellen-liste"></ol>
+  </div>
+</div>
+
+<footer class="erklaer">
+  <div><h3>Die Idee</h3>
+    <p>Das Planspiel ist ein <b>Gruppenspiel</b>, und diese Oberfläche gibt das zu. Nicht ein
+       Kabinett stellt Regler, sondern vier Ressorts legen Mappen ein — und keine Zahl wird
+       verbindlich, bevor vier Unterschriften stehen. Wer nach der Unterschrift nachbessert,
+       muss neu zeichnen.</p></div>
+  <div><h3>Was das gut kann</h3>
+    <p>Macht den <b>Konflikt</b> zum Gegenstand der Oberfläche statt zum Nebengespräch. Der
+       Einspruch ist ein echter Zustand, der den Rundenschluss sperrt — nicht eine Notiz am
+       Rand. Und man sieht jederzeit, welches Ressort welche Forderung eingebracht hat.</p></div>
+  <div><h3>Was das kostet</h3>
+    <p>Setzt Gruppenarbeit voraus. Wer allein spielt, zeichnet vier Mappen selbst und die Form
+       läuft leer. Für den echten Betrieb bräuchte dieser Entwurf außerdem einen
+       <b>Mehrspielerzustand im Server</b> — hier liegt er nur in dieser einen Ansicht.</p></div>
+</footer>
+
+<script type="module" src="../../js/entwurf/tisch.js"></script>
+</body>
+</html>

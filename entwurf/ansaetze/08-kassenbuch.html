@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<!-- AUSGEARBEITETER ENTWURF, bedienbar. Echte Engine. Die Spalten gehen auf:
+     der ausgewiesene Saldo entsteht aus den ausgewiesenen Summanden. -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Das Kassenbuch — Entwurf</title>
+<link rel="stylesheet" href="../../css/schriften.css">
+<style>
+:root{
+  --buch:#E6ECDF; --buch-hell:#F0F4EA; --linie:#A5B996; --linie-stark:#56704A;
+  --tinte:#141C0E; --blau:#17356A; --rot:#7E1E15; --grau:#4D5647; --gut:#155C39;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:#C6D2BB;color:var(--tinte);font-family:Inter,system-ui,sans-serif;
+  font-size:16px;line-height:1.4;font-variant-numeric:tabular-nums}
+:focus-visible{outline:3px solid var(--blau);outline-offset:2px}
+
+.fahne{background:var(--tinte);color:var(--buch);font-size:13px;padding:7px 20px}
+.fahne a{color:#C7DCA9}
+
+.buch{max-width:1340px;margin:0 auto;background:var(--buch);min-height:100vh;
+  box-shadow:0 0 24px rgba(0,0,0,.25);position:relative;
+  background-image:repeating-linear-gradient(180deg,transparent 0 25px,rgba(86,112,74,.16) 25px 26px)}
+.buch::before{content:'';position:absolute;left:52px;top:0;bottom:0;width:1px;background:var(--rot);opacity:.45}
+.buch::after{content:'';position:absolute;left:56px;top:0;bottom:0;width:1px;background:var(--rot);opacity:.45}
+.innen{position:relative;z-index:1}
+
+.kopf{padding:22px 26px 10px 76px;border-bottom:2px solid var(--linie-stark)}
+.kopf h1{font-family:Newsreader,serif;font-size:30px;font-weight:500}
+#buchkopf{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--grau);margin-top:5px}
+
+h2{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--blau);margin-bottom:7px}
+h3{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--grau);
+  border-bottom:1px solid var(--linie);padding-bottom:4px;margin:14px 0 7px}
+
+/* ── Beschlussspalte und Buch ───────────────────────────────────────────── */
+.raum{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);
+  border-bottom:2px solid var(--linie-stark)}
+@media(max-width:70rem){.raum{grid-template-columns:1fr}}
+.spalte{padding:16px 26px 22px 76px}
+.spalte+.spalte{border-left:2px solid var(--linie-stark);padding-left:26px}
+@media(max-width:70rem){.spalte+.spalte{border-left:0;padding-left:76px;
+  border-top:2px solid var(--linie-stark)}}
+
+.pos{display:grid;grid-template-columns:3.4em 1fr auto;gap:2px 9px;align-items:baseline;
+  padding:3px 5px;margin:0 -5px;border-bottom:1px dotted var(--linie)}
+.pos .knr{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blau)}
+.pos .n{font-size:13px;cursor:pointer}
+.pos .fn{font-size:.72em;vertical-align:super;line-height:0;color:var(--rot);
+  padding-left:.22em;text-decoration:none}
+.pos .fn:hover{text-decoration:underline}
+.pos .v{display:flex;align-items:baseline;gap:5px;white-space:nowrap}
+.feld{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;text-align:right;
+  color:var(--tinte);background:var(--buch-hell);border:1px solid var(--linie);padding:2px 5px;
+  width:5.4em;font-variant-numeric:tabular-nums}
+.feld:hover{border-color:var(--tinte)}
+.feld:focus{outline:none;border-color:var(--blau);box-shadow:0 0 0 2px rgba(23,53,106,.25)}
+.klappe{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--tinte);
+  background:var(--buch-hell);border:1px solid var(--linie);padding:2px 9px;cursor:pointer;width:5.4em}
+.klappe[aria-pressed="true"]{background:var(--gut);color:var(--buch);border-color:var(--gut)}
+.pos .eh{font-size:10.5px;color:var(--grau);min-width:3.6em;text-align:left}
+.pos.gebucht{background:#DCE6D0;box-shadow:-5px 0 0 var(--blau)}
+.pos .fehl{grid-column:1/-1;font-size:11px;color:var(--rot);font-weight:700;line-height:1.35}
+.pos[data-fehler="true"]{background:#F1E2DE;box-shadow:-5px 0 0 var(--rot)}
+
+.seiten{display:grid;grid-template-columns:1fr 1fr;gap:0 26px}
+@media(max-width:52rem){.seiten{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:25px}
+th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--grau);font-weight:600;
+  text-align:right;border-bottom:1px solid var(--linie-stark);padding-bottom:1px}
+th.l,th.k{text-align:left}
+td{text-align:right;padding:0;vertical-align:baseline}
+td.l{text-align:left;padding-right:8px}
+td.k{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--blau);
+  text-align:left;width:4.2em}
+td.b{font-family:'JetBrains Mono',monospace;font-size:13.5px;width:7.2em;white-space:nowrap}
+tr.summe td{border-top:1px solid var(--linie-stark);border-bottom:3px double var(--linie-stark);
+  font-weight:700;font-family:'JetBrains Mono',monospace}
+tr.summe td.l{font-family:Inter,sans-serif;letter-spacing:.05em;text-transform:uppercase;font-size:11.5px}
+tr.leer td{color:var(--grau);font-style:italic;text-align:left}
+td.seite[data-seite="soll"]{color:var(--rot)}
+td.seite[data-seite="haben"]{color:var(--gut)}
+
+.journal{padding:16px 26px 20px 76px;border-bottom:2px solid var(--linie-stark)}
+#journal-zahl{font-family:'JetBrains Mono',monospace;color:var(--grau);text-transform:none;
+  letter-spacing:0}
+
+/* ── Abschluss ──────────────────────────────────────────────────────────── */
+.abschluss{padding:18px 26px 20px 76px;border-bottom:2px solid var(--linie-stark)}
+#abschlusszeile{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(min(100%,182px),1fr))}
+.posten .n{font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--grau)}
+.posten .v{font-family:'JetBrains Mono',monospace;font-size:25px;font-weight:700;
+  letter-spacing:-.02em;line-height:1.16}
+.posten .v em{font-style:normal;font-size:11px;font-weight:400;color:var(--grau);
+  font-family:Inter,sans-serif}
+.posten .d{font-family:'JetBrains Mono',monospace;font-size:11.5px;margin-top:1px;color:var(--grau)}
+.posten .d[data-richtung="besser"]{color:var(--gut)}
+.posten .d[data-richtung="schlechter"]{color:var(--rot)}
+.posten.schluss .v{color:var(--rot)}
+#vermerk{margin-top:16px;border-top:1px solid var(--linie);padding-top:10px;
+  font-family:Newsreader,serif;font-size:15.5px;font-style:italic;color:var(--rot);max-width:84ch}
+#vermerk[data-ok="true"]{color:var(--gut)}
+#vermerk::before{content:'Vermerk des Prüfers: ';font-style:normal;font-family:Inter,sans-serif;
+  font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--grau)}
+
+.unten{padding:18px 26px 48px 76px;display:grid;gap:22px;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+#abschluss{font:inherit;font-weight:700;font-size:15px;background:var(--blau);color:var(--buch);
+  border:0;padding:11px 18px;cursor:pointer;width:100%}
+#abschluss:hover:not(:disabled){background:#22478A}
+#abschluss:disabled{background:#8C9785;color:#EDF1E7;cursor:not-allowed}
+#vorjahre{margin-top:12px}
+#vorjahre .leer{font-size:13px;color:var(--grau);font-style:italic}
+#quellen-liste{list-style:none;display:grid;gap:13px}
+#quellen-liste li{display:grid;grid-template-columns:1.6em 1fr;gap:9px}
+#quellen-liste .nr{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--rot);font-weight:700}
+#quellen-liste .betrifft{font-size:12px;font-weight:600}
+#quellen-liste .formel{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--grau);
+  margin-top:3px;line-height:1.5;word-break:break-word}
+#quellen-liste .ref{font-size:11.5px;color:var(--grau);margin-top:3px}
+#quellen-liste .note{font-size:11.5px;color:#5E6757;margin-top:2px;font-style:italic}
+.erklaer p{font-size:14px;color:var(--grau);max-width:58ch;margin-bottom:11px}
+.erklaer b{color:var(--tinte)}
+
+@media(max-width:34rem){
+  .buch::before{left:22px}.buch::after{left:26px}
+  .kopf,.journal,.abschluss,.unten,.spalte,.spalte+.spalte{padding-left:36px;padding-right:16px}
+  table{font-size:12.5px}td.b{width:6em}td.k{width:3.6em}
+  .pos{grid-template-columns:2.8em 1fr auto}
+}
+</style>
+</head>
+<body>
+
+<p class="fahne">Ausgearbeiteter Entwurf — <b>bedienbar</b>, rechnet mit der echten Engine.
+  <a href="index.html">Zurück zur Übersicht der zehn Ansätze</a></p>
+
+<div class="buch"><div class="innen">
+
+<header class="kopf">
+  <h1>Das Kassenbuch</h1>
+  <p id="buchkopf"></p>
+</header>
+
+<div class="raum">
+  <div class="spalte">
+    <h2>Beschlussspalte</h2>
+    <div id="beschluss"></div>
+  </div>
+  <div class="spalte">
+    <h2>Die Aufstellung</h2>
+    <div class="seiten">
+      <div id="soll"></div>
+      <div id="haben"></div>
+    </div>
+  </div>
+</div>
+
+<section class="journal">
+  <h2>Journal dieser Runde · <span id="journal-zahl"></span></h2>
+  <table>
+    <thead><tr><th class="k">Nr.</th><th class="k">Konto</th><th class="l">Buchungstext</th>
+      <th class="l">Seite</th><th>Veränderung</th></tr></thead>
+    <tbody id="journal"></tbody>
+  </table>
+</section>
+
+<section class="abschluss">
+  <h2>Abschluss</h2>
+  <div id="abschlusszeile"></div>
+  <p id="vermerk"></p>
+</section>
+
+<div class="unten">
+  <div>
+    <h2>Rundenabschluss</h2>
+    <button type="button" id="abschluss"></button>
+    <div id="vorjahre"></div>
+  </div>
+  <div>
+    <h2 id="quellen">Woher die Zahlen kommen</h2>
+    <ol id="quellen-liste"></ol>
+  </div>
+  <div class="erklaer">
+    <h2>Die Idee, und was sie kostet</h2>
+    <p>Jede Entscheidung ist eine <b>Buchung mit Gegenkonto</b>. Das Journal zeigt, was in
+      dieser Runde bewegt wurde und auf welcher Seite es wirkt. Soll und Haben stehen
+      nebeneinander, die Differenz ist nicht behauptet, sondern ablesbar.</p>
+    <p><b>Die Spalten gehen auf.</b> Der ausgewiesene Saldo wird aus den ausgewiesenen
+      Summanden gebildet, nicht danebengestellt — sonst stünde unter zwei Zahlen eine dritte,
+      die sich um Cent von ihrer Differenz unterscheidet, und wer nachrechnet, misstraut
+      danach der ganzen Fläche.</p>
+    <p><b>Was es kostet:</b> trocken und voraussetzungsreich. Wer nie eine doppelte
+      Buchführung gesehen hat, liest hier zuerst eine Form und dann erst Politik. Auf
+      schmalen Geräten bricht die Gegenüberstellung von Soll und Haben untereinander — und
+      damit ein Teil der Idee.</p>
+  </div>
+</div>
+
+</div></div>
+
+<script type="module" src="../../js/entwurf/buch.js"></script>
+</body>
+</html>

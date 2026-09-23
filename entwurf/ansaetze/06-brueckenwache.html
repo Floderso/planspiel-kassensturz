@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<!-- AUSGEARBEITETER ENTWURF, bedienbar. Echte Engine, auch die Bahn:
+     die Restrunden werden vorgerollt, nicht extrapoliert. -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Die Brückenwache — Entwurf</title>
+<link rel="stylesheet" href="../../css/schriften.css">
+<style>
+:root{
+  --nacht:#0B1320; --instrument:#111D2C; --feld:#0E1926; --rahmen:#2A3E56;
+  --phosphor:#F0B23C; --see:#6FD2E2; --warn:#F07A67; --gut:#6FD3A0;
+  --text:#DCE8F2; --matt:#93A9BC;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--nacht);color:var(--text);font-family:Inter,system-ui,sans-serif;
+  font-size:16px;line-height:1.45;font-variant-numeric:tabular-nums}
+:focus-visible{outline:3px solid var(--phosphor);outline-offset:3px;border-radius:2px}
+
+.fahne{background:var(--phosphor);color:#231705;font-size:13px;padding:7px 20px;font-weight:700}
+.fahne a{color:#3A2503}
+
+.kopf{padding:15px 22px;border-bottom:1px solid var(--rahmen);display:flex;gap:18px;
+  align-items:baseline;flex-wrap:wrap;background:#0E1826}
+.kopf h1{font-size:19px;letter-spacing:.14em;text-transform:uppercase;font-weight:600}
+#wache{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--phosphor)}
+
+.abschnitt{padding:20px 22px;border-bottom:1px solid var(--rahmen)}
+.abschnitt>h2{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--phosphor);
+  margin-bottom:4px}
+.abschnitt>.bu{font-size:13px;color:var(--matt);margin-bottom:14px;max-width:88ch}
+.abschnitt>.bu b{color:var(--text)}
+
+/* ── Horizont ───────────────────────────────────────────────────────────── */
+#horizont{background:var(--instrument);border:1px solid var(--rahmen);padding:6px}
+#horizont svg{width:100%;height:auto;display:block}
+.legende{display:flex;gap:20px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--matt)}
+.legende span{display:flex;align-items:center;gap:7px}
+.legende i{width:26px;height:0;border-top:3px solid var(--phosphor);display:block}
+.legende i.ohne{border-top:2px dashed #7E96AC}
+#horizont-lage{font-size:14.5px;color:var(--text);margin-top:12px;max-width:82ch;line-height:1.5}
+#horizont-lage b{color:var(--phosphor)}
+
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:14px}
+th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--matt);font-weight:600;
+  text-align:right;border-bottom:1px solid var(--rahmen);padding:0 8px 4px}
+th.j{text-align:left}
+td{text-align:right;padding:4px 8px;border-bottom:1px solid #1A2838;
+  font-family:'JetBrains Mono',monospace}
+td.j{text-align:left;font-family:Inter,sans-serif}
+td.matt{color:var(--matt)}
+tr.jetzt td{background:#152436;color:var(--phosphor);font-weight:700}
+tr.jetzt td.matt{color:#A98A4E}
+
+/* ── Instrumente ────────────────────────────────────────────────────────── */
+#konsole{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,164px),1fr))}
+.uhr{text-align:center}
+.uhr svg{width:100%;max-width:142px;height:auto}
+.uhr .bez{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--matt);margin-top:6px}
+.uhr .abl{font-family:'JetBrains Mono',monospace;font-size:12px;margin-top:2px;color:var(--matt)}
+.uhr[data-richtung="besser"] .abl{color:var(--gut)}
+.uhr[data-richtung="schlechter"] .abl{color:var(--warn)}
+
+#neben{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,208px),1fr));
+  margin-top:20px}
+.nw{background:var(--feld);border:1px solid var(--rahmen);border-left-width:3px;padding:10px 12px}
+.nw[data-richtung="besser"]{border-left-color:var(--gut)}
+.nw[data-richtung="schlechter"]{border-left-color:var(--warn)}
+.nw .n{font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--matt)}
+.nw .v{font-family:'JetBrains Mono',monospace;font-size:21px;font-weight:700;line-height:1.15}
+.nw .v em{font-style:normal;font-size:11px;font-weight:400;color:var(--matt);font-family:Inter,sans-serif}
+.nw .d{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--matt)}
+.nw[data-richtung="besser"] .d{color:var(--gut)}
+.nw[data-richtung="schlechter"] .d{color:var(--warn)}
+.nw .h{font-size:11.5px;color:var(--matt);margin-top:5px;line-height:1.4}
+
+#bremse{margin-top:16px;font-size:13.5px;font-weight:600;padding:9px 12px;
+  border-left:4px solid var(--warn);background:#2A1712;color:#F5B3A4}
+#bremse[data-ok="true"]{border-left-color:var(--gut);background:#0F2A1E;color:#9FE0BE}
+
+/* ── Telegraf ───────────────────────────────────────────────────────────── */
+#telegraf{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr))}
+#telegraf .gruppe h3{font-size:11px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--see);border-bottom:1px solid var(--rahmen);padding-bottom:5px;margin-bottom:9px}
+.stell{background:var(--feld);border:1px solid var(--rahmen);padding:9px 11px;margin-bottom:8px}
+.stell.gestellt{border-color:var(--phosphor);background:#16202C}
+.stell .z{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.stell .n{font-size:13px;color:var(--text);cursor:pointer}
+.stell .fn{font-size:.72em;vertical-align:super;line-height:0;color:var(--phosphor);
+  padding-left:.22em;text-decoration:none}
+.stell .fn:hover{text-decoration:underline}
+.stell .v{display:flex;align-items:baseline;gap:5px;white-space:nowrap}
+.feld{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;text-align:right;
+  color:var(--phosphor);background:#091420;border:1px solid var(--rahmen);padding:2px 6px;
+  width:5.6em;font-variant-numeric:tabular-nums}
+.feld:hover{border-color:var(--see)}
+.feld:focus{outline:none;border-color:var(--phosphor);box-shadow:0 0 0 2px rgba(240,178,60,.35)}
+.klappe{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--phosphor);
+  background:#091420;border:1px solid var(--rahmen);padding:2px 10px;cursor:pointer;width:5.6em}
+.klappe[aria-pressed="true"]{background:#14402F;color:#8FE3BA;border-color:#2C7A58}
+.stell .eh{font-size:11px;color:var(--matt);min-width:3.8em;text-align:left}
+.skala{height:6px;background:#091420;margin-top:8px;position:relative;border:1px solid #1E3048}
+.skala i{position:absolute;top:0;bottom:0;left:0;background:#8A6B2E}
+.stell.gestellt .skala i{background:var(--phosphor)}
+.skala u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--see)}
+.stell .fehl{font-size:11.5px;color:var(--warn);font-weight:600;margin-top:6px;line-height:1.35}
+.stell[data-fehler="true"]{border-color:var(--warn)}
+
+/* ── Logbuch und Quellen ────────────────────────────────────────────────── */
+.unten{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));
+  padding:20px 22px}
+.kasten{background:var(--instrument);border:1px solid var(--rahmen);padding:15px}
+.kasten h2{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--phosphor);
+  margin-bottom:10px}
+#abschluss{font:inherit;font-weight:700;font-size:15px;background:var(--phosphor);color:#231705;
+  border:0;padding:11px 18px;cursor:pointer;width:100%;border-radius:2px}
+#abschluss:hover:not(:disabled){background:#F7C463}
+#abschluss:disabled{background:#2A3646;color:#93A9BC;cursor:not-allowed}
+#logbuch{margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--matt)}
+#logbuch .e{padding:2px 0}#logbuch b{color:var(--text)}
+#logbuch .leer{font-style:italic}
+#quellen-liste{list-style:none;display:grid;gap:13px}
+#quellen-liste li{display:grid;grid-template-columns:1.6em 1fr;gap:9px}
+#quellen-liste .nr{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--phosphor);font-weight:700}
+#quellen-liste .betrifft{font-size:12px;font-weight:600;color:var(--text)}
+#quellen-liste .formel{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#B6C8D8;
+  margin-top:3px;line-height:1.5;word-break:break-word}
+#quellen-liste .ref{font-size:11.5px;color:var(--matt);margin-top:3px}
+#quellen-liste .note{font-size:11.5px;color:#8DA1B4;margin-top:2px;font-style:italic}
+
+.erklaer{padding:4px 22px 48px;display:grid;gap:20px;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr))}
+.erklaer h3{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--phosphor);
+  margin-bottom:5px}
+.erklaer p{font-size:14px;color:var(--matt);max-width:56ch}
+.erklaer b{color:var(--text)}
+
+/* Schmales Geraet: die Bahntabelle hat fuenf Zahlenspalten und passt nicht
+   nebeneinander. Sie bekommt einen eigenen Rollbereich statt die ganze Seite
+   zu verschieben — eine Tabelle darf scrollen, eine Seite nicht. */
+@media(max-width:34rem){
+  .tabellenraum{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tabellenraum table{min-width:430px}
+  th,td{padding-left:5px;padding-right:5px;font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<p class="fahne">Ausgearbeiteter Entwurf — <b>bedienbar</b>, rechnet mit der echten Engine.
+  <a href="index.html">Zurück zur Übersicht der zehn Ansätze</a></p>
+
+<header class="kopf">
+  <h1>Die Brückenwache</h1>
+  <p id="wache"></p>
+</header>
+
+<section class="abschnitt">
+  <h2>Der Horizont</h2>
+  <p class="bu">Wohin der Haushaltssaldo läuft. Die durchgezogene Linie ist der Kurs
+     <b>mit</b> dem jetzigen Beschluss, die gestrichelte der Kurs ohne ihn. Beide Bahnen sind
+     gerechnet, nicht gezeichnet: die Restrunden werden mit denselben Funktionen vorgerollt,
+     mit denen auch gespielt wird.</p>
+  <div id="horizont"></div>
+  <div class="legende">
+    <span><i></i> mit diesem Beschluss</span>
+    <span><i class="ohne"></i> wenn ab jetzt nichts mehr entschieden wird</span>
+  </div>
+  <p id="horizont-lage"></p>
+  <div class="tabellenraum" tabindex="0" role="region" aria-label="Die Bahn als Zahlen">
+    <table>
+      <caption class="bu" style="text-align:left;caption-side:top">Dieselbe Bahn als Zahlen.</caption>
+      <thead><tr><th class="j">Periode</th><th>Saldo</th><th>ohne Beschluss</th>
+        <th>Schuldenquote</th><th>CO₂ Mio. t</th></tr></thead>
+      <tbody id="bahn-tabelle"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="abschnitt">
+  <h2>Die Instrumente</h2>
+  <p class="bu">Jeder Zeiger trägt seine Ziffer — ein Instrument, das nur über einen Winkel
+     spricht, ist am Beamer unlesbar und für eine Vorlesesoftware stumm.</p>
+  <div id="konsole"></div>
+  <div id="neben"></div>
+  <p id="bremse"></p>
+</section>
+
+<section class="abschnitt">
+  <h2>Der Maschinentelegraf</h2>
+  <p class="bu">Die blaue Marke zeigt, wo der Hebel zum Wachbeginn stand.</p>
+  <div id="telegraf"></div>
+</section>
+
+<div class="unten">
+  <div class="kasten"><h2>Wachablösung</h2>
+    <button type="button" id="abschluss"></button>
+    <div id="logbuch"></div></div>
+  <div class="kasten"><h2 id="quellen">Woher die Zahlen kommen</h2>
+    <ol id="quellen-liste"></ol></div>
+</div>
+
+<footer class="erklaer">
+  <div><h3>Die Idee</h3>
+    <p>Ein Kurs hat <b>Trägheit</b>. Die Brücke zeigt nicht nur die Lage, sondern die Bahn —
+       und macht damit sichtbar, was ein Kennzahlenfeld verschweigt: dass Nichtstun auch eine
+       Entscheidung ist, die vier Runden später abgerechnet wird.</p></div>
+  <div><h3>Was das gut kann</h3>
+    <p>Der <b>Zeithorizont</b> steht im Bild statt in einer zweiten Ansicht. Beide Bahnen
+       nebeneinander beantworten die Frage, die im Seminar zählt: hat dieser Beschluss etwas
+       bewirkt oder nur die Zahlen verschoben?</p></div>
+  <div><h3>Was das kostet</h3>
+    <p>Dunkle Oberflächen sind im hellen Seminarraum am Beamer schwach. Und die Bahn zeigt
+       nur die <b>eine</b> Annahme „ab jetzt nichts mehr“ — Varianten nebeneinander zu legen,
+       bräuchte eine weitere Ansicht, die dieser Entwurf noch nicht hat.</p></div>
+</footer>
+
+<script type="module" src="../../js/entwurf/bruecke.js"></script>
+</body>
+</html>

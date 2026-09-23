@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<!-- AUSGEARBEITETER ENTWURF, bedienbar. Rechnet mit der echten Engine
+     ueber js/entwurf/spielkern.js. Spricht mit keinem Server. -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Der Kassenbon — Entwurf</title>
+<link rel="stylesheet" href="../../css/schriften.css">
+<style>
+:root{
+  --tisch:#2A2722; --bon:#FBFAF4; --bon-kante:#E4E0D2; --tinte:#1A1814;
+  --blass:#767266; --rot:#9A2718; --gruen:#1A5637; --gold:#8A6B12;
+  --lade:#3A3630; --lade-tief:#241F1A; --lade-rand:#544D43; --lade-text:#E8E1CE;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--tisch);color:var(--lade-text);
+  font-family:Inter,system-ui,sans-serif;font-size:16px;line-height:1.45;
+  font-variant-numeric:tabular-nums}
+:focus-visible{outline:3px solid #E8C45A;outline-offset:2px;border-radius:2px}
+
+.fahne{background:#D9CFA8;color:#241F12;font-size:13px;padding:7px 20px;font-weight:600}
+.fahne a{color:#4A2E06}
+
+.raum{display:grid;grid-template-columns:minmax(0,392px) minmax(0,1fr);
+  gap:0;align-items:start;min-height:100vh}
+@media(max-width:64rem){.raum{grid-template-columns:1fr}}
+
+/* ── Der Beleg ──────────────────────────────────────────────────────────── */
+.bon{background:var(--bon);color:var(--tinte);font-family:'JetBrains Mono',monospace;
+  font-size:13px;line-height:1.66;padding:22px 20px 0;margin:22px 0 28px 22px;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);position:relative}
+@media(max-width:64rem){.bon{margin:18px 14px 26px}}
+.bon::after{content:'';display:block;height:16px;margin:0 -20px;
+  background:linear-gradient(-45deg,var(--tisch) 8px,transparent 0) 0 0/16px 16px repeat-x,
+             linear-gradient(45deg,var(--tisch) 8px,var(--bon) 0) 0 0/16px 16px repeat-x}
+.bon h1{font-size:16px;letter-spacing:.3em;text-align:center;font-weight:700}
+.bon h1:focus-visible{outline-offset:6px}
+#bon-kopf{text-align:center;color:var(--blass);font-size:11px;line-height:1.55;
+  margin:4px 0 12px}
+.trenn{border-top:1px dashed #A9A392;margin:10px 0}
+.kap{font-size:10px;letter-spacing:.2em;color:var(--blass);margin:14px 0 4px;font-weight:400}
+.block:first-child .kap{margin-top:2px}
+
+/* Die Posten: der Wert IST das Feld */
+.pos{display:grid;grid-template-columns:1fr auto;gap:0 10px;align-items:baseline;
+  padding:2px 6px 2px 0;margin:0 -6px 0 0}
+.pos .txt{min-width:0}
+.pos .fn{font-size:.7em;vertical-align:super;line-height:0;color:var(--gold);
+  padding-left:.25em;text-decoration:none}
+.pos .fn:hover{text-decoration:underline}
+.pos .eingabe{white-space:nowrap;display:flex;align-items:baseline;gap:4px;justify-content:flex-end}
+.feld{font:inherit;font-weight:700;text-align:right;color:var(--tinte);
+  background:transparent;border:0;border-bottom:1px solid #C3BCA8;padding:0 2px 1px;
+  width:auto;min-width:3.4em;font-variant-numeric:tabular-nums}
+.feld:hover{border-bottom-color:var(--tinte);background:#F2EFE2}
+.feld:focus{outline:none;border-bottom:2px solid var(--gold);background:#F6F0DC}
+.feld:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.klappe{font:inherit;font-weight:700;color:var(--tinte);background:transparent;
+  border:1px solid #C3BCA8;padding:0 8px;cursor:pointer;min-width:3.4em}
+.klappe:hover{border-color:var(--tinte);background:#F2EFE2}
+.klappe[aria-pressed="true"]{background:var(--gruen);color:var(--bon);border-color:var(--gruen)}
+.pos .eh{font-size:11px;color:var(--blass);min-width:3.6em;text-align:left}
+.pos .storno{grid-column:1/-1;font-size:11px;color:var(--blass);
+  text-align:right;margin-top:-3px}
+.pos .storno::before{content:'↳ '}
+.pos.bewegt{background:#F4EFDC;box-shadow:-6px 0 0 #E0C05A}
+.pos .fehl{grid-column:1/-1;font-size:11px;color:var(--rot);font-weight:700;
+  text-align:right;line-height:1.35;padding:2px 0 3px}
+.pos[data-fehler="true"]{background:#F8E9E4;box-shadow:-6px 0 0 var(--rot)}
+
+/* Summen und Stempel */
+.z{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.z b{white-space:nowrap;font-weight:700}
+.z.sub{color:var(--blass);font-size:11px}
+.z.gross{font-size:17px;font-weight:700;padding:5px 0}
+.z.rot b,.z.rot span{color:var(--rot)}
+.z.gruen b,.z.gruen span{color:var(--gruen)}
+#neben .z{font-size:12px;padding:1px 0}
+#neben .z em{font-style:normal;font-size:11px;color:var(--blass);font-weight:400}
+#neben .z[data-richtung="besser"] b{color:var(--gruen)}
+#neben .z[data-richtung="schlechter"] b{color:var(--rot)}
+.stempel{border:2px solid var(--rot);color:var(--rot);transform:rotate(-3.5deg);
+  text-align:center;font-weight:700;letter-spacing:.14em;padding:6px;margin:14px 8px 8px;
+  font-size:13px}
+.stempel.ok{border-color:var(--gruen);color:var(--gruen);transform:rotate(2.5deg)}
+.leerzeile{color:var(--blass);text-align:center;font-size:11px;padding:4px 0}
+#protokoll .z{font-size:12px}
+#protokoll .z b{color:var(--gold)}
+
+.code{text-align:center;margin:14px 0 4px;line-height:0}
+.code i{display:inline-block;width:2px;height:32px;background:var(--tinte);margin-right:1px}
+.code i.w{width:4px}.code i.l{background:transparent}
+.dank{text-align:center;font-size:10px;color:var(--blass);margin-bottom:14px;line-height:1.5}
+
+/* ── Die Lade ───────────────────────────────────────────────────────────── */
+.lade{padding:30px 26px 52px}
+@media(max-width:64rem){.lade{padding:4px 18px 46px}}
+.lade h2{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#C0B69C;
+  margin-bottom:12px}
+.schub{background:var(--lade);border:1px solid var(--lade-rand);border-radius:5px;
+  padding:16px;box-shadow:inset 0 3px 14px rgba(0,0,0,.55);margin-bottom:24px}
+#faecher{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,128px),1fr));gap:11px}
+.fach{background:var(--lade-tief);border:1px solid #4E473E;border-radius:3px;
+  padding:11px 11px 10px;box-shadow:inset 0 2px 7px rgba(0,0,0,.55)}
+.fach .kat{font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:#A9A08A}
+.fach .wert{font-family:'JetBrains Mono',monospace;font-size:21px;font-weight:700;
+  letter-spacing:-.02em;margin-top:3px;color:#FAF6EA;line-height:1.15}
+.fach .wert em{font-style:normal;font-size:11px;font-weight:400;color:#A9A08A;
+  font-family:Inter,sans-serif}
+.fach .dif{font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:3px;color:#A9A08A}
+.fach[data-richtung="besser"] .dif{color:#6FC494}
+.fach[data-richtung="schlechter"] .dif{color:#E8907E}
+.fach[data-richtung="besser"]{border-left:3px solid #3E8A5E}
+.fach[data-richtung="schlechter"]{border-left:3px solid #A4472F}
+.fach.neben .wert{font-size:17px}
+.fach.leer{background:#1F1B17;border-style:dashed;display:grid;place-items:center;
+  color:#8B867A;font-size:11px;text-align:center;letter-spacing:.06em;min-height:74px}
+
+.abschluss-feld{background:var(--lade);border:1px solid var(--lade-rand);border-radius:5px;
+  padding:16px;margin-bottom:24px}
+#abschluss{font:inherit;font-weight:700;font-size:15px;background:#E0C05A;color:#241B02;
+  border:0;padding:11px 20px;border-radius:3px;cursor:pointer;width:100%}
+#abschluss:hover:not(:disabled){background:#EDD070}
+#abschluss:disabled{background:#4A443B;color:#9A9286;cursor:not-allowed}
+#abschluss-hinweis{font-size:12px;color:#A9A08A;margin-top:9px;line-height:1.45}
+#verlauf{margin-top:14px;padding-top:12px;border-top:1px solid var(--lade-rand)}
+#verlauf h3{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#A9A08A;
+  margin-bottom:5px}
+#verlauf .z{font-family:'JetBrains Mono',monospace;font-size:12px;color:#C0B69C;padding:2px 0}
+
+/* ── Quellen: einmal am Fuss, nicht unter jeder Zeile ───────────────────── */
+.quellen{background:var(--lade);border:1px solid var(--lade-rand);border-radius:5px;padding:16px}
+.quellen ol{list-style:none;display:grid;gap:14px}
+.quellen li{display:grid;grid-template-columns:1.7em 1fr;gap:10px}
+.quellen .nr{font-family:'JetBrains Mono',monospace;font-size:12px;color:#E0C05A;font-weight:700}
+.quellen .betrifft{font-size:12px;font-weight:600;color:#EDE5D0}
+.quellen .formel{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#C0B69C;
+  margin-top:3px;line-height:1.5;word-break:break-word}
+.quellen .ref{font-size:11.5px;color:#A9A08A;margin-top:3px}
+.quellen .note{font-size:11.5px;color:#A6A095;margin-top:2px;font-style:italic}
+
+.erklaer{margin-top:24px;max-width:64ch}
+.erklaer h3{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#C0B69C;
+  margin-bottom:5px}
+.erklaer h3+p{margin-bottom:12px}
+.erklaer p{font-size:14px;color:#B3AA94;line-height:1.5}
+.erklaer b{color:var(--lade-text)}
+</style>
+</head>
+<body>
+
+<p class="fahne">Ausgearbeiteter Entwurf — <b>bedienbar</b>, rechnet mit der echten Engine.
+  <a href="index.html">Zurück zur Übersicht der zehn Ansätze</a></p>
+
+<div class="raum">
+
+<div class="bon">
+  <h1 id="bon-titel" tabindex="-1">KASSENSTURZ</h1>
+  <p id="bon-kopf"></p>
+
+  <div class="trenn"></div>
+  <div id="posten"></div>
+
+  <div class="trenn"></div>
+  <div id="summen"></div>
+
+  <p class="stempel" id="stempel" hidden>SCHULDENBREMSE GERISSEN</p>
+  <p class="stempel ok" id="stempel-ok" hidden>SCHULDENBREMSE EINGEHALTEN</p>
+
+  <div class="trenn"></div>
+  <p class="kap">NEBENWIRKUNGEN</p>
+  <div id="neben"></div>
+
+  <div class="trenn"></div>
+  <p class="kap">BUCHUNGSPROTOKOLL · <span id="protokoll-zahl"></span></p>
+  <div id="protokoll"></div>
+
+  <div class="code" aria-hidden="true">
+    <i></i><i class="l"></i><i class="w"></i><i class="l"></i><i></i><i></i><i class="l"></i>
+    <i class="w"></i><i></i><i class="l"></i><i class="l"></i><i class="w"></i><i></i>
+    <i class="l"></i><i></i><i class="w"></i><i class="l"></i><i></i><i></i><i class="l"></i>
+    <i class="w"></i><i class="l"></i><i></i><i></i><i class="w"></i><i class="l"></i><i></i>
+  </div>
+  <p class="dank">Simulation für Lehrzwecke · kein Beleg im Rechtssinn<br>
+     Alle Beträge in Milliarden Euro</p>
+</div>
+
+<div class="lade">
+  <h2>Die Lade — was am Ende drin ist</h2>
+  <div class="schub"><div id="faecher"></div></div>
+
+  <h2>Rundenschluss</h2>
+  <div class="abschluss-feld">
+    <button type="button" id="abschluss"></button>
+    <p id="abschluss-hinweis"></p>
+    <div id="verlauf"></div>
+  </div>
+
+  <h2 id="quellen">Woher die Zahlen kommen</h2>
+  <div class="quellen"><ol id="quellen-liste"></ol></div>
+
+  <div class="erklaer">
+    <h3>Die Idee</h3>
+    <p>Der Name ist die Oberfläche. Ein <b>Kassensturz</b> ist der Moment, in dem die Lade
+      aufgeht und man zählt, was wirklich da ist. Darum sind die Werte auf dem Beleg selbst
+      die Eingabefelder: es gibt kein Bedienfeld neben dem Ergebnis, das man mit dem Ergebnis
+      abgleichen müsste — man schreibt in die Rechnung hinein, und sie rechnet sich neu.</p>
+    <h3>Was das gut kann</h3>
+    <p>Lückenlose Nachvollziehbarkeit in einer Leserichtung. Jede geänderte Zeile trägt ihren
+      Vorwert als Storno, das Buchungsprotokoll fasst die Runde zusammen, und der Beleg ist
+      druckbar — er wird damit von selbst zum Material fürs Debriefing.</p>
+    <h3>Was das kostet</h3>
+    <p>Eine schmale Monospalte ist eine harte Grenze. Lange Bezeichnungen müssen kurz bleiben,
+      und für den Vergleich <b>zwischen</b> Runden fehlt die Breite — deshalb steht der Verlauf
+      in der Lade und nicht auf dem Bon. Der Kassenbon erzählt gut und vergleicht schlecht.</p>
+  </div>
+</div>
+
+</div>
+
+<script type="module" src="../../js/entwurf/bon.js"></script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<!-- KONZEPTBILD, nicht funktionsfaehig. Zahlen echt aus der Engine (Status
+     quo und Variante Spitzensteuer 62 %, CO2 140 EUR/t), Bedienung tot. -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Das Tafelwerk — Konzeptbild</title>
+<link rel="stylesheet" href="../../css/schriften.css">
+<style>
+:root{
+  --papier:#F2F4F1; --tinte:#14181B; --zweit:#3D5561;
+  --stahl:#23536E; --fein:#AFBEC2;
+  --oxid:#8A2A21; --fichte:#1E5741; --senf:#7A5E00;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--papier);color:var(--tinte);font-family:Inter,system-ui,sans-serif;
+  font-size:16px;line-height:1.45;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1}
+::selection{background:var(--stahl);color:var(--papier)}
+
+.hinweis{background:var(--tinte);color:var(--papier);font-size:13px;padding:6px 24px;letter-spacing:.02em}
+
+.tafelkopf{border-bottom:2px solid var(--tinte);padding:18px 24px 10px;
+  display:flex;align-items:baseline;gap:20px;flex-wrap:wrap}
+.reihe{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--stahl);letter-spacing:.06em}
+.tafelkopf h1{font-size:21px;letter-spacing:-.01em;font-weight:700}
+.tafelkopf .stand{margin-left:auto;font-size:13px;color:var(--zweit)}
+
+.vorspann{padding:12px 24px;border-bottom:1px solid var(--fein);
+  font-size:14px;color:var(--zweit);max-width:96ch}
+.vorspann b{color:var(--tinte)}
+
+.blatt{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:0 32px;padding:0 24px 40px}
+
+h2{font-size:12px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;
+  border-bottom:1px solid var(--stahl);padding:18px 0 4px;margin-bottom:2px}
+
+table{width:100%;border-collapse:collapse;font-size:15px}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--zweit);
+  font-weight:600;text-align:right;padding:6px 6px 4px;border-bottom:1px solid var(--stahl)}
+th.l{text-align:left}
+td{padding:4px 6px;border-bottom:1px solid var(--fein);text-align:right}
+td.l{text-align:left}
+td.k{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--stahl);text-align:left}
+tr.gruppe td{padding-top:14px;font-weight:700;border-bottom:1px solid var(--stahl);font-size:13px;
+  letter-spacing:.05em;text-transform:uppercase;color:var(--tinte)}
+tr.summe td{border-top:3px double var(--tinte);border-bottom:0;font-weight:700;padding-top:6px}
+.fn{font-size:.68em;vertical-align:super;line-height:0;color:var(--stahl);padding-left:.15em}
+.soll{font-weight:700}
+.auf{color:var(--fichte);font-weight:600}
+.ab{color:var(--oxid);font-weight:600}
+.null{color:var(--zweit)}
+
+/* Schaubild: eine Achse, alle Reihen daran */
+.schaubild{position:relative;margin-top:6px}
+.schaubild::before{content:'';position:absolute;left:50%;top:22px;bottom:18px;border-left:1px solid var(--tinte)}
+.skala{display:flex;justify-content:space-between;font-size:11px;color:var(--zweit);
+  letter-spacing:.05em;padding-bottom:4px;border-bottom:1px solid var(--fein)}
+.reihe-z{padding:9px 0 7px;border-bottom:1px solid var(--fein)}
+.reihe-z .kopf{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.reihe-z .name{font-size:13px;color:var(--zweit)}
+.reihe-z .wert{font-size:22px;font-weight:700;letter-spacing:-.015em}
+.reihe-z .wert span{font-size:12px;font-weight:400;color:var(--zweit)}
+.balken{height:9px;margin-top:5px;position:relative}
+.balken i{position:absolute;top:0;height:9px;display:block}
+.notiz{font-size:12px;color:var(--zweit);margin-top:3px}
+
+.apparat{grid-column:1/-1;border-top:1px solid var(--stahl);margin-top:26px;padding-top:10px}
+.apparat h2{border:0;padding-top:0}
+.apparat ol{padding-left:22px;columns:2;column-gap:32px;max-width:none}
+.apparat li{font-size:12px;color:var(--zweit);margin-bottom:5px;break-inside:avoid}
+.apparat b{color:var(--tinte);font-weight:600}
+
+.lage{grid-column:1/-1;border-top:3px double var(--tinte);margin-top:22px;padding-top:12px}
+.lage h3{font-size:24px;letter-spacing:-.02em;max-width:36ch;line-height:1.2}
+.lage p{font-size:15px;color:var(--zweit);max-width:74ch;margin-top:6px}
+
+@media(max-width:60rem){.blatt{grid-template-columns:1fr}.apparat ol{columns:1}}
+</style>
+</head>
+<body>
+
+<p class="hinweis">Konzeptbild — nicht bedienbar. Alle Zahlen sind echt aus der Simulation gerechnet.</p>
+
+<header class="tafelkopf">
+  <span class="reihe">Tafel 3</span>
+  <h1>Steuerpolitische Stellgrößen und ihre Wirkung</h1>
+  <span class="stand">Kabinett Team A · Periode 1 von 5 · Legislatur 2025–2028</span>
+</header>
+
+<p class="vorspann">
+  Die Tafel weist je Stellgröße den <b>beschlossenen Satz</b>, die <b>Fortschreibung</b> der Vorperiode
+  und die <b>Veränderung</b> aus. Die Wirkungsreihen rechts sind auf eine gemeinsame Achse bezogen:
+  Nullpunkt ist die Fortschreibung. Ziffern verweisen auf den Quellenapparat am Fuß der Tafel.
+</p>
+
+<main class="blatt">
+
+<section>
+  <h2>Stellgrößen</h2>
+  <table>
+    <thead><tr><th class="l">Kennung</th><th class="l">Bezeichnung</th><th>Beschlossen</th><th>Fortschreibung</th><th>Veränderung</th></tr></thead>
+    <tbody>
+      <tr class="gruppe"><td class="k">3.1</td><td class="l" colspan="4">Steuern vom Einkommen</td></tr>
+      <tr><td class="k">3.1.1</td><td class="l">Grundfreibetrag, €<a class="fn">1</a></td><td class="soll">12.348</td><td>12.348</td><td class="null">±0</td></tr>
+      <tr><td class="k">3.1.2</td><td class="l">Eingangssteuersatz, %<a class="fn">1</a></td><td class="soll">14,0</td><td>14,0</td><td class="null">±0</td></tr>
+      <tr><td class="k">3.1.3</td><td class="l">Spitzensteuersatz, %<a class="fn">1</a></td><td class="soll">62,0</td><td>45,0</td><td class="auf">+17,0</td></tr>
+      <tr class="gruppe"><td class="k">3.2</td><td class="l" colspan="4">Steuern vom Umsatz und vom Vermögen</td></tr>
+      <tr><td class="k">3.2.1</td><td class="l">Umsatzsteuer, Regelsatz, %<a class="fn">2</a></td><td class="soll">19,0</td><td>19,0</td><td class="null">±0</td></tr>
+      <tr><td class="k">3.2.2</td><td class="l">Umsatzsteuer, ermäßigt, %<a class="fn">2</a></td><td class="soll">7,0</td><td>7,0</td><td class="null">±0</td></tr>
+      <tr><td class="k">3.2.3</td><td class="l">Erbschaftsteuer, %<a class="fn">3</a></td><td class="soll">20</td><td>20</td><td class="null">±0</td></tr>
+      <tr><td class="k">3.2.4</td><td class="l">Vermögensteuer, %<a class="fn">4</a></td><td class="soll">0,0</td><td>0,0</td><td class="null">±0</td></tr>
+      <tr class="gruppe"><td class="k">3.3</td><td class="l" colspan="4">Bepreisung von Emissionen</td></tr>
+      <tr><td class="k">3.3.1</td><td class="l">CO₂-Preis, €/t<a class="fn">5</a></td><td class="soll">140</td><td>55</td><td class="auf">+85</td></tr>
+      <tr><td class="k">3.3.2</td><td class="l">Klimageld<a class="fn">5</a></td><td class="soll">ja</td><td>ja</td><td class="null">±0</td></tr>
+      <tr class="gruppe"><td class="k">3.4</td><td class="l" colspan="4">Beiträge und Leistungen</td></tr>
+      <tr><td class="k">3.4.1</td><td class="l">Rentenversicherung, %<a class="fn">6</a></td><td class="soll">18,6</td><td>18,6</td><td class="null">±0</td></tr>
+      <tr><td class="k">3.4.2</td><td class="l">Krankenversicherung, %<a class="fn">6</a></td><td class="soll">16,3</td><td>16,3</td><td class="null">±0</td></tr>
+      <tr><td class="k">3.4.3</td><td class="l">Bürgergeld, €/Monat<a class="fn">7</a></td><td class="soll">563</td><td>563</td><td class="null">±0</td></tr>
+      <tr class="summe"><td class="k"></td><td class="l">Aufkommen insgesamt, Mrd. €</td><td class="soll">1.695</td><td>1.643</td><td class="auf">+52</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>Wirkungsreihen</h2>
+  <div class="schaubild">
+    <p class="skala"><span>−25 %</span><span>Fortschreibung</span><span>+25 %</span></p>
+
+    <div class="reihe-z">
+      <div class="kopf"><span class="name">Haushaltssaldo</span><span class="wert">−69 <span>Mrd. €</span></span></div>
+      <div class="balken"><i style="left:50%;right:0;background:var(--fichte)"></i></div>
+      <p class="notiz">+41,8 % gegenüber der Fortschreibung · Anschlag überschritten</p>
+    </div>
+
+    <div class="reihe-z">
+      <div class="kopf"><span class="name">Gini-Ungleichheit</span><span class="wert">0,351</span></div>
+      <div class="balken"><i style="left:22.4%;width:27.6%;background:var(--fichte)"></i></div>
+      <p class="notiz">−6,9 % gegenüber der Fortschreibung</p>
+    </div>
+
+    <div class="reihe-z">
+      <div class="kopf"><span class="name">Emissionen</span><span class="wert">244 <span>Mio. t</span></span></div>
+      <div class="balken"><i style="left:0;width:50%;background:var(--fichte)"></i></div>
+      <p class="notiz">−25,5 % gegenüber der Fortschreibung · Anschlag überschritten</p>
+    </div>
+
+    <div class="reihe-z">
+      <div class="kopf"><span class="name">Bruttoinlandsprodukt</span><span class="wert">4.470 <span>Mrd. €</span></span></div>
+      <div class="balken"><i style="left:49.7%;width:.6%;background:var(--zweit)"></i></div>
+      <p class="notiz">±0,0 % gegenüber der Fortschreibung</p>
+    </div>
+
+    <div class="reihe-z">
+      <div class="kopf"><span class="name">Armutsrisikoquote</span><span class="wert">15,0 <span>%</span></span></div>
+      <div class="balken"><i style="left:41.1%;width:8.9%;background:var(--fichte)"></i></div>
+      <p class="notiz">−4,5 % gegenüber der Fortschreibung</p>
+    </div>
+
+    <div class="reihe-z">
+      <div class="kopf"><span class="name">Palma-Verhältnis</span><span class="wert">1,52</span></div>
+      <div class="balken"><i style="left:26.7%;width:23.3%;background:var(--fichte)"></i></div>
+      <p class="notiz">−11,6 % gegenüber der Fortschreibung</p>
+    </div>
+  </div>
+</section>
+
+<section class="lage">
+  <h3>Haushaltsloch von 69 Mrd. Euro im Entwurf</h3>
+  <p>Gegenüber der Fortschreibung verbessert sich der Saldo um 50 Mrd. €. Die Einkommen rücken
+     zusammen; der Gini fällt um 0,026. Die Emissionen sinken um 83 Mio. t.</p>
+</section>
+
+<section class="apparat">
+  <h2>Quellenapparat</h2>
+  <ol>
+    <li><b>labor_factor = 1 + ε × Δ(1 − GS) / (1 − GS_SQ)</b> — Saez/Chetty/Gruber Konsens · ifo Schnelldienst 01/2025 · Piketty/Saez/Stantcheva (2014) AER</li>
+    <li><b>MwSt = Konsum × (0,70 × t_reg/(1+t_reg) + 0,30 × t_erm/(1+t_erm))</b> — Destatis VGR 2024 · Lewbel/Pendakur (2009) JPubEc</li>
+    <li><b>Erbschaftsteuer</b> — Bach/Thiemann (DIW) · Destatis Erbschaft- und Schenkungsteuerstatistik</li>
+    <li><b>Vermögensteuer</b> — Zucman/Saez Vermögenskonzentration · DIW Vermögensverteilung</li>
+    <li><b>Emissionen = 500 × max(0,4; min(1,1; 1 + ε_CO₂ × (p − 55)/100))</b> — BEHG § 10 · EWI/DIW BEHG-Evaluation 2023 · Edenhofer/PIK 2024</li>
+    <li><b>Sozialversicherungsbeiträge</b> — BMAS Rentenversicherungsbericht · GKV-Spitzenverband</li>
+    <li><b>Armutsrisikoquote</b> — Destatis EVS · Eurostat SILC-Methodik</li>
+  </ol>
+</section>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,436 @@
+/* SPDX-License-Identifier: CC-BY-4.0 */
+/* Copyright 2025 Florian Aram Feuerriegel — kassensturz.org */
+/* ═══════════════════════════════════════════════════════════════════════════
+   REGISTERBAND — die Spielflaeche als Registerblatt
+
+   Lage ist der einzige Rang. Keine Karte, kein Zierschatten, keine getoente
+   Flaeche entscheidet ueber Wichtigkeit — nur, was obenauf liegt.
+
+   Die Deckkraft der Folie steht bewusst NICHT hier: sie wird zur Laufzeit
+   gegen den Kartonton ausgerechnet (js/registerband.js) und als
+   --folie-alpha gesetzt. Ein fester Wert wuerde auf einem der fuenf
+   Volltoene den Kontrast unterschreiten.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Ein Vollton je Register */
+  --r1: #2B3A8C;  /* Ultramarin */
+  --r2: #1C6B63;  /* Petrol */
+  --r3: #7A4E14;  /* Sienna */
+  --r4: #6B2233;  /* Weinrot */
+  --r5: #3F5220;  /* Olivgruen */
+
+  --karton:    var(--r1);
+  --papier:    #F8F7F2;
+  --tinte:     #14140F;
+  --pult:      #262622;   /* die Unterlage, auf der das Band liegt */
+  --zinnober:  #D93A1E;   /* nur die Kante des Errata-Streifens */
+  --errata:    #A32912;   /* die Flaeche darunter, damit Text AA haelt */
+
+  --folie-alpha: 0.86;    /* Startwert; wird zur Laufzeit ersetzt */
+  --folie-breite: min(400px, 36%);
+  --neben-alpha: 0.78;    /* Startwert; wird zur Laufzeit ersetzt */
+  --neben: rgb(248 247 242 / var(--neben-alpha));
+  --folie: rgb(248 247 242 / var(--folie-alpha));
+
+  --ziel:    44px;
+  --rand:    clamp(1.1rem, 2.6vw, 2rem);
+  --kamm:    88px;
+  --scharnier: 90ms;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  background: var(--pult);
+  color: var(--papier);
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 17px; line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+::selection { background: var(--papier); color: var(--karton); }
+
+:focus-visible { outline: 2px solid var(--papier); outline-offset: 2px; }
+.folie :focus-visible { outline-color: var(--tinte); }
+
+* { scrollbar-color: var(--papier) var(--pult); scrollbar-width: thin; }
+
+.sprung {
+  position: absolute; left: var(--rand); top: -4rem; z-index: 20;
+  background: var(--papier); color: var(--tinte);
+  padding: 0.6rem 1rem; font-weight: 700;
+}
+.sprung:focus { top: 0.5rem; }
+
+/* ── Das Band ────────────────────────────────────────────────────────────── */
+
+.band { display: grid; grid-template-columns: minmax(0, 1fr) var(--kamm); min-height: 100vh; }
+
+.karton {
+  background: var(--karton);
+  padding: 1.4rem var(--rand) 7rem;
+  position: relative; z-index: 1;
+  min-width: 0;
+}
+
+/* Stanzloecher der Heftung — sie zeigen, dass das Blatt eingehaengt ist */
+.heftung { position: absolute; left: 0.55rem; width: 13px; height: 13px; border-radius: 50%;
+  background: var(--pult); box-shadow: inset 0 1px 2px rgb(0 0 0 / .55); }
+.heftung.o { top: 4.5rem; }
+.heftung.u { bottom: 9rem; }
+
+.kopfzeile {
+  margin-left: 1.7rem;
+  border-bottom: 1px solid rgb(248 247 242 / .38);
+  padding-bottom: 0.6rem;
+  display: flex; align-items: baseline; gap: 0.5rem 1.1rem; flex-wrap: wrap;
+}
+.kopfzeile .nr {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8125rem; letter-spacing: 0.13em; color: var(--neben);
+}
+.kopfzeile h1 { font-size: 1.5rem; letter-spacing: -0.015em; font-weight: 700; }
+.kopfzeile .team { margin-left: auto; font-size: 0.9375rem; color: var(--neben); }
+.kopfzeile .kurs { font-size: 0.9375rem; color: var(--neben); }
+
+.blatt {
+  margin-left: 1.7rem; margin-top: 1.4rem;
+  position: relative;
+}
+
+/* Die Zeilen laufen ueber die ganze Blattbreite; ihre Linien verschwinden
+   unter der Folie und tauchen jenseits ihrer Kante wieder auf. Genau so
+   liegt ein Blatt auf einer linierten Seite. */
+/* Die Einrueckung steht in den Regeln selbst (siehe .zeile, .ressort > h2):
+   eine padding-Kurzschreibweise weiter unten wuerde sie hier ueberschreiben. */
+
+/* Die Bahn, in der die Folie klebt — ohne eigene Flaeche, damit nur die
+   Folie selbst Rang behauptet. */
+.folienbahn {
+  position: absolute; top: 0; height: 100%;
+  right: calc(-1 * var(--rand) - 2.6rem);
+  width: var(--folie-breite);
+  pointer-events: none;
+}
+
+/* ── Ressorts als Abschnitte auf dem Karton ──────────────────────────────── */
+
+.ressort { margin-bottom: 1.6rem; }
+.ressort > h2 {
+  font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--neben); font-weight: 700;
+  display: flex; align-items: baseline; gap: 0.7rem;
+  border-bottom: 1px solid rgb(248 247 242 / .28);
+  padding: 0 calc(var(--folie-breite) - 0.5rem) 0.3rem 0;
+}
+.ressort > h2 .zahl {
+  font-family: 'JetBrains Mono', monospace; letter-spacing: 0.08em; color: var(--neben);
+}
+
+/* Bildseite nach unten: das gesperrte Ressort liegt umgedreht im Band */
+/* Bildseite nach unten: man sieht die unbedruckte Rueckseite desselben
+   Kartons — dunkler, weil sie keine Farbe traegt. Kein Ausgrauen: die
+   Erklaertexte muessen lesbar bleiben, sie sagen ja, wann es aufgeht. */
+.ressort[data-gesperrt='true'] {
+  background: rgb(0 0 0 / .3);
+  padding: 0.2rem 0.9rem 0.6rem;
+  margin-left: -0.9rem; margin-right: -0.9rem;
+}
+.ressort[data-gesperrt='true'] .zeile { pointer-events: none; }
+.ressort[data-gesperrt='true'] .stell,
+.ressort[data-gesperrt='true'] .klappe { color: var(--neben); }
+.sperrnotiz {
+  font-size: 0.875rem; padding: 0.55rem calc(var(--folie-breite) - 0.5rem) 0.2rem 0;
+  display: flex; align-items: baseline; gap: 0.5rem;
+}
+.sperrnotiz::before { content: '▾'; font-size: 0.75rem; }
+
+/* ── Die Zeile ───────────────────────────────────────────────────────────── */
+
+.zeile {
+  display: grid; grid-template-columns: minmax(0, 1fr) 7.5rem 6.5rem 8.5rem;
+  gap: 0 1.1rem; align-items: baseline;
+  padding: 0.35rem calc(var(--folie-breite) - 0.5rem) 0.35rem 0;
+  border-bottom: 1px solid rgb(248 247 242 / .2);
+  position: relative;
+}
+
+/* Gestanzt = gewaehlt. Das Loch ist der Zustand, keine Flaeche. */
+.zeile[data-geaendert='true']::before {
+  content: ''; position: absolute; left: -1.15rem; top: 1rem;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--pult); box-shadow: inset 0 1px 2px rgb(0 0 0 / .5);
+}
+
+.zeile .bez { font-size: 1rem; min-width: 0; }
+.zeile .bez .einheit { color: var(--neben); font-size: 0.9375rem; white-space: nowrap; }
+
+.zeile .wert { text-align: right; }
+.zeile .fort { text-align: right; font-size: 0.9375rem; color: var(--neben); }
+.zeile .delta { text-align: right; font-size: 0.9375rem; white-space: nowrap; }
+.zeile .delta .wort { color: var(--neben); }
+.zeile .delta[data-richtung='gleich'] { color: var(--neben); }
+
+.stell {
+  appearance: none; -moz-appearance: textfield;
+  background: none; border: 0;
+  border-bottom: 1.5px solid rgb(248 247 242 / .55);
+  font: inherit; font-variant-numeric: tabular-nums; font-weight: 700;
+  color: var(--papier); width: 100%; min-height: var(--ziel);
+  padding: 0 0.2rem; text-align: right;
+}
+.stell:hover { border-bottom-color: var(--papier); }
+.stell:disabled { border-bottom-style: dotted; opacity: .8; }
+.stell[aria-invalid='true'] { border-bottom-color: var(--zinnober); border-bottom-width: 2.5px; }
+
+.klappe {
+  appearance: none; background: none; border: 1.5px solid rgb(248 247 242 / .55);
+  border-radius: 0; font: inherit; color: var(--papier);
+  min-height: var(--ziel); min-width: 5rem; padding: 0 0.8rem; cursor: pointer;
+}
+.klappe[aria-pressed='true'] { background: var(--papier); color: var(--karton); border-color: var(--papier); }
+
+/* Der Errata-Streifen: eingelegt, nicht eingefaerbt */
+.errata {
+  grid-column: 1 / -1;
+  background: var(--errata); color: var(--papier);
+  border-left: 4px solid var(--zinnober);
+  font-size: 0.875rem; font-weight: 600;
+  padding: 0.4rem 0.7rem; margin: 0.25rem 0 0.4rem;
+}
+
+/* Die Herleitung liegt unter der Zeile, nicht daneben */
+details.herleitung > summary {
+  list-style: none; cursor: pointer;
+  min-height: var(--ziel); display: block; padding: 0.6rem 0;
+}
+details.herleitung > summary::-webkit-details-marker { display: none; }
+details.herleitung > summary::after {
+  content: '+'; font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8125rem; color: var(--neben); padding-left: 0.4rem;
+}
+details.herleitung[open] > summary::after { content: '\2212'; }
+details.herleitung[open] > summary { font-weight: 700; }
+details.herleitung > summary:hover::after { opacity: 1; }
+.herleitung dl {
+  font-size: 0.875rem; padding: 0.1rem 0 0.7rem 0.9rem;
+  border-left: 1px solid rgb(248 247 242 / .3); max-width: 66ch;
+}
+.herleitung dt { font-weight: 700; margin-top: 0.45rem; }
+.herleitung dd { color: var(--neben); }
+.herleitung .formel { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8125rem; }
+
+/* ── Die Folie ───────────────────────────────────────────────────────────── */
+
+.folie {
+  position: sticky; top: 1rem; pointer-events: auto;
+  background: var(--folie); color: var(--tinte);
+  padding: 1rem 1.2rem 1.1rem 2.2rem;
+  box-shadow: -2px 0 0 rgb(0 0 0 / .3), 9px 10px 0 rgb(0 0 0 / .26);
+}
+/* Die Stanzung der Folie sitzt an ihrer Heftkante */
+.folie::before, .folie::after {
+  content: ''; position: absolute; left: 0.7rem;
+  width: 11px; height: 11px; border-radius: 50%;
+  background: var(--karton); box-shadow: inset 0 1px 2px rgb(0 0 0 / .4);
+}
+.folie::before { top: 1.1rem; }
+.folie::after  { bottom: 1.1rem; }
+
+.folie h2 {
+  font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase;
+  color: #3D4557; font-weight: 700; margin-bottom: 0.5rem;
+}
+
+.kennzahl {
+  display: grid; grid-template-columns: 1fr auto; gap: 0 0.7rem;
+  align-items: baseline; padding: 0.45rem 0;
+  border-bottom: 1px solid rgb(20 20 15 / .18);
+}
+.kennzahl dt { font-size: 0.875rem; color: #3D4557; }
+.kennzahl dd { text-align: right; }
+.kennzahl .wert { font-size: 1.375rem; font-weight: 700; letter-spacing: -0.015em; }
+.kennzahl .wert .einheit { font-size: 0.8125rem; font-weight: 400; color: #3D4557; }
+.kennzahl .ab { grid-column: 1 / -1; font-size: 0.8125rem; color: #3D4557; }
+.kennzahl .ab b { font-weight: 700; }
+.kennzahl .ab[data-richtung='mehr']   b { color: #0E3D2B; }
+.kennzahl .ab[data-richtung='minder'] b { color: #6B160B; }
+
+.abschluss { border-top: 3px double var(--tinte); margin-top: 0.7rem; padding-top: 0.5rem; }
+.abschluss div { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.9375rem; padding: 0.15rem 0; }
+.abschluss div:last-child { font-weight: 700; font-size: 1.0625rem; }
+
+/* Halb eingehaengt: die Freigabe steht aus */
+.freigabe {
+  margin-top: 0.8rem; font-size: 0.875rem; color: #3D4557;
+  display: flex; align-items: center; gap: 0.45rem;
+}
+.freigabe .loecher { display: flex; gap: 4px; }
+.freigabe .loecher i {
+  width: 9px; height: 9px; border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px rgb(20 20 15 / .55);
+}
+.freigabe .loecher i[data-voll='true'] { background: var(--tinte); box-shadow: none; }
+
+/* ── Die Lage ────────────────────────────────────────────────────────────── */
+
+.lage { margin-top: 1.6rem; border-top: 3px double rgb(248 247 242 / .5); padding-top: 0.9rem; }
+.lage h2 { font-size: 1.5rem; line-height: 1.22; letter-spacing: -0.02em; text-wrap: balance; max-width: 38ch; }
+.lage p { margin-top: 0.45rem; max-width: 70ch; color: var(--neben); font-size: 0.9375rem; }
+
+/* ── Der Reiterkamm ──────────────────────────────────────────────────────── */
+
+.kamm { display: flex; flex-direction: column; gap: 3px; padding-top: 1.4rem; background: var(--pult); z-index: 0; }
+
+.reiter {
+  appearance: none; border: 0; border-radius: 0; cursor: pointer;
+  writing-mode: vertical-rl; text-orientation: mixed;
+  font: inherit; font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8125rem; letter-spacing: 0.1em;
+  color: var(--papier);
+  display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+  padding: 0.7rem 0; min-width: var(--ziel); position: relative;
+}
+.reiter[aria-current='true'] { font-weight: 700; margin-left: -10px; }
+.reiter[aria-current='false'] { opacity: .62; }
+.reiter:disabled { cursor: default; }
+.reiter .haken { writing-mode: horizontal-tb; font-size: 0.8125rem; }
+
+/* ── Die Registerzeile ───────────────────────────────────────────────────── */
+
+.registerzeile {
+  position: fixed; inset: auto 0 0 0; z-index: 5;
+  background: var(--pult); color: var(--papier);
+  border-top: 1px solid rgb(248 247 242 / .3);
+  padding-block: 0.6rem; padding-inline: var(--rand);
+  display: flex; align-items: center; gap: 0.5rem 1.4rem; flex-wrap: wrap;
+  min-height: var(--ziel);
+  overflow-x: clip;
+}
+.registerzeile > * { min-width: 0; }
+.registerzeile .t { font-size: 0.9375rem; color: rgb(248 247 242 / .82); }
+.registerzeile #fakt-bewegt b, .registerzeile .t b { color: var(--papier); font-weight: 700; }
+.registerzeile .t b { color: var(--papier); font-weight: 700; }
+
+.schliessen {
+  margin-left: auto;
+  appearance: none; background: var(--papier); color: var(--tinte);
+  border: 2px solid var(--papier); border-radius: 0;
+  font: inherit; font-weight: 700;
+  min-height: var(--ziel); padding: 0 1.2rem; cursor: pointer;
+}
+.schliessen:disabled { background: none; color: rgb(248 247 242 / .5); border-color: rgb(248 247 242 / .3); cursor: default; }
+
+/* ── Die Beschlussvorlage ────────────────────────────────────────────────── */
+
+dialog.vorlage {
+  margin: auto; border: 0; border-radius: 0; padding: 0;
+  background: var(--folie); color: var(--tinte);
+  max-width: min(46rem, 92vw); width: 100%;
+  box-shadow: 9px 10px 0 rgb(0 0 0 / .3);
+}
+dialog.vorlage::backdrop { background: rgb(38 38 34 / .72); }
+.vorlage-kopf { border-bottom: 1px solid rgb(20 20 15 / .3); padding: 1rem var(--rand); }
+.vorlage-kopf h2 { font-size: 1.25rem; }
+/* Kein Zinnober: das hier ist ein Vorbehalt, kein Fehler. */
+.vorlage-hinweis {
+  border-top: 1px solid rgb(20 20 15 / .35);
+  border-bottom: 1px solid rgb(20 20 15 / .35);
+  color: #3D4557; font-size: 0.9375rem; font-weight: 600;
+  padding: 0.55rem 0; margin: 0.6rem var(--rand) 0;
+}
+.vorlage-rumpf { padding: 0.9rem var(--rand); max-height: 50vh; overflow-y: auto; }
+.vorlage-rumpf h3 { font-size: 0.9375rem; margin: 0.9rem 0 0.35rem; }
+.vorlage-rumpf h3:first-child { margin-top: 0; }
+.vorlage-rumpf table { width: 100%; border-collapse: collapse; }
+.vorlage-rumpf th {
+  font-size: 0.8125rem; color: #3D4557; text-align: right;
+  border-bottom: 1px solid rgb(20 20 15 / .4); padding: 0.3rem 0.4rem;
+}
+.vorlage-rumpf th:first-child { text-align: left; }
+.vorlage-rumpf td { padding: 0.35rem 0.4rem; border-bottom: 1px solid rgb(20 20 15 / .18); text-align: right; }
+.vorlage-rumpf td:first-child { text-align: left; }
+.vorlage-fuss {
+  border-top: 1px solid rgb(20 20 15 / .3); padding: 0.85rem var(--rand);
+  display: flex; gap: 0.7rem; align-items: center; flex-wrap: wrap;
+}
+.zurueck {
+  appearance: none; background: none; color: var(--tinte);
+  border: 1.5px solid rgb(20 20 15 / .55); border-radius: 0;
+  font: inherit; min-height: var(--ziel); padding: 0 1rem; cursor: pointer;
+}
+.vorlage-fuss .weiter { margin-left: auto; background: var(--tinte); color: var(--papier); border-color: var(--tinte); }
+
+/* ── Das Scharnier: zwei Bilder, kein Uebergang ──────────────────────────── */
+
+@keyframes eingehaengt { from { background: var(--papier); color: var(--karton); } }
+.frisch { animation: eingehaengt var(--scharnier) steps(2, jump-none); }
+
+/* ── Schmal: die Folie legt sich unter den Karton, der Kamm quer ─────────── */
+
+@media (max-width: 62rem) {
+  .band { grid-template-columns: minmax(0, 1fr); }
+  .kamm { flex-direction: row; padding: 0; order: -1; overflow-x: auto; }
+  .reiter { writing-mode: horizontal-tb; flex: 0 0 auto; padding: 0 0.9rem; min-height: var(--ziel); }
+  .reiter[aria-current='true'] { margin-left: 0; margin-bottom: -6px; }
+  .zeile, .ressort > h2, .sperrnotiz { padding-right: 0 !important; }
+  /* Die Aufklappmarke nach vorn: hinten konnte sie als Waise allein in
+     eine Zeile rutschen, wenn die Bezeichnung umbricht. */
+  details.herleitung > summary::after { content: none; }
+  details.herleitung > summary::before {
+    content: '+'; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8125rem; color: var(--neben); padding-right: 0.45rem;
+  }
+  details.herleitung[open] > summary::before { content: '\2212'; }
+  /* Auf dem Handy gehoert die Auswertung nach oben: wer einen Wert aendert,
+     muss die Wirkung sehen, nicht 2000 Pixel weiter unten. */
+  .folienbahn { position: static; width: auto; height: auto; }
+  /* Klebend nahm die Folie 413 von 844 px, also die halbe Flaeche, und es
+     blieben vier Zeilen. Sie steht deshalb fest oben; den laufenden
+     Abschluss traegt die Registerzeile am unteren Rand mit. */
+  .folie { position: static; margin: 0 0 1.4rem; }
+  .zeile { grid-template-columns: minmax(0, 1fr) 6.5rem; }
+  .zeile .fort { display: none; }
+  .zeile .delta { grid-column: 1 / -1; text-align: left; }
+}
+
+@media (max-width: 34rem) {
+  .karton { padding-left: 1.7rem; }
+  .kopfzeile, .blatt { margin-left: 0; }
+  .heftung { display: none; }
+  .zeile[data-geaendert='true']::before { left: -1rem; }
+  .registerzeile .schliessen { margin-left: 0; width: 100%; }
+}
+
+/* Nichts wird weichgezeichnet, also findet reduced-motion nur das Scharnier */
+@media (prefers-reduced-motion: reduce) { .frisch { animation: none; } }
+
+@media print {
+  body { background: #fff; color: #000; }
+  .kamm, .registerzeile, .sprung { display: none; }
+  .karton { background: #fff; color: #000; }
+  .folie { position: static; box-shadow: none; border: 1px solid #000; }
+}
+
+/* Der Beschluss hinterlaesst eine Spur auf der Folie, nicht nur im Ohr */
+.vermerk {
+  margin-top: 0.7rem; padding-top: 0.55rem;
+  border-top: 1px solid rgb(20 20 15 / .35);
+  font-size: 0.875rem; font-weight: 600; color: #3D4557;
+}
+/* Der Haken der erledigten Register, gezeichnet statt als Glyphe */
+.reiter .haken {
+  writing-mode: horizontal-tb; width: 11px; height: 7px;
+  border-left: 2px solid currentColor; border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg); margin-top: 0.4rem;
+}
+/* Die Marke der Sperrnotiz ebenso */
+.sperrnotiz::before {
+  content: ''; width: 0; height: 0;
+  border-left: 5px solid transparent; border-right: 5px solid transparent;
+  border-top: 6px solid currentColor; align-self: center;
+}

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registerband — Kassensturz Planspiel</title>
+  <link rel="stylesheet" href="css/schriften.css">
+  <link rel="stylesheet" href="css/registerband.css?v=8">
+</head>
+<body>
+
+<a class="sprung" href="#blattkoerper">Direkt zu den Stellgrößen</a>
+
+<div class="band">
+
+  <div class="karton">
+    <span class="heftung o" aria-hidden="true"></span>
+    <span class="heftung u" aria-hidden="true"></span>
+
+    <header class="kopfzeile">
+      <span class="nr" id="reg-nr">Register 1</span>
+      <h1 id="reg-spanne">Legislatur 2025–2028</h1>
+      <span class="kurs">Stufe fortgeschritten · 5 Register · 4 Kabinette</span>
+      <span class="team">Kabinett Team A</span>
+    </header>
+
+    <div class="blatt">
+
+      <div class="folienbahn">
+        <aside class="folie" aria-labelledby="folie-titel">
+          <h2 id="folie-titel">Auswertung, aufgelegt</h2>
+          <dl id="kennzahlen"></dl>
+          <div class="abschluss" id="abschluss"></div>
+          <p class="freigabe">
+            <span class="loecher" aria-hidden="true">
+              <i data-voll="true"></i><i data-voll="true"></i><i></i><i></i>
+            </span>
+            Halb eingehängt — 2 von 4 Kabinetten haben freigegeben
+          </p>
+          <p class="vermerk" id="vermerk" hidden></p>
+        </aside>
+      </div>
+
+      <main id="blattkoerper" tabindex="-1"></main>
+
+      <section class="lage" aria-labelledby="lage-kopf" style="grid-column:1/-1">
+        <h2 id="lage-kopf"></h2>
+        <p id="lage-text"></p>
+      </section>
+
+    </div>
+  </div>
+
+  <nav class="kamm" id="kamm" aria-label="Register"></nav>
+
+</div>
+
+<footer class="registerzeile">
+  <span class="t">Register <b>1</b> von 5</span>
+  <span class="t">Abschluss <b id="fakt-abschluss">—</b></span>
+  <span class="t" id="fakt-bewegt">0 Stellgrößen bewegt</span>
+  <button type="button" class="schliessen" id="btn-schliessen" disabled>Register schließen</button>
+</footer>
+
+<p id="live" role="status" aria-live="polite"
+   style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap"></p>
+
+<dialog class="vorlage" id="vorlage" aria-labelledby="v-kopf">
+  <div class="vorlage-kopf">
+    <h2 id="v-kopf">Register 1 schließen — Legislatur 2025–2028</h2>
+  </div>
+  <p class="vorlage-hinweis">Vorschau: Der Registerwechsel ist in dieser Etappe noch nicht gebaut.
+     Der Beschluss wird vermerkt, das nächste Register aber nicht freigegeben.</p>
+  <div class="vorlage-rumpf" tabindex="0" role="group" aria-label="Bewegte Stellgrößen und erwartete Wirkung">
+    <h3 id="v-zahl">0 bewegte Stellgrößen</h3>
+    <table>
+      <thead><tr><th>Stellgröße</th><th>Rundenstart</th><th>Beschluss</th></tr></thead>
+      <tbody id="v-stell"></tbody>
+    </table>
+    <h3>Erwartete Wirkung</h3>
+    <table>
+      <thead><tr><th>Kennzahl</th><th>Vorher</th><th>Nachher</th><th>Veränderung</th></tr></thead>
+      <tbody id="v-wirkung"></tbody>
+    </table>
+  </div>
+  <div class="vorlage-fuss">
+    <button type="button" class="zurueck" id="btn-zurueck">Zurück zum Register</button>
+    <button type="button" class="zurueck weiter" id="btn-fassen">Beschluss fassen</button>
+  </div>
+</dialog>
+
+<script type="module" src="js/registerband.js?v=5"></script>
+</body>
+</html>

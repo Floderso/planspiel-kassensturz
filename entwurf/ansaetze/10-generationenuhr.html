@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<!-- KONZEPTBILD, nicht funktionsfaehig. Werte der Runde echt aus der Engine;
+     die Jahre nach 2030 sind Fortschreibung mit ZINS_EFFEKTIV und
+     BIP_WACHSTUM_NOMINAL_JAHR aus data.js, nicht Simulationsausgabe. -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Die Generationenuhr — Konzeptbild</title>
+<link rel="stylesheet" href="../../css/schriften.css">
+<style>
+:root{
+  --grund:#12100E; --flaeche:#1C1915; --rahmen:#38322A;
+  --licht:#F4EFE3; --matt:#9B9285;
+  --jetzt:#E0C05A; --spaeter:#C56A43; --gut:#5FA87A;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--grund);color:var(--licht);font-family:Inter,system-ui,sans-serif;
+  font-size:16px;line-height:1.45;font-variant-numeric:tabular-nums}
+.hinweis{background:var(--jetzt);color:#221B04;font-size:13px;padding:6px 20px;font-weight:600}
+
+.kopf{padding:18px 24px 12px;text-align:center}
+.kopf h1{font-family:Newsreader,serif;font-size:32px;font-weight:500;letter-spacing:-.01em}
+.kopf p{color:var(--matt);font-size:14px;margin-top:4px}
+
+.raum{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);gap:0;
+  align-items:start;max-width:1320px;margin:0 auto}
+@media(max-width:66rem){.raum{grid-template-columns:1fr}}
+
+/* ── Das Zifferblatt ────────────────────────────────────────────────────── */
+.blatt{padding:6px 24px 26px;display:flex;justify-content:center}
+.blatt svg{width:100%;max-width:560px;height:auto}
+
+.ablesung{padding:0 24px 22px;text-align:center}
+.ablesung .satz{font-family:Newsreader,serif;font-size:clamp(20px,3.2vw,29px);font-weight:500;
+  max-width:30ch;margin:0 auto;line-height:1.18}
+.ablesung .satz b{color:var(--spaeter);font-weight:600}
+.ablesung .mess{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--matt);margin-top:9px}
+
+/* ── Die Jahresleiste ───────────────────────────────────────────────────── */
+.leiste{padding:0 24px 34px;max-width:900px;margin:0 auto}
+.leiste h2{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--jetzt);
+  margin-bottom:12px}
+.jahre{display:grid;gap:7px}
+.jahr{display:grid;grid-template-columns:4.2em 1fr 6.4em;gap:12px;align-items:center;font-size:13px}
+.jahr .j{font-family:'JetBrains Mono',monospace;color:var(--matt)}
+.jahr .bahn{height:20px;background:#17140F;border:1px solid var(--rahmen);position:relative}
+.jahr .bahn i{position:absolute;top:0;bottom:0;left:0;background:var(--spaeter);opacity:.82}
+.jahr .bahn u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--gut)}
+.jahr .v{font-family:'JetBrains Mono',monospace;text-align:right;font-weight:700}
+.jahr.jetzt .j{color:var(--jetzt);font-weight:700}
+.jahr.jetzt .bahn i{background:var(--jetzt)}
+.jahr.jetzt .v{color:var(--jetzt)}
+.jahr.grau .v,.jahr.grau .j{color:#827C73}
+.leiste .fn{font-size:12px;color:var(--matt);margin-top:12px;max-width:72ch}
+
+/* ── Was heute entschieden wurde ────────────────────────────────────────── */
+.heute{padding:6px 24px 30px}
+.heute h2{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--jetzt);
+  border-bottom:1px solid var(--rahmen);padding-bottom:5px;margin-bottom:12px}
+.hebel{display:grid;gap:4px;margin-bottom:22px}
+.hebel .z{display:flex;justify-content:space-between;gap:10px;padding:4px 0;
+  border-bottom:1px dotted var(--rahmen);font-size:13px}
+.hebel .z b{font-family:'JetBrains Mono',monospace;font-weight:700}
+.hebel .z.neu b{color:var(--jetzt)}
+.hebel .z.neu span::after{content:' ▲';color:var(--jetzt);font-size:11px}
+
+.kennzahlen{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,124px),1fr))}
+.kz{background:var(--flaeche);border:1px solid var(--rahmen);padding:10px 11px}
+.kz .n{font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--matt)}
+.kz .v{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;margin-top:2px}
+.kz .d{font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:2px}
+.d.gut{color:var(--gut)}.d.schlecht{color:var(--spaeter)}.d.neutral{color:var(--matt)}
+
+.fuss{border-top:1px solid var(--rahmen);padding:22px 24px 48px;max-width:1320px;margin:0 auto;
+  display:grid;gap:22px;grid-template-columns:repeat(auto-fit,minmax(min(100%,292px),1fr))}
+.fuss h3{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--jetzt);margin-bottom:6px}
+.fuss p{font-size:14px;color:var(--matt);max-width:56ch}
+.fuss b{color:var(--licht)}
+</style>
+</head>
+<body>
+<p class="hinweis">Konzeptbild 10 von 10 — nicht bedienbar. Werte der Runde echt aus der Simulation.</p>
+
+<header class="kopf">
+  <h1>Die Generationenuhr</h1>
+  <p>Kabinett Team A · Runde 1 von 5 · jede Entscheidung wird danach bemessen, was sie 2045 kostet</p>
+</header>
+
+<div class="raum">
+<div>
+<div class="blatt">
+<svg viewBox="0 0 400 400" role="img"
+     aria-label="Zifferblatt von 2026 bis 2060. Der Schuldenschatten läuft von 2026 bis 2045 und bedeckt knapp die Hälfte des Blattes.">
+  <circle cx="200" cy="200" r="182" fill="#1C1915" stroke="#38322A" stroke-width="2"/>
+  <circle cx="200" cy="200" r="132" fill="none" stroke="#2A251F" stroke-width="1"/>
+
+  <!-- Der Schatten: aufgelaufene Schuld von heute bis 2045 -->
+  <path d="M200 200 L200 30 A170 170 0 0 1 336 267 Z" fill="#C4663E" fill-opacity=".3"/>
+  <path d="M200 200 L200 30 A170 170 0 0 1 336 267 Z" fill="none" stroke="#C4663E" stroke-width="1.5"/>
+
+  <!-- Der gedeckte Teil: was die Schuldenbremse zuliesse -->
+  <path d="M200 200 L200 60 A140 140 0 0 1 231 64 Z" fill="#5FA87A" fill-opacity=".55"/>
+
+  <!-- Jahresmarken -->
+  <g font-family="JetBrains Mono, monospace" font-size="12" fill="#9B9285" text-anchor="middle">
+    <text x="200" y="22">2026</text>
+    <text x="352" y="118">2035</text>
+    <text x="352" y="296">2045</text>
+    <text x="200" y="392">2050</text>
+    <text x="48" y="296">2055</text>
+    <text x="48" y="118">2060</text>
+  </g>
+  <g stroke="#4A4238" stroke-width="1.5">
+    <path d="M200 18 v16"/><path d="M382 200 h-16"/><path d="M200 382 v-16"/><path d="M18 200 h16"/>
+  </g>
+
+  <!-- Zeiger: heute -->
+  <circle cx="200" cy="200" r="7" fill="#E0C05A"/>
+  <path d="M200 200 L200 38" stroke="#E0C05A" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Zeiger: 2045, wo die Last faellig wird -->
+  <path d="M200 200 L332 262" stroke="#C4663E" stroke-width="3" stroke-linecap="round"
+        stroke-dasharray="7 5"/>
+
+  <!-- Mittelfeld -->
+  <text x="200" y="192" text-anchor="middle" font-family="Inter, sans-serif" font-size="11"
+        letter-spacing="1.6" fill="#9B9285">SCHULDENSTAND 2045</text>
+  <text x="200" y="232" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="38"
+        font-weight="700" fill="#F4EFE3">2.214</text>
+  <text x="200" y="252" text-anchor="middle" font-family="Inter, sans-serif" font-size="12"
+        fill="#9B9285">Mrd. € · Fortschreibung</text>
+</svg>
+</div>
+
+<div class="ablesung">
+  <p class="satz">Die heutige Entscheidung kostet den Jahrgang 2045
+     <b>340 Milliarden weniger</b> als die Fortschreibung.</p>
+  <p class="mess">vor dem Beschluss 2.554 Mrd. € · nach dem Beschluss 2.214 Mrd. € · Differenz −340</p>
+</div>
+
+<div class="leiste">
+  <h2>Was jede Runde vererbt</h2>
+  <div class="jahre">
+    <div class="jahr jetzt"><span class="j">2026</span>
+      <span class="bahn"><i style="width:31%"></i><u style="left:7%"></u></span><span class="v">−69</span></div>
+    <div class="jahr grau"><span class="j">2027</span>
+      <span class="bahn"><i style="width:36%"></i><u style="left:7%"></u></span><span class="v">−80</span></div>
+    <div class="jahr grau"><span class="j">2028</span>
+      <span class="bahn"><i style="width:41%"></i><u style="left:7%"></u></span><span class="v">−91</span></div>
+    <div class="jahr grau"><span class="j">2035</span>
+      <span class="bahn"><i style="width:58%"></i><u style="left:7%"></u></span><span class="v">−129</span></div>
+    <div class="jahr grau"><span class="j">2045</span>
+      <span class="bahn"><i style="width:84%"></i><u style="left:7%"></u></span><span class="v">−187</span></div>
+  </div>
+  <p class="fn">Balken: jährlicher Fehlbetrag. Grüner Strich: was die Schuldenbremse zuließe.
+     Die Jahre ab 2027 sind Fortschreibung mit Zinssatz und nominalem Wachstum aus
+     <code>data.js</code> — keine eigene Simulation, sondern dieselben Annahmen, mit denen
+     die Engine rechnet.</p>
+</div>
+</div>
+
+<aside class="heute">
+  <h2>Heute beschlossen</h2>
+  <div class="hebel">
+    <p class="z"><span>Grundfreibetrag</span><b>12.348 €</b></p>
+    <p class="z"><span>Eingangssteuersatz</span><b>14,0 %</b></p>
+    <p class="z neu"><span>Spitzensteuersatz</span><b>62,0 %</b></p>
+    <p class="z"><span>Umsatzsteuer</span><b>19,0 %</b></p>
+    <p class="z"><span>Erbschaftsteuer</span><b>20 %</b></p>
+    <p class="z"><span>Körperschaftsteuer</span><b>15,0 %</b></p>
+    <p class="z"><span>Rentenversicherung</span><b>18,6 %</b></p>
+    <p class="z"><span>Krankenversicherung</span><b>16,3 %</b></p>
+    <p class="z"><span>Bürgergeld</span><b>563 €</b></p>
+    <p class="z"><span>Kindergeld</span><b>259 €</b></p>
+    <p class="z neu"><span>CO₂-Preis</span><b>140 €/t</b></p>
+    <p class="z"><span>Klimageld</span><b>ja</b></p>
+  </div>
+
+  <h2>Lage der Runde</h2>
+  <div class="kennzahlen">
+    <div class="kz"><p class="n">Saldo</p><p class="v">−69</p><p class="d gut">+50</p></div>
+    <div class="kz"><p class="n">Gini</p><p class="v">0,351</p><p class="d gut">−0,026</p></div>
+    <div class="kz"><p class="n">CO₂</p><p class="v">244</p><p class="d gut">−83</p></div>
+    <div class="kz"><p class="n">BIP</p><p class="v">4.470</p><p class="d neutral">±0</p></div>
+    <div class="kz"><p class="n">Zusatzlast</p><p class="v">37,7</p><p class="d schlecht">+18,2</p></div>
+    <div class="kz"><p class="n">Armutsrisiko</p><p class="v">15,0</p><p class="d gut">−0,7</p></div>
+  </div>
+</aside>
+</div>
+
+<footer class="fuss">
+  <div><h3>Die Idee</h3>
+    <p>Die organisierende Achse ist nicht der Haushalt, sondern die <b>Zeit</b>. Jede
+       Entscheidung wird sofort in das übersetzt, was sie 2045 bedeutet — weil genau das
+       im Seminar die Frage ist, die man beim Reglerschieben vergisst.</p></div>
+  <div><h3>Was das gut kann</h3>
+    <p>Macht <b>Zinseszins sichtbar</b>: dass 69 Milliarden heute 187 Milliarden in zwanzig
+       Jahren sind, ist die Lehre des Planspiels und steht hier im Bild statt in einer
+       Fußnote. Der Schatten wächst, wenn man nichts tut.</p></div>
+  <div><h3>Was das kostet</h3>
+    <p>Die Zukunftsachse ist <b>Fortschreibung, nicht Simulation</b>. Das muss sichtbar
+       bleiben, sonst behauptet die Oberfläche eine Prognosegüte, die das Modell nicht hat.
+       Und ein Zifferblatt mit 34 Jahren ist schwer genau abzulesen — die Zahl in der Mitte
+       trägt darum die Last.</p></div>
+</footer>
+</body>
+</html>

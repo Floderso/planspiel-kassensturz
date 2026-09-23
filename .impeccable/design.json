@@ -1,0 +1,468 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-19T15:00:25.095Z",
+  "title": "Design System: Kassensturz Registerband",
+  "extensions": {
+    "colorMeta": {
+      "register-ultramarin": {
+        "role": "primary",
+        "displayName": "Ultramarin",
+        "canonical": "oklch(38.7% 0.137 270.8)",
+        "tonalRamp": [
+          "oklch(15% 0.137 270.8)",
+          "oklch(26% 0.137 270.8)",
+          "oklch(38% 0.137 270.8)",
+          "oklch(49% 0.137 270.8)",
+          "oklch(61% 0.137 270.8)",
+          "oklch(72% 0.137 270.8)",
+          "oklch(84% 0.137 270.8)",
+          "oklch(95% 0.137 270.8)"
+        ],
+        "purpose": "Vollton von Register 1; derzeit der Kartonton der ganzen Flaeche."
+      },
+      "register-petrol": {
+        "role": "primary",
+        "displayName": "Petrol",
+        "canonical": "oklch(47.9% 0.075 185.1)",
+        "tonalRamp": [
+          "oklch(15% 0.075 185.1)",
+          "oklch(26% 0.075 185.1)",
+          "oklch(38% 0.075 185.1)",
+          "oklch(49% 0.075 185.1)",
+          "oklch(61% 0.075 185.1)",
+          "oklch(72% 0.075 185.1)",
+          "oklch(84% 0.075 185.1)",
+          "oklch(95% 0.075 185.1)"
+        ],
+        "purpose": "Vollton von Register 2; derzeit nur als Reiterflaeche sichtbar."
+      },
+      "register-sienna": {
+        "role": "primary",
+        "displayName": "Sienna",
+        "canonical": "oklch(46.3% 0.092 68.3)",
+        "tonalRamp": [
+          "oklch(15% 0.092 68.3)",
+          "oklch(26% 0.092 68.3)",
+          "oklch(38% 0.092 68.3)",
+          "oklch(49% 0.092 68.3)",
+          "oklch(61% 0.092 68.3)",
+          "oklch(72% 0.092 68.3)",
+          "oklch(84% 0.092 68.3)",
+          "oklch(95% 0.092 68.3)"
+        ],
+        "purpose": "Vollton von Register 3; derzeit nur als Reiterflaeche sichtbar."
+      },
+      "register-weinrot": {
+        "role": "primary",
+        "displayName": "Weinrot",
+        "canonical": "oklch(36.9% 0.104 9.7)",
+        "tonalRamp": [
+          "oklch(15% 0.104 9.7)",
+          "oklch(26% 0.104 9.7)",
+          "oklch(38% 0.104 9.7)",
+          "oklch(49% 0.104 9.7)",
+          "oklch(61% 0.104 9.7)",
+          "oklch(72% 0.104 9.7)",
+          "oklch(84% 0.104 9.7)",
+          "oklch(95% 0.104 9.7)"
+        ],
+        "purpose": "Vollton von Register 4; derzeit nur als Reiterflaeche sichtbar."
+      },
+      "register-olivgruen": {
+        "role": "primary",
+        "displayName": "Olivgruen",
+        "canonical": "oklch(41.0% 0.078 126.9)",
+        "tonalRamp": [
+          "oklch(15% 0.078 126.9)",
+          "oklch(26% 0.078 126.9)",
+          "oklch(38% 0.078 126.9)",
+          "oklch(49% 0.078 126.9)",
+          "oklch(61% 0.078 126.9)",
+          "oklch(72% 0.078 126.9)",
+          "oklch(84% 0.078 126.9)",
+          "oklch(95% 0.078 126.9)"
+        ],
+        "purpose": "Vollton von Register 5; derzeit nur als Reiterflaeche sichtbar."
+      },
+      "karton": {
+        "role": "primary",
+        "displayName": "Karton",
+        "canonical": "oklch(38.7% 0.137 270.8)",
+        "tonalRamp": [
+          "oklch(15% 0.137 270.8)",
+          "oklch(26% 0.137 270.8)",
+          "oklch(38% 0.137 270.8)",
+          "oklch(49% 0.137 270.8)",
+          "oklch(61% 0.137 270.8)",
+          "oklch(72% 0.137 270.8)",
+          "oklch(84% 0.137 270.8)",
+          "oklch(95% 0.137 270.8)"
+        ],
+        "purpose": "Alias auf den Vollton des laufenden Registers; wird zur Laufzeit gesetzt."
+      },
+      "papier": {
+        "role": "neutral",
+        "displayName": "Papierweiss",
+        "canonical": "oklch(97.6% 0.007 97.4)",
+        "tonalRamp": [
+          "oklch(15% 0.007 97.4)",
+          "oklch(26% 0.007 97.4)",
+          "oklch(38% 0.007 97.4)",
+          "oklch(49% 0.007 97.4)",
+          "oklch(61% 0.007 97.4)",
+          "oklch(72% 0.007 97.4)",
+          "oklch(84% 0.007 97.4)",
+          "oklch(95% 0.007 97.4)"
+        ],
+        "purpose": "Jede Schrift auf dem Karton, die Folienflaeche, der Fokusring."
+      },
+      "tinte": {
+        "role": "neutral",
+        "displayName": "Volltinte",
+        "canonical": "oklch(18.9% 0.010 107.3)",
+        "tonalRamp": [
+          "oklch(15% 0.010 107.3)",
+          "oklch(26% 0.010 107.3)",
+          "oklch(38% 0.010 107.3)",
+          "oklch(49% 0.010 107.3)",
+          "oklch(61% 0.010 107.3)",
+          "oklch(72% 0.010 107.3)",
+          "oklch(84% 0.010 107.3)",
+          "oklch(95% 0.010 107.3)"
+        ],
+        "purpose": "Jede Schrift auf der Folie und im Dialog; der Weiter-Knopf."
+      },
+      "pult": {
+        "role": "neutral",
+        "displayName": "Pult",
+        "canonical": "oklch(26.7% 0.007 106.9)",
+        "tonalRamp": [
+          "oklch(15% 0.007 106.9)",
+          "oklch(26% 0.007 106.9)",
+          "oklch(38% 0.007 106.9)",
+          "oklch(49% 0.007 106.9)",
+          "oklch(61% 0.007 106.9)",
+          "oklch(72% 0.007 106.9)",
+          "oklch(84% 0.007 106.9)",
+          "oklch(95% 0.007 106.9)"
+        ],
+        "purpose": "Unterlage: Seitengrund, Reiterkamm, Registerzeile, Tiefe jeder Stanzung."
+      },
+      "zinnober": {
+        "role": "secondary",
+        "displayName": "Zinnober",
+        "canonical": "oklch(58.6% 0.200 32.3)",
+        "tonalRamp": [
+          "oklch(15% 0.200 32.3)",
+          "oklch(26% 0.200 32.3)",
+          "oklch(38% 0.200 32.3)",
+          "oklch(49% 0.200 32.3)",
+          "oklch(61% 0.200 32.3)",
+          "oklch(72% 0.200 32.3)",
+          "oklch(84% 0.200 32.3)",
+          "oklch(95% 0.200 32.3)"
+        ],
+        "purpose": "Ausschliesslich Errata-Kante und abgewiesene Feldunterlinie."
+      },
+      "errata": {
+        "role": "secondary",
+        "displayName": "Errata-Rot",
+        "canonical": "oklch(47.4% 0.162 32.6)",
+        "tonalRamp": [
+          "oklch(15% 0.162 32.6)",
+          "oklch(26% 0.162 32.6)",
+          "oklch(38% 0.162 32.6)",
+          "oklch(49% 0.162 32.6)",
+          "oklch(61% 0.162 32.6)",
+          "oklch(72% 0.162 32.6)",
+          "oklch(84% 0.162 32.6)",
+          "oklch(95% 0.162 32.6)"
+        ],
+        "purpose": "Flaeche des Errata-Streifens; traegt Papierweiss mit 6,8:1."
+      },
+      "folienton-neben": {
+        "role": "neutral",
+        "displayName": "Folien-Nebenton",
+        "canonical": "oklch(39.1% 0.032 266.1)",
+        "tonalRamp": [
+          "oklch(15% 0.032 266.1)",
+          "oklch(26% 0.032 266.1)",
+          "oklch(38% 0.032 266.1)",
+          "oklch(49% 0.032 266.1)",
+          "oklch(61% 0.032 266.1)",
+          "oklch(72% 0.032 266.1)",
+          "oklch(84% 0.032 266.1)",
+          "oklch(95% 0.032 266.1)"
+        ],
+        "purpose": "Beschriftungen und Einheiten auf der Folienflaeche."
+      },
+      "richtung-mehr": {
+        "role": "tertiary",
+        "displayName": "Richtung Mehr",
+        "canonical": "oklch(32.3% 0.060 163.6)",
+        "tonalRamp": [
+          "oklch(15% 0.060 163.6)",
+          "oklch(26% 0.060 163.6)",
+          "oklch(38% 0.060 163.6)",
+          "oklch(49% 0.060 163.6)",
+          "oklch(61% 0.060 163.6)",
+          "oklch(72% 0.060 163.6)",
+          "oklch(84% 0.060 163.6)",
+          "oklch(95% 0.060 163.6)"
+        ],
+        "purpose": "Fette Zahl der Veraenderungszeile, wenn die Kennzahl besser steht."
+      },
+      "richtung-minder": {
+        "role": "tertiary",
+        "displayName": "Richtung Minder",
+        "canonical": "oklch(34.8% 0.120 30.9)",
+        "tonalRamp": [
+          "oklch(15% 0.120 30.9)",
+          "oklch(26% 0.120 30.9)",
+          "oklch(38% 0.120 30.9)",
+          "oklch(49% 0.120 30.9)",
+          "oklch(61% 0.120 30.9)",
+          "oklch(72% 0.120 30.9)",
+          "oklch(84% 0.120 30.9)",
+          "oklch(95% 0.120 30.9)"
+        ],
+        "purpose": "Fette Zahl der Veraenderungszeile, wenn die Kennzahl schlechter steht."
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Lage-Ueberschrift und Registertitel; balancierter Umbruch, max. 38ch."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Der Kennzahlenwert auf der Folie — die groesste Zahl der Flaeche."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Zeilenbezeichnungen, Stellfelder, Klappen, Knoepfe; Tabellenziffern global."
+      },
+      "body-neben": {
+        "displayName": "Body-Neben",
+        "purpose": "Einheiten, Fortschreibung, Delta-Zelle, Registerzeile."
+      },
+      "klein": {
+        "displayName": "Klein",
+        "purpose": "Errata, Sperrnotiz, Herleitung, Freigabe, Vermerk."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Ressort- und Folienueberschrift; Versalien ueber einer echten Gruppe."
+      },
+      "kennung": {
+        "displayName": "Kennung",
+        "purpose": "Mono nur fuer Registernummer, Formel, Reiterjahre, Klappmarke."
+      }
+    },
+    "shadows": [
+      {
+        "name": "folienkante",
+        "value": "-2px 0 0 rgb(0 0 0 / .3), 9px 10px 0 rgb(0 0 0 / .26)",
+        "purpose": "Die aufgelegte Acetatfolie: Heftkante links, harter Versatz auf dem Karton. Keine Weichzeichnung."
+      },
+      {
+        "name": "vorlagenkante",
+        "value": "9px 10px 0 rgb(0 0 0 / .3)",
+        "purpose": "Der modale Beschluss, dasselbe Material wie die Folie."
+      },
+      {
+        "name": "stanzung",
+        "value": "inset 0 1px 2px rgb(0 0 0 / .5)",
+        "purpose": "Jedes Loch: Flaeche zeigt das Pult, Innenkante die Materialstaerke. Gestanzt = gewaehlt."
+      },
+      {
+        "name": "stanzung-heftung",
+        "value": "inset 0 1px 2px rgb(0 0 0 / .55)",
+        "purpose": "Die Heftloecher am linken Blattrand."
+      }
+    ],
+    "motion": [
+      {
+        "name": "scharnier",
+        "value": "90ms steps(2, jump-none)",
+        "purpose": "Die einzige Bewegung der Welt: zwei Bilder, kein Uebergang, kein Easing. Delta-Zelle und Folie bekommen sie beim Fortschreiben."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "band",
+        "value": "62rem"
+      },
+      {
+        "name": "schmal",
+        "value": "34rem"
+      }
+    ],
+    "runtimeTokens": [
+      {
+        "name": "--folie-alpha",
+        "value": "0.805–0.844 (geloest, Ziel 13:1)",
+        "purpose": "Deckkraft der Folie, per Binaersuche gegen den Kartonton geloest (loeseDeckkraft in js/registerband.js)."
+      },
+      {
+        "name": "--neben-alpha",
+        "value": "0.600–0.829 (geloest, Ziel 4,6:1)",
+        "purpose": "Deckkraft der Nebenrollen auf dem Karton (loeseNebenton). Fester Wert 0,74 fiel auf Petrol mit 4,01:1 und Sienna mit 4,49:1 durch."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Stellfeld",
+      "kind": "input",
+      "refersTo": "stellfeld",
+      "description": "Ueberschreibbarer Wert ohne Kasten — der Kern der Flaeche; kein Regler.",
+      "html": "<input class=\"ds-stellfeld\" type=\"text\" inputmode=\"decimal\" value=\"11.604\">",
+      "css": ".ds-stellfeld { appearance: none; background: none; border: 0; border-bottom: 1.5px solid rgb(248 247 242 / .55); border-radius: 0; font: 700 17px/1.45 Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums; color: #F8F7F2; text-align: right; min-height: 44px; padding: 0 0.2rem; width: 10rem; } .ds-stellfeld:hover { border-bottom-color: #F8F7F2; } .ds-stellfeld:focus-visible { outline: 2px solid #F8F7F2; outline-offset: 2px; } .ds-stellfeld:disabled { border-bottom-style: dotted; opacity: .8; } .ds-stellfeld[aria-invalid=\"true\"] { border-bottom-color: #D93A1E; border-bottom-width: 2.5px; }"
+    },
+    {
+      "name": "Klappe (Ja/Nein)",
+      "kind": "button",
+      "refersTo": "klappe",
+      "description": "Das einzige gerahmte Bedienelement; gedrueckt kippt die Flaeche auf Papierweiss um.",
+      "html": "<button class=\"ds-klappe\" type=\"button\" aria-pressed=\"true\">ja</button>",
+      "css": ".ds-klappe { appearance: none; background: none; border: 1.5px solid rgb(248 247 242 / .55); border-radius: 0; font: 17px/1.45 Inter, system-ui, sans-serif; color: #F8F7F2; min-height: 44px; min-width: 5rem; padding: 0 0.8rem; cursor: pointer; } .ds-klappe[aria-pressed=\"true\"] { background: #F8F7F2; color: #2B3A8C; border-color: #F8F7F2; } .ds-klappe:focus-visible { outline: 2px solid #F8F7F2; outline-offset: 2px; }"
+    },
+    {
+      "name": "Knopf Register schliessen",
+      "kind": "button",
+      "refersTo": "schliessen",
+      "description": "Der einzige Vollflaechen-Knopf auf dem Karton; deaktiviert, solange nichts bewegt ist.",
+      "html": "<button class=\"ds-schliessen\" type=\"button\">Register schließen</button>",
+      "css": ".ds-schliessen { appearance: none; background: #F8F7F2; color: #14140F; border: 2px solid #F8F7F2; border-radius: 0; font: 700 17px/1.45 Inter, system-ui, sans-serif; min-height: 44px; padding: 0 1.2rem; cursor: pointer; } .ds-schliessen:hover { background: #fff; } .ds-schliessen:focus-visible { outline: 2px solid #F8F7F2; outline-offset: 2px; } .ds-schliessen:disabled { background: none; color: rgb(248 247 242 / .5); border-color: rgb(248 247 242 / .3); cursor: default; }"
+    },
+    {
+      "name": "Reiter",
+      "kind": "nav",
+      "refersTo": "reiter",
+      "description": "Ein Reiter je Register, senkrecht in Mono, Hoehe proportional zum Umfang; der laufende schiebt sich unter den Karton.",
+      "html": "<nav class=\"ds-kamm\" aria-label=\"Register\"><button class=\"ds-reiter\" style=\"background:#2B3A8C;flex:7\" aria-current=\"true\"><span>2025–2028</span></button><button class=\"ds-reiter\" style=\"background:#1C6B63;flex:9\" aria-current=\"false\" disabled><span>2029–2032</span></button><button class=\"ds-reiter\" style=\"background:#7A4E14;flex:13\" aria-current=\"false\" disabled><span>2033–2036</span></button></nav>",
+      "css": ".ds-kamm { display: flex; flex-direction: column; gap: 3px; background: #262622; width: 88px; height: 320px; padding-top: 1.4rem; } .ds-reiter { appearance: none; border: 0; border-radius: 0; cursor: pointer; writing-mode: vertical-rl; text-orientation: mixed; font: 0.8125rem/1.45 \"JetBrains Mono\", ui-monospace, monospace; letter-spacing: 0.1em; color: #F8F7F2; display: flex; align-items: center; justify-content: center; padding: 0.7rem 0; min-width: 44px; } .ds-reiter[aria-current=\"true\"] { font-weight: 700; margin-left: -10px; } .ds-reiter[aria-current=\"false\"] { opacity: .62; } .ds-reiter:disabled { cursor: default; } .ds-reiter:focus-visible { outline: 2px solid #F8F7F2; outline-offset: 2px; }"
+    },
+    {
+      "name": "Stellgroessenzeile mit Stanzloch",
+      "kind": "custom",
+      "refersTo": "stellfeld",
+      "description": "Die Zeile auf dem Karton: Bezeichnung, Wert, Fortschreibung, Veraenderung. Gestanzt in der Marge heisst gewaehlt.",
+      "html": "<div class=\"ds-zeile\" data-geaendert=\"true\"><span class=\"ds-bez\">Spitzensteuersatz<span class=\"ds-einheit\">, %</span></span><span class=\"ds-wert\">47,0</span><span class=\"ds-fort\">45,0</span><span class=\"ds-delta\">+2,0 <span class=\"ds-wort\">angehoben</span></span></div>",
+      "css": ".ds-zeile { position: relative; display: grid; grid-template-columns: minmax(0,1fr) 7.5rem 6.5rem 8.5rem; gap: 0 1.1rem; align-items: baseline; padding: 0.35rem 0; border-bottom: 1px solid rgb(248 247 242 / .2); background: #2B3A8C; color: #F8F7F2; font: 17px/1.45 Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums; margin-left: 1.7rem; } .ds-zeile[data-geaendert=\"true\"]::before { content: \"\"; position: absolute; left: -1.15rem; top: 1rem; width: 10px; height: 10px; border-radius: 50%; background: #262622; box-shadow: inset 0 1px 2px rgb(0 0 0 / .5); } .ds-zeile .ds-wert, .ds-zeile .ds-fort, .ds-zeile .ds-delta { text-align: right; } .ds-zeile .ds-wert { font-weight: 700; } .ds-zeile .ds-einheit, .ds-zeile .ds-fort, .ds-zeile .ds-wort { color: rgb(248 247 242 / .614); font-size: 0.9375rem; }"
+    },
+    {
+      "name": "Errata-Streifen",
+      "kind": "custom",
+      "refersTo": "errata-streifen",
+      "description": "Eingelegt, nicht eingefaerbt. Der einzige Ort der Welt, an dem Rot vorkommt.",
+      "html": "<p class=\"ds-errata\">Auf 75,0 % begrenzt. Zulässig sind 20,0 bis 75,0 %.</p>",
+      "css": ".ds-errata { background: #A32912; color: #F8F7F2; border-left: 4px solid #D93A1E; border-radius: 0; font: 600 0.875rem/1.45 Inter, system-ui, sans-serif; padding: 0.4rem 0.7rem; margin: 0.25rem 0 0.4rem; }"
+    },
+    {
+      "name": "Folie (aufgelegte Auswertung)",
+      "kind": "card",
+      "refersTo": "folie",
+      "description": "Milchacetat ueber Vollton: geloeste Deckkraft, Stanzloecher an der Heftkante, harte Versatzkante. Die einzige Ebene, die ueber einer anderen liegt.",
+      "html": "<aside class=\"ds-folie\"><h2>Auswertung, aufgelegt</h2><dl class=\"ds-kennzahl\"><dt>Haushaltssaldo</dt><dd><span class=\"ds-zahl\">−119<span class=\"ds-einheit\"> Mrd. €</span></span></dd><p class=\"ds-ab\" data-richtung=\"mehr\"><b>+12 Mrd. €</b> höher als zum Rundenstart</p></dl><div class=\"ds-abschluss\"><div><span>Abschluss</span><span>−119 Mrd. €</span></div></div></aside>",
+      "css": ".ds-folie { position: relative; background: rgb(248 247 242 / 0.836); color: #14140F; border-radius: 0; padding: 1rem 1.2rem 1.1rem 2.2rem; width: min(400px, 100%); font: 17px/1.45 Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums; box-shadow: -2px 0 0 rgb(0 0 0 / .3), 9px 10px 0 rgb(0 0 0 / .26); } .ds-folie::before, .ds-folie::after { content: \"\"; position: absolute; left: 0.7rem; width: 11px; height: 11px; border-radius: 50%; background: #2B3A8C; box-shadow: inset 0 1px 2px rgb(0 0 0 / .4); } .ds-folie::before { top: 1.1rem; } .ds-folie::after { bottom: 1.1rem; } .ds-folie h2 { font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; color: #3D4557; font-weight: 700; margin: 0 0 0.5rem; } .ds-kennzahl { display: grid; grid-template-columns: 1fr auto; gap: 0 0.7rem; align-items: baseline; padding: 0.45rem 0; border-bottom: 1px solid rgb(20 20 15 / .18); margin: 0; } .ds-kennzahl dt { font-size: 0.875rem; color: #3D4557; } .ds-kennzahl dd { margin: 0; text-align: right; } .ds-zahl { font-size: 1.375rem; font-weight: 700; letter-spacing: -0.015em; } .ds-zahl .ds-einheit { font-size: 0.8125rem; font-weight: 400; color: #3D4557; } .ds-ab { grid-column: 1 / -1; font-size: 0.8125rem; color: #3D4557; margin: 0; } .ds-ab[data-richtung=\"mehr\"] b { color: #0E3D2B; } .ds-ab[data-richtung=\"minder\"] b { color: #6B160B; } .ds-abschluss { border-top: 3px double #14140F; margin-top: 0.7rem; padding-top: 0.5rem; } .ds-abschluss div { display: flex; justify-content: space-between; gap: 1rem; font-weight: 700; font-size: 1.0625rem; }"
+    },
+    {
+      "name": "Gesperrtes Ressort (Bildseite nach unten)",
+      "kind": "custom",
+      "refersTo": "errata-streifen",
+      "description": "Die getoente Vollbreitenflaeche entzieht Rang und verleiht ihn nie: sie heisst ausschliesslich \"noch nicht freigegeben\". Kein Ausgrauen der Erklaerung.",
+      "html": "<section class=\"ds-gesperrt\"><h2>Umwelt und Klima<span class=\"ds-zahl-klein\">2 Stellgrößen</span></h2><p class=\"ds-sperrnotiz\"><span class=\"ds-marke\" aria-hidden=\"true\"></span>Bildseite nach unten — dieses Ressort wird ab Register 4 freigegeben.</p></section>",
+      "css": ".ds-gesperrt { background: rgb(0 0 0 / .3); padding: 0.2rem 0.9rem 0.6rem; color: #F8F7F2; font: 17px/1.45 Inter, system-ui, sans-serif; } .ds-gesperrt h2 { font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; color: rgb(248 247 242 / .614); font-weight: 700; display: flex; align-items: baseline; gap: 0.7rem; border-bottom: 1px solid rgb(248 247 242 / .28); padding: 0 0 0.3rem; margin: 0; } .ds-zahl-klein { font-family: \"JetBrains Mono\", monospace; letter-spacing: 0.08em; } .ds-sperrnotiz { font-size: 0.875rem; padding: 0.55rem 0 0.2rem; display: flex; align-items: center; gap: 0.5rem; margin: 0; } .ds-marke { width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid currentColor; }"
+    },
+    {
+      "name": "Registerzeile",
+      "kind": "nav",
+      "refersTo": "registerzeile",
+      "description": "Fest am unteren Rand auf Pultflaeche; traegt den laufenden Abschluss schmal, was die Folie breit traegt.",
+      "html": "<footer class=\"ds-registerzeile\"><span class=\"ds-t\">Register <b>1</b> von 5</span><span class=\"ds-t\">Abschluss <b>−119 Mrd. €</b></span><span class=\"ds-t\">3 Stellgrößen bewegt</span><button class=\"ds-schliessen2\" type=\"button\">Register schließen</button></footer>",
+      "css": ".ds-registerzeile { background: #262622; color: #F8F7F2; border-top: 1px solid rgb(248 247 242 / .3); padding: 0.6rem clamp(1.1rem, 2.6vw, 2rem); display: flex; align-items: center; gap: 0.5rem 1.4rem; flex-wrap: wrap; min-height: 44px; font: 0.9375rem/1.45 Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums; } .ds-registerzeile .ds-t { color: rgb(248 247 242 / .82); } .ds-registerzeile .ds-t b { color: #F8F7F2; font-weight: 700; } .ds-schliessen2 { margin-left: auto; appearance: none; background: #F8F7F2; color: #14140F; border: 2px solid #F8F7F2; border-radius: 0; font: 700 17px/1.45 Inter, system-ui, sans-serif; min-height: 44px; padding: 0 1.2rem; cursor: pointer; } .ds-schliessen2:focus-visible { outline: 2px solid #F8F7F2; outline-offset: 2px; }"
+    },
+    {
+      "name": "Herleitung",
+      "kind": "custom",
+      "refersTo": "stellfeld",
+      "description": "Die Herleitung liegt unter der Zeile, nicht daneben; Klappmarke in Mono, Zusammenfassung 44px hoch.",
+      "html": "<details class=\"ds-herleitung\" open><summary>Spitzensteuersatz<span class=\"ds-einheit\">, %</span></summary><dl><dt>Rechenweg</dt><dd class=\"ds-formel\">dT/dt · (1 − ε · t/(1−t))</dd><dt>Fundstelle</dt><dd>Beispielinstitut, 2024</dd></dl></details>",
+      "css": ".ds-herleitung { background: #2B3A8C; color: #F8F7F2; font: 17px/1.45 Inter, system-ui, sans-serif; padding: 0 0.5rem; } .ds-herleitung > summary { list-style: none; cursor: pointer; min-height: 44px; display: block; padding: 0.6rem 0; } .ds-herleitung > summary::-webkit-details-marker { display: none; } .ds-herleitung > summary::after { content: \"+\"; font-family: \"JetBrains Mono\", monospace; font-size: 0.8125rem; color: rgb(248 247 242 / .614); padding-left: 0.4rem; } .ds-herleitung[open] > summary::after { content: \"\\2212\"; } .ds-herleitung[open] > summary { font-weight: 700; } .ds-herleitung:focus-within > summary { outline: 2px solid #F8F7F2; outline-offset: 2px; } .ds-herleitung dl { font-size: 0.875rem; padding: 0.1rem 0 0.7rem 0.9rem; border-left: 1px solid rgb(248 247 242 / .3); max-width: 66ch; margin: 0; } .ds-herleitung dt { font-weight: 700; margin-top: 0.45rem; } .ds-herleitung dd { color: rgb(248 247 242 / .614); margin: 0; } .ds-formel { font-family: \"JetBrains Mono\", ui-monospace, monospace; font-size: 0.8125rem; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Das Acetat-Registerband",
+    "overview": "Die Spielflaeche ist ein aufgeschlagenes Registerband. Eine Legislaturperiode ist ein Registerblatt: ganzflaechiger Vollton-Karton, der die Stellgroessen traegt, darueber — einen Millimeter, nicht eine Ebene — die gestanzte Milchacetatfolie mit der Auswertung. Rechts steht der Reiterkamm ueber die volle Hoehe, ein Reiter je Periode. Es gibt keine Karten, keine Kacheln, keine Schubladen und keine Bedienfelder; es gibt ein Blatt, eine Folie und Reiter.\n\nDer Ton ist amtlich-handwerklich, nicht digital-freundlich: Aktenmaterial, das jemand tatsaechlich in der Hand hatte. Die Dichte ist hoch — Zeilen statt Boxen, Linien statt Abstaende —, die Farbe dagegen kommt in grossen, ruhigen Flaechen. Die gesamte Tiefe entsteht aus Physik: Papier liegt auf Karton, Karton liegt auf dem Pult. Nichts wird weichgezeichnet, nichts schwebt, nichts glueht.\n\nLage ist der einzige Rang. Wichtigkeit wird ausschliesslich durch Uebereinanderliegen ausgedrueckt — nie durch eine getoente Flaeche, eine Umrandung, eine Akzentfarbe oder einen Zierschatten. Wer in dieser Welt etwas hervorheben will, legt es obenauf oder laesst es.",
+    "keyCharacteristics": [
+      "Ein Vollton je Register, ganzflaechig auf dem Karton",
+      "Radius 0 ausnahmslos; das einzige runde Element ist das Stanzloch",
+      "Tiefe nur als harte Versatzkante ohne Weichzeichnung",
+      "Deckkraft der Folie und des Nebentons wird zur Laufzeit gegen den Kartonton gerechnet, nie gesetzt",
+      "Zustandssprache aus der Welt: gestanzt, Bildseite nach unten, halb eingehaengt, Zinnober-Errata",
+      "Genau eine Bewegung: das Scharnier, 90 ms, zweistufig, kein Easing",
+      "Inter mit Tabellenziffern; JetBrains Mono nur fuer Kennungen"
+    ],
+    "rules": [
+      {
+        "name": "Die Geloeste-Deckkraft-Regel",
+        "section": "colors",
+        "body": "Nebenrollen bekommen ihre Deckkraft gegen den Kartonton geloest, nicht gesetzt. loeseNebenton() sucht per Binaersuche (24 Schritte) die kleinste Deckkraft, bei der Papierweiss auf dem jeweiligen Registerton 4,6:1 erreicht; ueber die fuenf Toene ergibt das Alpha 0,600 (Weinrot) bis 0,829 (Petrol). Ein fester Wert fiel durch die Pflicht: 0,74 kam auf Petrol auf 4,01:1 und auf Sienna auf 4,49:1. Dieselbe Suche gilt in loeseDeckkraft() fuer die Folie selbst, Ziel 13:1, Alpha 0,805 bis 0,844."
+      },
+      {
+        "name": "Die Zinnober-Regel",
+        "section": "colors",
+        "body": "Zinnober gehoert ausschliesslich dem Errata-Streifen. Nicht fuer Hinweise, nicht fuer Vorbehalte, nicht fuer den wichtigsten Knopf."
+      },
+      {
+        "name": "Die Modellmassstab-Regel",
+        "section": "colors",
+        "body": "Farbige Richtungsangaben werden gegen den Status quo dieses Modells gebildet, nie gegen eine Realweltschwelle. Andernfalls kann eine Politik nicht gelingen und die Farbe luegt."
+      },
+      {
+        "name": "Die Kennungs-Regel",
+        "section": "typography",
+        "body": "Mono bedeutet \"das ist eine Kennung oder ein Rechenweg\", nicht \"das ist technisch\". Registernummer, Formel und Reiterjahre tragen sie; Kennzahlen und Geldbetraege nicht."
+      },
+      {
+        "name": "Die Anzeigedifferenz-Regel",
+        "section": "typography",
+        "body": "Eine angezeigte Differenz wird aus den angezeigten Werten gebildet, nicht aus den rohen. Sonst stehen −119, −53 und \"+65\" nebeneinander und die Bilanz geht um eins daneben."
+      },
+      {
+        "name": "Die Lage-ist-Rang-Regel",
+        "section": "elevation",
+        "body": "Es liegt genau eine Sache ueber einer anderen: die Folie ueber dem Karton. Eine zweite Ebene, ein aufsteigender Schatten beim Hover, eine schwebende Karte oder ein Weichzeichner sind in dieser Welt nicht vorgesehen."
+      },
+      {
+        "name": "Die Entzugsflaechen-Regel",
+        "section": "elevation",
+        "body": "Die getoente Vollbreitenflaeche entzieht Rang und verleiht ihn nie. Sie bedeutet ausschliesslich \"Bildseite nach unten\": ein Ressort, das in diesem Register noch nicht freigegeben ist. Sie darf nicht zu einem Kartensystem verallgemeinert werden, nicht zur Gruppierung, nicht zur Betonung, nicht als Panel. Kein Ausgrauen der Schrift: die Erklaertexte muessen lesbar bleiben."
+      }
+    ],
+    "dos": [
+      "Do den Kartonton pro Register setzen und --folie-alpha sowie --neben-alpha derselben Binaersuche ueberlassen (Ziel 13:1 bzw. 4,6:1).",
+      "Do Rang durch Lage ausdruecken: die Folie liegt ueber dem Karton, sonst nichts ueber nichts.",
+      "Do Radius 0 verwenden und border-radius: 0 dort ausdruecklich setzen, wo der Browser von sich aus rundet.",
+      "Do Tiefe als harte Versatzkante schreiben (9px 10px 0) und Stanzungen als Pultflaeche mit inset 0 1px 2px.",
+      "Do Zustaende in der Sprache der Welt benennen: gestanzt = gewaehlt, Bildseite nach unten = gesperrt, halb eingehaengt = Freigabe steht aus, Zinnober-Errata = Fehler.",
+      "Do jede Bewegung auf das Scharnier beschraenken: 90 ms, steps(2, jump-none), kein Easing an keiner Stelle.",
+      "Do 44px Mindestmass fuer jedes Bedienelement halten, auch fuer eine <summary>.",
+      "Do Fehlertext im Klartext mit zulaessigem Bereich in den Errata-Streifen schreiben und ihn sofort ansagen, nicht entprellt.",
+      "Do Schriften lokal aus fonts/ einbinden; kein externer Schriftdienst."
+    ],
+    "donts": [
+      "Don't eine Deckkraft fuer eine Nebenrolle von Hand setzen. Ein fester Wert fiel auf Petrol (4,01:1) und Sienna (4,49:1) durch die Pflicht.",
+      "Don't die getoente Vollbreitenflaeche zum Kartensystem machen. Sie entzieht Rang und verleiht ihn nie.",
+      "Don't Zinnober ausserhalb des Errata-Streifens und der abgewiesenen Feldunterlinie verwenden.",
+      "Don't einen weichgezeichneten Schatten, einen Schein oder ein Leuchten einfuehren; Tiefe faellt hier hart.",
+      "Don't Werte in Kacheln, Karten oder Panels gruppieren; Gruppen entstehen aus Ueberschrift und Haarlinie.",
+      "Don't Regler oder Bedienfelder bauen. Ein Wert wird ueberschrieben.",
+      "Don't einen Easing-Verlauf, eine Uebergangsdauer oder eine zweite Animation ergaenzen.",
+      "Don't ein gesperrtes Ressort ausgrauen — seine Erklaerung muss lesbar bleiben.",
+      "Don't Richtungsfarben gegen eine Realweltschwelle bilden; Massstab ist der Status quo dieses Modells."
+    ]
+  }
+}

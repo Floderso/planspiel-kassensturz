@@ -1,0 +1,332 @@
+/* SPDX-License-Identifier: CC-BY-4.0 */
+/* Copyright 2025 Florian Aram Feuerriegel — kassensturz.org */
+/* ═══════════════════════════════════════════════════════════════════════════
+   KABINETT — die Spielflaeche als Versammlung
+
+   Eine gleichmaessig dicke Kontur um alles. Flache Fuellung, kein Verlauf in
+   irgendeiner Form. Der einzige Verlauf der Seite ist der Schein hinter der
+   Mitte, und der gehoert dem Grund.
+
+   Keine Figur ist Dekoration: jede traegt Zahl und Wort, das Gesicht ist das
+   vierte Signal neben Vorzeichen, Farbe und Wort — nie das einzige.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --grund:     #4B2BC4;
+  --grund-hell:#6B4ED8;   /* 5,49:1 mit Papierweiss — 7A5BE8 lag bei 4,53 und damit zu knapp an der Pflicht */
+  --tinte:     #17141F;
+  --papier:    #FFFBF2;
+
+  --gruen:     #177040;   /* 5,93:1 auf Papier — #1E8A4C lag bei 4,24 */
+  --rot:       #C0352C;   /* 5,37:1 auf Papier, symmetrisch auch fuer weissen Streifentext */
+
+  /* Ressortfarben — flach, gesaettigt, voneinander unterscheidbar */
+  --res-fin:   #FFC93C;
+  --res-wir:   #4ECDC4;
+  --res-soz:   #FF8FB1;
+  --res-umw:   #8BD450;
+
+  --kontur:    3px;
+  --rundung:   22px;
+  --ziel:      48px;
+  --rand:      clamp(1rem, 3vw, 2.4rem);
+  --sacken:    180ms;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(60% 45% at 50% 30%, var(--grund-hell) 0%, transparent 70%),
+    var(--grund);
+  background-attachment: fixed;
+  color: var(--papier);
+  font-family: 'Baloo 2', Inter, system-ui, sans-serif;
+  font-size: 17px; line-height: 1.4;
+}
+
+.zahl { font-family: Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1; }
+
+::selection { background: var(--papier); color: var(--grund); }
+/* Auf dem Violettgrund traegt der Ring Papierweiss, auf den Papierkarten
+   Tinte. Die frueher hier stehende Klasse .blatt existiert im Markup nicht,
+   also lag ein papierweisser Ring auf papierweissem Grund — 1,0:1. */
+:focus-visible { outline: var(--kontur) solid var(--papier); outline-offset: 3px; }
+.ressort :focus-visible,
+.ausruf :focus-visible,
+.vermerk :focus-visible,
+dialog.vorlage :focus-visible,
+.wesen :focus-visible { outline-color: var(--tinte); }
+* { scrollbar-color: var(--papier) var(--grund); scrollbar-width: thin; }
+
+.sprung {
+  position: absolute; left: var(--rand); top: -5rem; z-index: 30;
+  background: var(--papier); color: var(--tinte);
+  border: var(--kontur) solid var(--tinte); border-radius: var(--rundung);
+  padding: 0.7rem 1.2rem; font-weight: 800;
+}
+.sprung:focus { top: 0.8rem; }
+
+/* ── Kopf ────────────────────────────────────────────────────────────────── */
+
+.kopf {
+  padding: 1.1rem var(--rand) 0;
+  display: flex; align-items: baseline; gap: 0.4rem 1.2rem; flex-wrap: wrap;
+}
+.kopf h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.01em; }
+.kopf .fakt { font-size: 0.9375rem; font-weight: 500; color: rgb(255 251 242 / .88); }
+.kopf .fakt b { color: var(--papier); font-weight: 800; }
+.kopf .rechts { margin-left: auto; }
+
+/* ── Der Rat: der Stapel ─────────────────────────────────────────────────── */
+
+.rat {
+  padding: 1rem var(--rand) 0;
+  display: flex; justify-content: center; align-items: flex-end;
+  gap: 0;
+}
+
+.wesen {
+  width: clamp(150px, 20vw, 196px);
+  text-align: center;
+  position: relative;
+}
+/* Sie sitzen ineinander, nicht nebeneinander: rund ein Viertel Ueberlappung
+   und versetzte Hoehen — das ist die Stapelkomposition der Vorlage, nicht
+   eine Reihe von Maskottchen. */
+/* Ueberlappen soll die Zeichnung, nicht die Beschriftung: die Figur ragt
+   ueber ihre Spalte hinaus, das Schild bleibt in seiner. Sonst verdecken
+   sich die Woerter gegenseitig, und die Vorlage ueberlappt Figuren, keine
+   Texte. Prozentuale Raender scheiden hier aus — sie rechnen gegen den
+   Container, nicht gegen das Element. */
+.wesen + .wesen { margin-left: -28px; }
+.wesen:nth-child(1) { margin-bottom: 34px; }
+.wesen:nth-child(2) { margin-bottom: -8px; }
+.wesen:nth-child(3) { margin-bottom: 42px; }
+.wesen:nth-child(4) { margin-bottom: 0; }
+/* Die Schilder weichen abwechselnd aus, damit die Woerter sich nicht
+   verdecken, waehrend die Zeichnungen einander ueberlappen duerfen. */
+.wesen:nth-child(odd)  .schild { margin-left: -8px; margin-right: 4px; }
+.wesen:nth-child(even) .schild { margin-left: 4px; margin-right: -8px; }
+.wesen:nth-child(1) { z-index: 4; }
+.wesen:nth-child(2) { z-index: 3; }
+.wesen:nth-child(3) { z-index: 2; }
+.wesen:nth-child(4) { z-index: 1; }
+.wesen:hover, .wesen:focus-within { z-index: 5; }
+
+.wesen svg { display: block; width: 140%; margin-left: -20%; height: auto; overflow: visible; }
+
+.wesen .schild {
+  background: var(--papier); color: var(--tinte);
+  border: var(--kontur) solid var(--tinte); border-radius: var(--rundung);
+  padding: 0.45rem 0.6rem 0.55rem; margin: -16px 0 0; position: relative;
+}
+.wesen:nth-child(even) .schild { transform: rotate(-1.4deg); }
+.wesen:nth-child(odd)  .schild { transform: rotate(1.1deg); }
+.wesen .name { font-size: 0.8125rem; font-weight: 700; display: block; }
+.wesen .wert { font-size: 1.75rem; font-weight: 800; line-height: 1.05; display: block; }
+.wesen .wert .einheit { font-size: 0.75rem; font-weight: 700; }
+.wesen .lage { font-size: 0.8125rem; font-weight: 700; display: block; margin-top: 0.1rem; }
+.wesen .lage[data-richtung='mehr']   { color: var(--gruen); }
+.wesen .lage[data-richtung='minder'] { color: var(--rot); }
+.wesen .lage[data-richtung='gleich'] { color: var(--tinte); }
+
+/* ── Die Lage als Ausruf ─────────────────────────────────────────────────── */
+
+.ausruf {
+  margin: 1.3rem var(--rand) 0;
+  background: var(--papier); color: var(--tinte);
+  border: var(--kontur) solid var(--tinte); border-radius: var(--rundung);
+  padding: 0.9rem 1.2rem 1rem;
+}
+.ausruf h2 { font-size: 1.375rem; font-weight: 800; line-height: 1.2; text-wrap: balance; max-width: 34ch; }
+.ausruf p  { font-size: 0.9375rem; font-weight: 500; margin-top: 0.3rem; max-width: 68ch; }
+
+/* ── Das Kabinett ────────────────────────────────────────────────────────── */
+
+.kabinett {
+  padding: 1.3rem var(--rand) 8rem;
+  display: grid; gap: 1.1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 292px), 1fr));
+  align-items: start;
+}
+
+.ressort {
+  background: var(--papier); color: var(--tinte);
+  border: var(--kontur) solid var(--tinte); border-radius: var(--rundung);
+  padding: 0.9rem 1rem 1rem;
+}
+.ressort > header { display: flex; align-items: center; gap: 0.7rem; }
+/* 54px waren zu klein: der Unterschied zwischen ruhig und erleichtert
+   rendert dort als 2px gegen 7px und ist nicht ablesbar. */
+.ressort > header svg { width: 68px; height: 68px; flex: 0 0 auto; overflow: visible; }
+.ressort h2 { font-size: 1.0625rem; font-weight: 800; line-height: 1.15; }
+.ressort .anzahl { font-size: 0.8125rem; font-weight: 700; color: rgb(23 20 31 / .72); }
+
+.ressort[data-schlaeft='true'] { background: #E7E1D6; }
+.schlafnotiz { font-size: 0.875rem; font-weight: 700; margin-top: 0.6rem; }
+
+/* ── Die Zeile ───────────────────────────────────────────────────────────── */
+
+.zeile {
+  border-top: 2px solid rgb(23 20 31 / .22);
+  padding: 0.35rem 0 0.2rem;
+  display: grid; grid-template-columns: minmax(0, 1fr) 6.2rem;
+  gap: 0 0.7rem; align-items: start;
+}
+.zeile > details.woher { grid-column: 1; }
+.zeile:first-of-type { border-top: 0; margin-top: 0.5rem; }
+
+.zeile .bez { font-size: 0.9375rem; font-weight: 700; min-width: 0; }
+.zeile .bez .einheit { font-weight: 500; color: rgb(23 20 31 / .72); white-space: nowrap; }
+
+.stell {
+  appearance: none; background: none;
+  border: 0; border-bottom: var(--kontur) solid var(--tinte);
+  font-family: Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums;
+  font-size: 1.125rem; font-weight: 700; color: var(--tinte);
+  width: 100%; min-height: var(--ziel); padding: 0 0.2rem; text-align: right;
+}
+.stell:hover { background: rgb(23 20 31 / .06); }
+.stell:disabled { border-bottom-style: dotted; color: rgb(23 20 31 / .6); }
+.stell[aria-invalid='true'] { border-bottom-color: var(--rot); }
+
+.klappe {
+  appearance: none; background: none; color: var(--tinte);
+  border: var(--kontur) solid var(--tinte); border-radius: 999px;
+  font: inherit; font-weight: 800; font-size: 0.9375rem;
+  min-height: var(--ziel); width: 100%; cursor: pointer;
+}
+.klappe[aria-pressed='true'] { background: var(--tinte); color: var(--papier); }
+
+.delta {
+  grid-column: 1 / -1; font-size: 0.875rem; font-weight: 700;
+  padding-bottom: 0.35rem;
+}
+.delta[data-richtung='mehr']   { color: var(--gruen); }
+.delta[data-richtung='minder'] { color: var(--rot); }
+.delta[data-richtung='gleich'] { color: rgb(23 20 31 / .66); }
+
+.fehler {
+  grid-column: 1 / -1;
+  background: var(--rot); color: var(--papier);
+  border-radius: 14px; padding: 0.4rem 0.7rem; margin: 0.1rem 0 0.4rem;
+  font-size: 0.875rem; font-weight: 700;
+}
+
+/* ── Die Herleitung ──────────────────────────────────────────────────────── */
+
+/* Fuenf wiederholte Aufklapp-Zeilen zerschlagen die Karte. Die Herleitung
+   haengt deshalb an der Bezeichnung selbst — ein Fragezeichen am Namen. */
+details.woher > summary {
+  list-style: none; cursor: pointer;
+  min-height: var(--ziel); display: flex; align-items: center;
+  flex-wrap: wrap; gap: 0;
+  font-size: 0.9375rem; font-weight: 700;
+}
+details.woher > summary::-webkit-details-marker { display: none; }
+details.woher > summary::after { content: '?'; font-weight: 800; margin-left: 0.45rem;
+  border: 2px solid rgb(23 20 31 / .5); color: rgb(23 20 31 / .6); border-radius: 999px;
+  width: 1.2rem; height: 1.2rem; display: grid; place-items: center; font-size: 0.75rem;
+  flex: 0 0 auto; }
+details.woher[open] > summary::after { background: var(--tinte); border-color: var(--tinte); color: var(--papier); }
+details.woher > summary:hover::after { border-color: var(--tinte); color: var(--tinte); }
+.woher dl { font-size: 0.875rem; font-weight: 500; padding: 0.1rem 0 0.6rem; max-width: 62ch;
+  grid-column: 1 / -1; }
+.woher dt { font-weight: 800; margin-top: 0.4rem; }
+.woher dd { color: rgb(23 20 31 / .78); }
+.woher .formel { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8125rem; color: var(--tinte); }
+
+/* ── Die Leiste ──────────────────────────────────────────────────────────── */
+
+.leiste {
+  position: fixed; inset: auto 0 0 0; z-index: 20;
+  background: var(--tinte); color: var(--papier);
+  padding-block: 0.7rem; padding-inline: var(--rand);
+  display: flex; align-items: center; gap: 0.5rem 1.3rem; flex-wrap: wrap;
+  min-height: var(--ziel); overflow-x: clip;
+}
+.leiste > * { min-width: 0; }
+.leiste .t { font-size: 0.9375rem; font-weight: 500; color: rgb(255 251 242 / .86); }
+.leiste .t b { color: var(--papier); font-weight: 800; }
+
+.schliessen {
+  margin-left: auto;
+  appearance: none; background: var(--papier); color: var(--tinte);
+  border: var(--kontur) solid var(--papier); border-radius: 999px;
+  font: inherit; font-weight: 800; font-size: 1rem;
+  min-height: var(--ziel); padding: 0 1.4rem; cursor: pointer;
+}
+.schliessen:disabled { background: none; color: rgb(255 251 242 / .55); border-color: rgb(255 251 242 / .4); cursor: default; }
+
+/* ── Die Vorlage ─────────────────────────────────────────────────────────── */
+
+dialog.vorlage {
+  margin: auto; padding: 0; max-width: min(44rem, 92vw); width: 100%;
+  background: var(--papier); color: var(--tinte);
+  border: var(--kontur) solid var(--tinte); border-radius: var(--rundung);
+}
+dialog.vorlage::backdrop { background: rgb(23 20 31 / .7); }
+.v-kopf { padding: 1rem var(--rand) 0; }
+.v-kopf h2 { font-size: 1.25rem; font-weight: 800; }
+.v-hinweis { font-size: 0.9375rem; font-weight: 700; color: rgb(23 20 31 / .72);
+  padding: 0.5rem var(--rand) 0; }
+.v-rumpf { padding: 0.8rem var(--rand); max-height: 52vh; overflow-y: auto; }
+.v-rumpf h3 { font-size: 0.9375rem; font-weight: 800; margin: 0.9rem 0 0.3rem; }
+.v-rumpf h3:first-child { margin-top: 0; }
+.v-rumpf table { width: 100%; border-collapse: collapse; }
+.v-rumpf th { font-size: 0.8125rem; font-weight: 700; color: rgb(23 20 31 / .72);
+  text-align: right; border-bottom: 2px solid var(--tinte); padding: 0.3rem 0.4rem; }
+.v-rumpf th:first-child { text-align: left; }
+.v-rumpf td { padding: 0.4rem; border-bottom: 1px solid rgb(23 20 31 / .18); text-align: right; }
+.v-rumpf td:first-child { text-align: left; font-weight: 700; }
+.v-fuss { padding: 0.9rem var(--rand); display: flex; gap: 0.7rem; flex-wrap: wrap; align-items: center; }
+.zurueck {
+  appearance: none; background: none; color: var(--tinte);
+  border: var(--kontur) solid var(--tinte); border-radius: 999px;
+  font: inherit; font-weight: 800; min-height: var(--ziel); padding: 0 1.2rem; cursor: pointer;
+}
+.v-fuss .weiter { margin-left: auto; background: var(--tinte); color: var(--papier); }
+
+.vermerk {
+  grid-column: 1 / -1; margin: 0 var(--rand);
+  background: var(--papier); color: var(--tinte);
+  border: var(--kontur) solid var(--tinte); border-radius: var(--rundung);
+  padding: 0.7rem 1rem; font-weight: 700; font-size: 0.9375rem;
+}
+
+/* ── Der eine Moment ─────────────────────────────────────────────────────── */
+
+@keyframes sacken {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(0.94, 1.05); }
+  100% { transform: scale(1); }
+}
+.sackt { animation: sacken var(--sacken) cubic-bezier(0.16, 1, 0.3, 1); transform-origin: 50% 100%; }
+
+@media (prefers-reduced-motion: reduce) { .sackt { animation: none; } }
+
+/* ── Schmal ──────────────────────────────────────────────────────────────── */
+
+@media (max-width: 46rem) {
+  /* Vier Figuren nebeneinander passen auf 390 px nicht. Der Stapel bricht
+     deshalb in zwei Reihen — er bleibt ein Stapel, er wird nur zweizeilig. */
+  .rat { flex-wrap: wrap; justify-content: center; row-gap: 0; }
+  .wesen { width: clamp(118px, 39vw, 148px); }
+  .wesen + .wesen { margin-left: -10px; }
+  .wesen:nth-child(3) { margin-left: 0; }
+  .wesen:nth-child(1) { margin-bottom: 16px; }
+  .wesen:nth-child(2) { margin-bottom: 0; }
+  .wesen:nth-child(3) { margin-bottom: 16px; }
+  .wesen:nth-child(4) { margin-bottom: 0; }
+  .kopf .rechts { margin-left: 0; width: 100%; }
+  .leiste .schliessen { margin-left: 0; width: 100%; }
+}
+
+@media print {
+  body { background: #fff; color: #000; }
+  .leiste, .sprung { display: none; }
+}
