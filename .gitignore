@@ -11,3 +11,14 @@ Designe idehen planspiel/
 
 # Bespoke-Stencil-Schriftdateien (Fontshare-EULA, siehe ui/fonts/README.md)
 makro-planspiel/ui/fonts/*.woff2
+
+# Laufzeitkonfiguration — enthaelt Adressen und Zugangsschluessel und wird je
+# Umgebung anders gesetzt. Vorlage: konfig.beispiel.js
+#
+# Der Schraegstrich am Anfang ist wichtig: ohne ihn schluesse das Muster auch
+# js/konfig.js aus, und das ist Quellcode.
+/konfig.js
+
+# Aufnahmen aus den Gestaltungspruefungen: 9 MB Bilder, jederzeit neu
+# erzeugbar. Der Text daneben (critique/, surfaces/, design.json) bleibt.
+.impeccable/review/

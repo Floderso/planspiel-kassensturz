@@ -25,7 +25,9 @@ Diese Datei wiederholt das nicht. Sie hält nur fest, was sonst nirgends steht.
 ## Befehle
 
 ```bash
-npm start          # statischer Server auf :8000 (python3 -m http.server)
+npm start          # statischer Server auf :8000 (werkzeug/entwicklungsserver.js)
+                   # sendet no-store — python3 -m http.server tat das nicht,
+                   # und veraltete Module haben dadurch Seiten zerschossen (ADR 005)
 npm test           # node --test tests/*.test.js  → aktuell 70 Tests
 ```
 
@@ -38,6 +40,12 @@ cd makro-planspiel && npm test
 ```
 
 ## Regeln, die nicht verhandelbar sind
+
+**Modellannahmen stehen einmal, nicht zweimal.** Zinssatz und nominales
+Wachstum leben in `data.js` und werden von `berechne.js`, `transition.js`
+und `abgeleitet.js` importiert. Vorher rechnete der Haushalt mit 1,06 %
+Zinsen, während die Schuldenfortschreibung 2,5 % ansetzte — 41 Mrd. €
+jährlich, die niemandem auffielen. Siehe `entwurf/PRUEFUNG.md`.
 
 **Jede ökonomische Annahme braucht eine Quelle.** Elastizitäten, Faktoren und
 Tarifformeln stehen nicht frei im Code, sondern in `FORMEL_QUELLEN_*`-Objekten
@@ -52,7 +60,24 @@ Publikation. Eine Zahl ohne Beleg ist in einem Lehrplanspiel wertlos.
 // Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
 ```
 
-**Kein Build-Schritt.** `index.html` lädt `js/planspiel.js` als
+**Genau eine Datei spricht mit dem Server.** Alle Netzwerkaufrufe liegen in
+`js/dienste/server.js`, das Fachsprache spricht (`holeSitzung`,
+`stimmeAb`) statt HTTP. Keine Oberflächendatei kennt eine URL, ein Verb
+oder eine Statuszahl. `tests/architektur.test.js` erzwingt das — wer
+anderswo ein `fetch(` schreibt, bekommt einen roten Test.
+
+**Keine Adressen im Code.** Server-Adressen, Token und Schalter stehen
+ausschließlich in `/konfig.js` und werden über `js/konfig.js` gelesen. Wer
+eine URL direkt in eine Quelldatei schreibt, macht das Ausrollen kaputt —
+und die nächste Umgebung unmöglich. Ist `api_basis` leer, läuft das
+Planspiel vollständig offline; das ist ein gültiger Betriebsfall.
+
+**Admin-Token nie in die URL.** Er geht als `Authorization: Bearer …` raus
+und steht in Links nur im Fragment (`#token=…`), das kein Server je sieht.
+`?token=` existiert noch als Rückfallebene für alte Links und soll
+verschwinden.
+
+**Kein Build-Schritt.** `index.html` lädt `js/verhandlungstisch.js` als
 `type="module"`, der Browser löst die Imports selbst auf. Kein Bundler, kein
 Transpiler, keine `node_modules` im Frontend. Wer eine npm-Abhängigkeit
 einführen will, fragt vorher — das würde die Architektur ändern (siehe ADR 001).
@@ -66,6 +91,15 @@ Kommentare mitzuziehen.
 
 `node:test` und `node:assert/strict`, kein Framework. Zwei Sorten:
 
+- **Dimensionen** (`dimensionen.test.js`) — prüft Einheiten und Vorzeichen
+  der Fiskalindikatoren, nicht Größenordnungen. Entstanden nach der
+  Fachprüfung vom 12.09.2026, die zwei Skalierungsfehler fand, die keiner
+  der damaligen 70 Tests fangen konnte. **Zins und Wachstum kommen aus
+  `data.js` (`ZINS_EFFEKTIV`, `BIP_WACHSTUM_NOMINAL_JAHR`) — nie eigene
+  Werte in einem Modul definieren**
+- **Architekturgrenzen** (`architektur.test.js`) — hält die Trennung von
+  Oberfläche, Kern und Außenwelt maschinell nach. Ein `todo`-Eintrag darin
+  zeigt jeweils die nächste offene Etappe an
 - **Invarianten** — für jede zulässige Parameterkombination müssen alle
   Kennzahlen endlich sein und in ihrem Definitionsbereich liegen
 - **Komparative Statik** — die Vorzeichen der Reaktionen müssen der
@@ -80,8 +114,17 @@ Modell ökonomisch unsinnig wird.
 ## Struktur
 
 ```
-index.html · admin.html · debriefing.html · demo.html   Oberflächen, statisch
-js/planspiel.js       UI-Steuerung, URL-Konfiguration, API-Abgleich
+index.html            Spielfläche — Der Verhandlungstisch (seit 20.09.2026)
+index-klassisch.html  die vorherige Spielfläche, bleibt als Rückfallebene
+admin.html · debriefing.html · demo.html                Oberflächen, statisch
+konfig.js             Laufzeitkonfiguration — wird beim Ausrollen ersetzt
+css/schriften.css     lokale Schriften (fonts/), kein Google
+js/konfig.js          liest konfig.js, ergänzt Vorgaben
+js/dienste/server.js  der EINZIGE Ort mit fetch()
+js/verhandlungstisch.js  UI-Steuerung der Spielfläche
+js/spielkern.js       Übersetzung zur Engine — Stellgrößen, Kennzahlen, Runden
+js/felder.js          Eingabe und Fehlerverhalten
+js/planspiel.js       UI-Steuerung der klassischen Fläche
 js/data.js            Wirtschaftsdaten, Kurskonfiguration, Schocks
 js/data/              ausgelagerte Datensätze (presse_pool.js)
 js/rechner/           die Engine — siehe docs/ENGINE.md
@@ -89,7 +132,13 @@ api/src/index.ts      Hono.js auf Cloudflare Workers (eigenes npm-Projekt)
 makro-planspiel/      eigenständiges Teilprojekt mit eigenen Tests
 tests/                node --test
 docs/                 Architektur, Engine, API, Deployment, ADRs
+entwurf/ansaetze/     zehn Gestaltungsentwürfe, fünf davon bedienbar
 ```
+
+**Die Spielfläche ist der Verhandlungstisch.** Vier Ressorts, ein Gerät je
+Team: keine Runde schließt, bevor alle vier gezeichnet haben. Die Regel liegt
+in `js/verhandlungstisch.js` und ist bewusst KEINE Eigenschaft des Modells —
+`js/spielkern.js` weiß nichts von Unterschriften.
 
 ## Vorsicht
 
