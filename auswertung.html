@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kassensturz — Die Auswertung</title>
+<link rel="stylesheet" href="css/schriften.css">
+<style>
+:root{
+  --filz:#3C4D46; --filz-tief:#33423C; --papier:#FBF8F0; --karton:#DECFAC;
+  --tinte:#161A16; --grau:#585F54; --zettel:#F3E483;
+  --fin:#17406B; --soz:#7D1C4B; --umw:#155A41; --wir:#7A3E0C;
+  --gut:#125C36; --schlecht:#8E2418;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--filz);color:var(--papier);font-family:Inter,system-ui,sans-serif;
+  font-size:16px;line-height:1.45;font-variant-numeric:tabular-nums;
+  background-image:radial-gradient(circle at 18% 12%,rgba(255,255,255,.04),transparent 55%)}
+:focus-visible{outline:3px solid var(--zettel);outline-offset:3px;border-radius:2px}
+[hidden]{display:none !important}
+
+.kopf{padding:22px 24px 16px;max-width:980px;margin:0 auto}
+.kopf .zurueck{font-size:13px;margin-bottom:10px}
+.kopf .zurueck a{color:var(--zettel)}
+.kopf h1{font-family:Newsreader,serif;font-size:32px;font-weight:500}
+#kopf-team{font-size:17px;color:var(--zettel);margin-top:2px}
+#kopf-lage{font-size:13px;color:#C8D2CB;margin-top:2px}
+#laedt{max-width:980px;margin:0 auto;padding:30px 24px;color:#C8D2CB;font-size:15px;max-width:66ch}
+main{max-width:980px;margin:0 auto;padding:0 24px 60px}
+
+section{background:var(--papier);color:var(--tinte);padding:22px 24px 24px;margin-bottom:20px;
+  box-shadow:0 8px 24px rgba(0,0,0,.34)}
+section h2{font-family:Newsreader,serif;font-size:23px;font-weight:500;margin-bottom:4px}
+section .bu{font-size:13px;color:var(--grau);margin-bottom:16px;max-width:76ch}
+h3{font-size:16px;font-weight:700;margin-bottom:8px}
+.leer{font-size:13.5px;color:var(--grau);font-style:italic}
+.hinweis{font-size:12.5px;color:var(--grau);margin-top:11px;max-width:76ch;line-height:1.5}
+
+/* Die Aussage */
+#aussage{font-family:Newsreader,serif;font-size:clamp(19px,2.6vw,25px);line-height:1.4;
+  max-width:60ch;border-left:5px solid var(--fin);padding:4px 0 4px 16px}
+
+/* Zeitreihen */
+#reihen{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))}
+.reihe{color:var(--grau)}
+.reihe[data-richtung="besser"]{color:var(--gut)}
+.reihe[data-richtung="schlechter"]{color:var(--schlecht)}
+.reihe figcaption{display:grid;gap:1px;margin-bottom:6px}
+.rn{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--grau)}
+.rw{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:var(--tinte)}
+.rw em{font-style:normal;font-size:11px;font-weight:400;color:var(--grau);font-family:Inter,sans-serif}
+.rd{font-family:'JetBrains Mono',monospace;font-size:11.5px}
+.reihe svg{width:100%;height:auto;display:block;background:#F4F0E4;border:1px solid #E2DCCB}
+.zahlen{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:5px}
+.zahlen caption{position:absolute;left:-9999px}
+.zahlen th{font-weight:600;color:var(--grau);padding:2px 4px;text-align:center;
+  font-family:'JetBrains Mono',monospace}
+.zahlen td{font-family:'JetBrains Mono',monospace;text-align:center;padding:2px 4px;
+  color:var(--tinte);border-top:1px solid #E2DCCB}
+
+/* Nebenwerte */
+#neben{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,196px),1fr));
+  margin-top:20px}
+.nw{background:#F4F0E4;border-left:3px solid #C6BEA8;padding:10px 12px}
+.nw[data-richtung="besser"]{border-left-color:var(--gut)}
+.nw[data-richtung="schlechter"]{border-left-color:var(--schlecht)}
+.nw .n{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--grau)}
+.nw .v{font-family:'JetBrains Mono',monospace;font-size:21px;font-weight:700}
+.nw .v em{font-style:normal;font-size:11px;font-weight:400;color:var(--grau);font-family:Inter,sans-serif}
+.nw .d{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--grau)}
+.nw[data-richtung="besser"] .d{color:var(--gut)}
+.nw[data-richtung="schlechter"] .d{color:var(--schlecht)}
+.nw .h{font-size:11.5px;color:var(--grau);margin-top:5px;line-height:1.4}
+
+/* Tabellen */
+.tabellenraum{overflow-x:auto;-webkit-overflow-scrolling:touch}
+/* Tabellen duerfen rollen, die Seite nicht. */
+@media(max-width:34rem){
+  section{padding:18px 16px 20px}
+  .kopf,main{padding-left:16px;padding-right:16px}
+}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--grau);
+  text-align:left;border-bottom:1px solid var(--tinte);padding:0 10px 5px 0;font-weight:600}
+tbody td{padding:7px 10px 7px 0;border-bottom:1px dotted #D5CEBC;vertical-align:top}
+td.p{font-family:'JetBrains Mono',monospace;font-weight:700;width:2.2em}
+td.r{font-weight:600;white-space:nowrap}
+td.a{font-family:'JetBrains Mono',monospace;font-size:12px}
+td.w{font-family:Newsreader,serif;font-size:14px;max-width:34ch}
+td.s,td.d{font-size:11.5px;color:var(--grau)}
+td.matt{color:var(--grau)}
+td.l{white-space:nowrap}
+tr[data-stand="abgelehnt"]{opacity:.62}
+tr[data-stand="abgelehnt"] td.p::after{content:' ✗';color:var(--schlecht)}
+#beschluesse table{min-width:620px}
+.breit{min-width:440px}
+#nichtstun .gross{font-family:Newsreader,serif;font-size:19px;margin-bottom:12px;max-width:58ch}
+#nichtstun .gross b{color:var(--fin)}
+#nichtstun table{font-size:13px}
+#nichtstun td{font-family:'JetBrains Mono',monospace;text-align:right}
+#nichtstun td.l{font-family:Inter,sans-serif;text-align:left}
+#nichtstun th{text-align:right}
+#nichtstun th.l{text-align:left}
+
+/* Werkstattbericht */
+.wb{border-top:4px solid #C6BEA8;padding-top:14px;margin-top:22px}
+.wb:first-child{margin-top:0}
+.w-fin{border-top-color:var(--fin)}.w-wir{border-top-color:var(--wir)}
+.w-soz{border-top-color:var(--soz)}.w-umw{border-top-color:var(--umw)}
+.wb .tabellenraum{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.wb table{min-width:560px}
+.wb label{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--grau);font-weight:600;margin:13px 0 4px}
+.wb textarea{font:inherit;width:100%;padding:10px 11px;border:1px solid #C6BEA8;
+  background:#F4F0E4;color:var(--tinte);resize:vertical;line-height:1.5;font-size:14px}
+.wb textarea:focus{outline:none;border-color:var(--fin);box-shadow:0 0 0 2px rgba(23,64,107,.28)}
+
+/* ── C3 · Baukasten ─────────────────────────────────────────────────────── */
+.baukasten{display:grid;gap:18px;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
+@media(max-width:52rem){.baukasten{grid-template-columns:1fr}}
+.bk-spalte h3{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--grau);
+  margin-bottom:9px;display:flex;justify-content:space-between;align-items:baseline;gap:9px}
+.zaehler{font-size:11px;letter-spacing:0;text-transform:none;font-weight:400}
+#katalog{display:grid;gap:7px}
+.kart{font:inherit;text-align:left;background:#F4F0E4;border:1px solid #C6BEA8;
+  padding:9px 11px;cursor:pointer;display:grid;gap:2px}
+.kart:hover:not(:disabled){border-color:var(--fin);background:var(--papier)}
+.kart:disabled{opacity:.45;cursor:not-allowed}
+.kn{font-size:13.5px;font-weight:700}
+.kw{font-size:11.5px;color:var(--grau);line-height:1.35}
+.gw{border:1px solid #D5CEBC;border-left:4px solid var(--fin);padding:10px 12px;margin-bottom:9px;
+  background:#FDFBF5}
+.gw-kopf{display:flex;justify-content:space-between;gap:9px;align-items:center}
+.gw-n{font-size:13px;font-weight:700}
+.gw-k{display:flex;gap:4px}
+.gw-k button{font:inherit;font-size:12px;width:26px;height:26px;border:1px solid #C6BEA8;
+  background:var(--papier);color:var(--tinte);cursor:pointer;border-radius:2px}
+.gw-k button:hover:not(:disabled){border-color:var(--tinte)}
+.gw-k button:disabled{opacity:.35;cursor:not-allowed}
+.gw-k .weg:hover{border-color:var(--schlecht);color:var(--schlecht)}
+.gw-felder{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.gw label{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--grau);
+  font-weight:600;display:grid;gap:3px}
+.gw select,.gw input{font:inherit;font-size:13.5px;padding:6px 8px;border:1px solid #C6BEA8;
+  background:#F4F0E4;color:var(--tinte);text-transform:none;letter-spacing:0;font-weight:400}
+.gw select:focus,.gw input:focus{outline:none;border-color:var(--fin);
+  box-shadow:0 0 0 2px rgba(23,64,107,.28)}
+.gw-text{margin-top:9px}
+.gw-text input{width:100%}
+.meldung{padding:9px 12px;border-left:4px solid var(--schlecht);background:#F6E9E5;
+  color:#6E1B11;font-size:13px;margin-bottom:12px}
+
+/* ── B1b · Der Schaukasten selbst ───────────────────────────────────────── */
+.schaukasten{display:grid;gap:16px}
+.sk-stueck{border:1px solid #D5CEBC;background:#FDFBF5;padding:14px 15px}
+.sk-inhalt{min-height:40px}
+.sk-kopf{font-size:13px;font-weight:700;display:flex;justify-content:space-between;
+  gap:10px;flex-wrap:wrap;align-items:baseline;margin-bottom:10px}
+.sk-kopf span{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:400;
+  color:var(--grau)}
+.sk-balken{display:flex;gap:6px;align-items:flex-end;padding-top:16px}
+.sk-bal{flex:1;display:grid;gap:3px;justify-items:center;min-width:0}
+.sk-bal i{display:block;width:100%;max-width:46px;background:var(--fin);min-height:2px}
+.sk-bal[data-vz="minus"] i{background:var(--schlecht)}
+.sk-w{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tinte);
+  white-space:nowrap}
+.sk-n{font-size:10px;color:var(--grau);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;max-width:100%}
+.sk-tab{width:100%;border-collapse:collapse;font-size:13px}
+.sk-tab th{text-align:left;font-weight:600;padding:4px 10px 4px 0;border-bottom:1px dotted #D5CEBC}
+.sk-tab td{padding:4px 0;border-bottom:1px dotted #D5CEBC;font-family:'JetBrains Mono',monospace;
+  font-size:12.5px}
+.sk-tab .sk-d{text-align:right;color:var(--grau)}
+.sk-tab .sk-d[data-richtung="besser"]{color:var(--gut)}
+.sk-tab .sk-d[data-richtung="schlechter"]{color:var(--schlecht)}
+.sk-gross{font-family:'JetBrains Mono',monospace;font-size:clamp(34px,6vw,54px);
+  font-weight:700;line-height:1.05;letter-spacing:-.02em}
+.sk-gross[data-richtung="besser"]{color:var(--gut)}
+.sk-gross[data-richtung="schlechter"]{color:var(--schlecht)}
+.sk-gross em{font-style:normal;font-size:.36em;font-weight:400;color:var(--grau)}
+.sk-gross-n{font-size:12.5px;color:var(--grau);margin-top:2px}
+.sk-stueck figcaption{font-family:Newsreader,serif;font-size:16px;line-height:1.45;
+  margin-top:11px;padding-top:10px;border-top:1px solid #E2DCCB;max-width:64ch}
+.sk-nr{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--grau);
+  margin-top:8px}
+.sk-fuss{font-size:11.5px;color:var(--grau);margin-top:9px;line-height:1.45}
+.sk-leer{font-size:13px;color:var(--grau);font-style:italic}
+</style>
+</head>
+<body>
+
+<header class="kopf">
+  <p class="zurueck"><a href="index.html">← Zum Verhandlungstisch</a>
+     · <a href="buehne.html">Vortragen →</a></p>
+  <h1>Die Auswertung</h1>
+  <p id="kopf-team"></p>
+  <p id="kopf-lage"></p>
+</header>
+
+<p id="laedt">Wird geladen …</p>
+
+<main id="auswertung" hidden>
+
+  <section aria-labelledby="h-aus">
+    <h2 id="h-aus">Was herausgekommen ist</h2>
+    <p id="aussage"></p>
+  </section>
+
+  <section aria-labelledby="h-rei">
+    <h2 id="h-rei">Die vier Kennzahlen über die Perioden</h2>
+    <p class="bu">Jede Kurve trägt ihre Zahlen auch als Tabelle — eine Linie allein ist am
+       Beamer oft unlesbar und für eine Vorlesesoftware stumm.</p>
+    <div id="reihen"></div>
+    <div id="neben"></div>
+  </section>
+
+  <section aria-labelledby="h-nic">
+    <h2 id="h-nic">Gegen das Nichtstun</h2>
+    <p class="bu">Was herausgekommen wäre, hättet ihr nie etwas beschlossen.</p>
+    <div id="nichtstun"></div>
+  </section>
+
+  <section aria-labelledby="h-bes">
+    <h2 id="h-bes">Die Beschlüsse</h2>
+    <p class="bu">Je Periode, was eingebracht wurde, warum — und wie abgestimmt wurde.
+       Abgelehnte Vorlagen stehen mit dabei.</p>
+    <div class="tabellenraum" id="beschluesse" tabindex="0" role="region"
+         aria-label="Alle Beschlüsse"></div>
+  </section>
+
+  <section aria-labelledby="h-wrk">
+    <h2 id="h-wrk">Werkstattbericht</h2>
+    <p class="bu">„Das habe ich in meinem Ressort geändert, und das war danach anders."
+       <b>Bewusst keine Zurechnung:</b> die dritte Spalte heißt nicht „meine Wirkung". Die
+       Engine rechnet Wechselwirkungen — in einer Volkswirtschaft wirkt nichts allein.</p>
+    <div id="werkstatt"></div>
+  </section>
+
+  <section aria-labelledby="h-bau">
+    <h2 id="h-bau">Schaukasten zusammenstellen</h2>
+    <p class="bu">Womit willst du deinen Mitspielern erklären, was du gemacht hast?
+       Höchstens fünf Stücke — die Grenze ist Absicht: wer alles zeigen darf, wählt nicht aus.
+       Ressort: <b id="baukasten-ressort"></b></p>
+    <p id="baukasten-meldung" class="meldung" role="status" hidden></p>
+    <div id="baukasten-feld" class="baukasten">
+      <div class="bk-spalte">
+        <h3>Katalog</h3>
+        <div id="katalog"></div>
+      </div>
+      <div class="bk-spalte">
+        <h3>Deine Auswahl <span id="gewaehlt-zahl" class="zaehler"></span></h3>
+        <div id="gewaehlt"></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-vor">
+    <h2 id="h-vor">Vorschau</h2>
+    <p class="bu">So sehen es deine Mitspieler, wenn sie am Tisch auf dein Ressort klicken.</p>
+    <div id="vorschau" class="schaukasten"></div>
+  </section>
+
+</main>
+
+<script src="konfig.js"></script>
+<script type="module" src="js/auswertung.js"></script>
+</body>
+</html>
