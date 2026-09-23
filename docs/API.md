@@ -5,6 +5,38 @@ Lokal: `http://localhost:8787`
 
 Alle Endpunkte unter `/api/`. Alle Requests und Responses: `Content-Type: application/json`.
 
+Die Adresse steht **nicht mehr im Code**, sondern in `/konfig.js` (`api_basis`).
+
+## Admin-Zugang
+
+Endpunkte, die der Lehrperson vorbehalten sind, erwarten den Admin-Token im
+Kopf der Anfrage:
+
+```
+Authorization: Bearer <admin_token>
+```
+
+`?token=…` wird aus Rücksichtnahme auf ältere Links weiterhin akzeptiert, ist
+aber **abgekündigt**: Query-Parameter landen in Serverprotokollen und im
+Browserverlauf. Neue Aufrufe nutzen den Header.
+
+---
+
+## Betrieb
+
+### `GET /health`
+
+Sagt, ob der Dienst läuft. Liegt bewusst außerhalb von `/api/` (kein CORS) und
+enthält keinerlei Sitzungsinformation.
+
+```json
+{ "status": "ok", "version": "1.0.0", "zeit": "2026-09-12T14:03:00.000Z" }
+```
+
+Mit `?speicher=1` wird zusätzlich geprüft, ob die Speicherbindung antwortet;
+schlägt das fehl, antwortet der Endpunkt mit `503` und
+`{ "status": "fehler", "speicher": "nicht erreichbar" }`.
+
 ---
 
 ## Endpunkte
@@ -191,7 +223,65 @@ Das Frontend berechnet die Simulation aus diesen Parametern neu (→ [ADR 001](a
 ## Session-Lifecycle
 
 ```
-POST /sessions          → Session wird angelegt (TTL: 24 h)
-PUT  /sessions/:id/...  → Jeder Write setzt TTL auf 24 h zurück
-                        → Nach 24 h Inaktivität automatisch gelöscht (KV-TTL)
+POST /sessions          → Session wird angelegt (TTL: 180 Tage, ~1 Semester)
+PUT  /sessions/:id/...  → Jeder Write setzt die TTL zurück
+                        → Nach 180 Tagen Inaktivität automatisch gelöscht (KV-TTL)
+
+Die Frist steht in api/src/index.ts als SESSION_TTL. Sie gilt auch für
+hochgeladene Matrikelnummern — siehe entwurf/BETRIEB.md, Abschnitt 5.
 ```
+
+## Der Verhandlungstisch — namentliche Unterschriften
+
+Seit dem 20.09.2026. Anders als `POST /vote`, das nur eine Stimme hochzählt,
+halten diese Endpunkte fest, **wer** gezeichnet hat. `vote` bleibt daneben
+bestehen — `index-klassisch.html` benutzt es weiter.
+
+Die Ressorts einer Sitzung stehen in `session.ressorts` (Vorgabe
+`["fin","wir","soz","umw"]`, bei der Anlage überschreibbar). Sobald jedes
+davon gezeichnet hat **und** kein Einspruch mehr steht, wird die Periode
+automatisch gesperrt.
+
+### `POST /api/sessions/:id/teams/:team/zeichnung`
+
+Ein Ressort zeichnet die Mappe.
+
+```json
+{ "periode_idx": 0, "ressort": "fin", "person": "Amira", "matrikelnummer": "7712345" }
+```
+
+`matrikelnummer` bleibt leer, wenn jemand für eine andere Person zeichnet —
+eine falsche Zuordnung personenbezogener Daten wäre schlimmer als keine.
+
+Antwort: `{ ok, offen[], widerspruch[], locked, zeichnungen, einsprueche }`.
+`offen` sind die Ressorts ohne Unterschrift, `widerspruch` die mit Einspruch.
+
+### `DELETE /api/sessions/:id/teams/:team/zeichnung/:ressort`
+
+Unterschrift zurückziehen, Rumpf `{ "periode_idx": 0 }`. Nach dem Sperren
+der Periode nicht mehr möglich (409).
+
+### `POST /api/sessions/:id/teams/:team/einspruch`
+
+```json
+{ "periode_idx": 0, "ressort": "soz", "person": "Lea", "grund": "optional" }
+```
+
+Sperrt den Rundenschluss. Wer Einspruch einlegt, verliert seine Unterschrift;
+wer zeichnet, nimmt seinen Einspruch zurück.
+
+### `DELETE /api/sessions/:id/teams/:team/einspruch/:ressort`
+
+Einspruch zurücknehmen, Rumpf `{ "periode_idx": 0 }`.
+
+### Was dabei zu beachten ist
+
+`PUT /teams/:team` überschreibt den Teamstand **nicht** mehr vollständig:
+Unterschriften und Einsprüche gehören dem Server und werden beim Speichern
+übernommen. Sonst löschte jedes Sichern eines Geräts die Unterschriften der
+drei anderen.
+
+Ein Team aus `team_names` darf zeichnen, **bevor** es zum ersten Mal
+gespeichert hat — am Verhandlungstisch kann die erste Unterschrift fallen,
+ehe jemand eine Zahl angefasst hat. Ein Team, das nicht in `team_names`
+steht, wird weiterhin abgelehnt.

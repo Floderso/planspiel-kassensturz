@@ -10,6 +10,10 @@ import { berechneRente } from './rechner/rente.js';
 import { PRESETS, KURS_KONFIG_DEFAULT, SCHOCK_BIBLIOTHEK, TOOLTIPS } from './data.js';
 import { bewerteLernziele, erzeugeKausalketten } from './feedback.js';
 import { waehleMedienspiegel, berechneWaehlerstimmung } from './rechner/medienspiegel.js';
+import { hatBackend } from './konfig.js';
+import {
+  holeSitzung, holeMitglieder, trittBei, sendeTeamZustand, stimmeAb,
+} from './dienste/server.js';
 
 // ── URL-Konfiguration ─────────────────────────────────────────────────────────
 // Lehrpersonen können die Kurskonfiguration per URL-Parameter setzen:
@@ -40,7 +44,11 @@ function parseUrlKonfig() {
 }
 
 // session_id aus URL — wird für Backend-Sync verwendet (Phase 2b)
-const URL_SESSION_ID = new URLSearchParams(location.search).get('session') ?? null;
+// Ohne konfiguriertes Backend (konfig.js: api_basis leer) gilt jede Sitzung als
+// nicht vorhanden — damit greifen alle bestehenden Offline-Pfade automatisch.
+const URL_SESSION_ID = hatBackend()
+  ? (new URLSearchParams(location.search).get('session') ?? null)
+  : null;
 
 // ── LocalStorage-Schema ──────────────────────────────────────────────────────
 
@@ -1636,16 +1644,16 @@ function renderFiskalPanel(r, z, abl) {
   if (!el) return;
   const rows = [
     { label: 'Primärsaldo PS_t',       val: fmt.pct2(abl.ps_t),    cls: abl.ps_t >= 0 ? 'good' : 'bad',
-      formula: 'PS_t = S_t + Zinslast / BIP', ref: 'Blanchard (2019) AEA' },
+      formula: 'PS_t = S_t + i × D_t   (Prozentpunkte BIP)', ref: 'Blanchard (2019) AEA' },
     { label: 'Zinsaufwand',             val: fmt.mrdAbs(r.zinsen_dyn || 0),    cls: 'neutral',
       formula: 'Z_t = i × D_t × BIP_t', ref: 'Bundesbank Effektivzins' },
     { label: 'Gesamtsaldo S_t',         val: fmt.pct2(r.saldo_bip_pct), cls: r.saldo_bip_pct >= -0.35 ? 'good' : 'bad',
       formula: 'S_t = Einnahmen − Ausgaben', ref: 'Art. 109 GG (−0,35 % Grenze)' },
     { label: 'r − g',                   val: fmt.pct2(abl.r_minus_g * 100), cls: abl.r_minus_g < 0 ? 'good' : 'warn',
       formula: 'r − g = Zins − BIP-Wachstum', ref: 'Domar (1944) · Blanchard (2019)' },
-    { label: 'PS-Ziel PS* (Domar)',     val: fmt.pct2(abl.ps_star * 100), cls: 'neutral',
-      formula: 'PS* = (r−g) × D_t / 100', ref: 'Domar-Bedingung' },
-    { label: 'S2-Tragfähigkeitslücke',  val: fmt.pct2(abl.s2 * 100), cls: abl.s2 >= 0 ? 'good' : 'bad',
+    { label: 'PS-Ziel PS* (Domar)',     val: fmt.pct2(abl.ps_star), cls: 'neutral',
+      formula: 'PS* = (r − g) × D_t', ref: 'Domar-Bedingung' },
+    { label: 'S2-Tragfähigkeitslücke',  val: fmt.pct2(abl.s2), cls: abl.s2 >= 0 ? 'good' : 'bad',
       formula: 'S2 = PS_t − PS*  (>0 tragfähig)', ref: 'IMF Fiscal Monitor 2024' },
   ];
   el.innerHTML = rows.map(row => `
@@ -1892,18 +1900,15 @@ async function showTeamPicker() {
 
   async function loadMembers() {
     try {
-      const res  = await fetch(`${API_BASE}/sessions/${URL_SESSION_ID}/members`);
-      if (!res.ok) {
-        errorEl.textContent = `Fehler beim Laden der Session (HTTP ${res.status}).`;
-        return;
-      }
-      const data = await res.json();
+      const data = await holeMitglieder(URL_SESSION_ID);
       errorEl.textContent = '';
       sessionMeta = data;
       renderTeams(data);
-    } catch (err) {
-      console.error('loadMembers:', err);
-      errorEl.textContent = 'Netzwerkfehler — Verbindung prüfen.';
+    } catch (fehler) {
+      console.error('loadMembers:', fehler);
+      errorEl.textContent = fehler.istNetzwerkfehler
+        ? 'Netzwerkfehler — Verbindung prüfen.'
+        : `Fehler beim Laden der Session (HTTP ${fehler.status}).`;
     }
   }
 
@@ -1939,17 +1944,7 @@ async function showTeamPicker() {
     loadEl.textContent  = 'Beitreten …';
 
     try {
-      const res = await fetch(`${API_BASE}/sessions/${URL_SESSION_ID}/members`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ name, matrikelnummer, team }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        loadEl.textContent = '';
-        errorEl.textContent = data.error ?? 'Fehler beim Beitreten.';
-        return;
-      }
+      await trittBei(URL_SESSION_ID, { name, matrikelnummer, team });
       // Erfolgreich: URL anpassen und Spiel starten
       clearInterval(pollTimer);
       overlay.classList.add('hidden');
@@ -1970,9 +1965,13 @@ async function showTeamPicker() {
         renderAll();
         startPolling();
       });
-    } catch (_) {
+    } catch (fehler) {
       loadEl.textContent  = '';
-      errorEl.textContent = 'Netzwerkfehler — bitte erneut versuchen.';
+      // Eine fachliche Ablehnung des Servers ("Team ist voll") soll die Person
+      // auch lesen — nicht pauschal als Netzwerkfehler verschwinden.
+      errorEl.textContent = fehler.istNetzwerkfehler
+        ? 'Netzwerkfehler — bitte erneut versuchen.'
+        : (fehler.message || 'Fehler beim Beitreten.');
     }
   }
 
@@ -1985,16 +1984,10 @@ async function showTeamPicker() {
 // Ohne Session-Parameter läuft alles ausschließlich über localStorage — kein
 // Netzwerk-Zugriff, volle Offline-Funktionalität.
 
-const API_BASE = 'https://planspiel-api.aramisda2.workers.dev/api';
-
 async function apiPushState() {
   if (!URL_SESSION_ID || !state.team_id) return;
   try {
-    await fetch(`${API_BASE}/sessions/${URL_SESSION_ID}/teams/${encodeURIComponent(state.team_id)}`, {
-      method:  'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ perioden: state.perioden }),
-    });
+    await sendeTeamZustand(URL_SESSION_ID, state.team_id, state.perioden);
   } catch (_) {
     // Netzwerkfehler ignorieren — localStorage-State bleibt gültig
   }
@@ -2010,9 +2003,7 @@ async function apiPushState() {
 async function apiRestoreState() {
   if (!URL_SESSION_ID || !state.team_id) return false;
   try {
-    const res = await fetch(`${API_BASE}/sessions/${URL_SESSION_ID}`);
-    if (!res.ok) return false;
-    const session = await res.json();
+    const session = await holeSitzung(URL_SESSION_ID);
     const ownState = session.teams[state.team_id];
     if (!ownState || !ownState.perioden || ownState.perioden.length === 0) return false;
 
@@ -2063,15 +2054,7 @@ async function apiRestoreState() {
 async function apiVote(periode_idx) {
   if (!URL_SESSION_ID || !state.team_id) return null;
   try {
-    const res = await fetch(
-      `${API_BASE}/sessions/${URL_SESSION_ID}/teams/${encodeURIComponent(state.team_id)}/vote`,
-      {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ periode_idx }),
-      }
-    );
-    return res.ok ? await res.json() : null;
+    return await stimmeAb(URL_SESSION_ID, state.team_id, periode_idx);
   } catch (_) {
     return null;
   }
@@ -2080,9 +2063,7 @@ async function apiVote(periode_idx) {
 async function apiPollSession() {
   if (!URL_SESSION_ID) return;
   try {
-    const res = await fetch(`${API_BASE}/sessions/${URL_SESSION_ID}`);
-    if (!res.ok) return;
-    const session = await res.json();
+    const session = await holeSitzung(URL_SESSION_ID);
     // Andere Teams: locked-Status übernehmen, wenn sich etwas geändert hat
     let changed = false;
 

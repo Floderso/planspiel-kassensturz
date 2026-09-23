@@ -1,0 +1,335 @@
+/* SPDX-License-Identifier: CC-BY-4.0
+   Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
+
+   ═══════════════════════════════════════════════════════════════════
+   tokens.css — ENTWURF. Die eine Quelle der Wahrheit fürs Aussehen.
+
+   Regel: Im ganzen Projekt steht kein fester Farbwert, kein fester
+   Abstand, keine feste Millisekundenzahl. Alles liest var(--…) hier.
+
+   Grundlage ist Arams Palette aus "Designe idehen planspiel/Farben.rtf":
+     Fresh Sky   #00a7e1  →  Akzentfamilie (Hue 232)
+     Dusty Mauve #b0413e  →  Negativsignal  (Hue 25)
+     Sage Green  #6baa75  →  Positivsignal  (Hue 148)
+   Die drei Töne sind als Vollton zu hell für weißen Text. Deshalb
+   liegen sie hier als *Familie* vor: der Originalton bleibt als helle
+   Stufe, die Textstufe ist dunkler gerechnet. In OKLCH, weil dort
+   gleiche Zahlen gleich hell aussehen.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  color-scheme: light;
+
+  /* ── 1. Graustufen ────────────────────────────────────────────
+     1–2 Flächen · 3–5 zurückhaltende Flächen · 6–8 Linien ·
+     9–10 Rahmen von Bedienelementen (≥3:1) · 11 gedämpfter Text ·
+     12 Haupttext. Minimal ins Blaue gezogen (Hue 250), damit
+     Grau und Akzent zusammengehören. */
+  --gray-1:  oklch(0.995 0.002 250);
+  --gray-2:  oklch(0.975 0.004 250);
+  --gray-3:  oklch(0.953 0.006 250);
+  --gray-4:  oklch(0.930 0.008 250);
+  --gray-5:  oklch(0.908 0.009 250);
+  --gray-6:  oklch(0.880 0.010 250);
+  --gray-7:  oklch(0.845 0.012 250);
+  --gray-8:  oklch(0.785 0.014 250);
+  --gray-9:  oklch(0.638 0.016 250);
+  --gray-10: oklch(0.585 0.018 250);
+  --gray-11: oklch(0.475 0.018 250);
+  --gray-12: oklch(0.215 0.016 250);
+
+  /* ── 2. Akzent — Fresh Sky als Familie ────────────────────────
+     accent-8 ist der Originalton #00a7e1. Der Vollton für Flächen
+     mit weißem Text liegt tiefer, sonst reicht der Kontrast nicht. */
+  --accent-1:  oklch(0.990 0.006 232);
+  --accent-2:  oklch(0.974 0.016 232);
+  --accent-3:  oklch(0.944 0.036 232);
+  --accent-4:  oklch(0.912 0.056 232);
+  --accent-5:  oklch(0.876 0.078 232);
+  --accent-6:  oklch(0.830 0.098 232);
+  --accent-7:  oklch(0.762 0.122 232);
+  --accent-8:  oklch(0.684 0.140 232);   /* = Fresh Sky, Original */
+  --accent-9:  oklch(0.520 0.130 232);   /* Vollton, weißer Text */
+  --accent-10: oklch(0.472 0.122 232);   /* gedrückt / Hover */
+  --accent-11: oklch(0.462 0.118 232);   /* Links, Text in Akzent */
+  --accent-12: oklch(0.268 0.070 232);
+
+  /* ── 3. Signalfarben ──────────────────────────────────────────
+     Farbe ist nie die einzige Information — immer Text oder Symbol
+     dazu. Im Planspiel heißt das: "-116 Mrd. €" trägt das Wort
+     "Defizit", nicht nur die Farbe Rot. */
+  --danger-bg:    oklch(0.962 0.022  25);
+  --danger-line:  oklch(0.760 0.115  25);
+  --danger-fg:    oklch(0.480 0.155  25);   /* nah an Dusty Mauve */
+  --success-bg:   oklch(0.962 0.024 148);
+  --success-line: oklch(0.681 0.101 148);   /* = Sage Green, Original */
+  --success-fg:   oklch(0.448 0.105 148);
+  --warning-bg:   oklch(0.966 0.040  85);
+  --warning-line: oklch(0.818 0.118  85);
+  --warning-fg:   oklch(0.452 0.112  85);
+
+  /* ── 4. Semantische Farben — NUR diese im Code benutzen ───────
+     "--color-surface" überlebt einen Farbwechsel, "--gray-2" nicht. */
+  --color-bg:            var(--gray-2);
+  --color-bg-subtle:     var(--gray-3);
+  --color-surface:       var(--gray-1);
+  --color-surface-hover: var(--gray-3);
+  --color-border:        var(--gray-6);
+  --color-border-strong: var(--gray-9);
+  --color-border-input:  var(--gray-9);
+  --color-fg:            var(--gray-12);
+  --color-fg-muted:      var(--gray-11);
+  --color-fg-subtle:     var(--gray-10);
+  --color-accent:        var(--accent-9);
+  --color-accent-hover:  var(--accent-10);
+  --color-accent-fg:     oklch(1 0 0);
+  --color-accent-text:   var(--accent-11);
+  --color-accent-subtle: var(--accent-2);
+  --color-focus:         var(--accent-9);
+
+  /* ── 5. Diagrammfarben ────────────────────────────────────────
+     Kategorial, in dieser Reihenfolge vergeben. Auch für Menschen
+     mit Rot-Grün-Schwäche unterscheidbar, weil die Helligkeiten
+     auseinanderliegen. */
+  --chart-1: oklch(0.520 0.130 232);   /* Akzentblau */
+  --chart-2: oklch(0.640 0.160  50);   /* Orange */
+  --chart-3: oklch(0.560 0.105 165);   /* Teal */
+  --chart-4: oklch(0.740 0.140  85);   /* Bernstein */
+  --chart-5: oklch(0.500 0.140 305);   /* Violett */
+  --chart-grid: var(--gray-5);
+  --chart-axis: var(--gray-9);
+
+  /* ── 6. Stufen der Modultiefe ─────────────────────────────────
+     Einsteiger / Fortgeschritten / Experte. Bewusst entsättigt,
+     damit sie nicht mit den Signalfarben konkurrieren. */
+  --tier-ein-fg:  var(--gray-11);
+  --tier-ein-bg:  var(--gray-3);
+  --tier-fort-fg: oklch(0.470 0.130 300);
+  --tier-fort-bg: oklch(0.965 0.020 300);
+  --tier-exp-fg:  oklch(0.470 0.120  60);
+  --tier-exp-bg:  oklch(0.965 0.030  60);
+
+  /* ── 7. Typografie ────────────────────────────────────────────
+     Alle drei Schriften liegen lokal im Projekt (entwurf/fonts/),
+     kein Aufruf an fonts.googleapis.com bei jedem Seitenaufruf. */
+  --font-display: "Bespoke Stencil", "Newsreader", Georgia, serif;
+  --font-serif:   "Newsreader", Georgia, "Times New Roman", serif;
+  --font-sans:    "Inter", ui-sans-serif, system-ui, -apple-system,
+                  "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+                  Consolas, "Liberation Mono", monospace;
+
+  /* Stufen im Verhältnis ~1.2. Grundgröße 16px — im Hörsaal wird
+     die Seite an die Wand geworfen, 13px ist dort unlesbar. */
+  --text-xs:   0.75rem;
+  --text-sm:   0.875rem;
+  --text-base: 1rem;
+  --text-lg:   1.125rem;
+  --text-xl:   1.375rem;
+  --text-2xl:  1.75rem;
+  --text-3xl:  2.25rem;
+  --text-4xl:  3rem;
+
+  --leading-tight:  1.2;
+  --leading-normal: 1.5;
+  --leading-loose:  1.7;
+
+  --weight-normal:   400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  --measure: 68ch;
+
+  /* ── 8. Abstände — 4px-Raster ─────────────────────────────────
+     Jeder Abstand im Projekt ist einer dieser Werte. Kein 13px,
+     kein 27px. */
+  --space-0:  0;
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.25rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* ── 9. Ecken, Rahmen, Schatten ───────────────────────────────
+     Der Ist-Zustand hat 6px und 8px nebeneinander. Hier gibt es
+     eine Leiter, und jede Komponente greift eine Sprosse. */
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 2px oklch(0.2 0.02 250 / 0.06);
+  --shadow-md: 0 2px 8px oklch(0.2 0.02 250 / 0.08),
+               0 1px 2px oklch(0.2 0.02 250 / 0.04);
+  --shadow-lg: 0 8px 28px oklch(0.2 0.02 250 / 0.12),
+               0 2px 6px oklch(0.2 0.02 250 / 0.06);
+
+  /* ── 10. Bewegung ─────────────────────────────────────────────
+     Zeichengleich mit transitions-dev/_root.css. Nicht
+     auseinanderlaufen lassen. */
+  --dur-instant: 100ms;
+  --dur-fast:    160ms;
+  --dur-normal:  240ms;
+  --dur-slow:    400ms;
+
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ── 11. Layoutmaße ───────────────────────────────────────────
+     Die drei Zonen der Oberfläche. */
+  --bar-h:       56px;
+  --nav-h:       52px;
+  --rail-w:      340px;   /* Kabinett links */
+  --panel-w:     320px;   /* Kennzahlen rechts */
+  --content-max: 1680px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Dunkles Thema — „Hörsaal-Modus".
+   Getauscht werden ausschließlich die Rohwerte oben. Die
+   semantische Ebene (--color-fg, --color-surface …) rührt niemand
+   an. Genau deshalb kostet das dunkle Thema hier keine Extraarbeit.
+
+   Drei Blöcke, weil es drei Zustände gibt: „automatisch" folgt dem
+   System, „dunkel" und „hell" gewinnen gegen das System.
+   ═══════════════════════════════════════════════════════════════════ */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+  /* Graustufen gespiegelt: 1 ist jetzt die dunkelste Fläche,
+     12 der hellste Text. Die semantische Ebene oben bleibt
+     unverändert — nur diese Rohwerte werden getauscht. */
+  --gray-1:  oklch(0.185 0.012 250);
+  --gray-2:  oklch(0.215 0.014 250);
+  --gray-3:  oklch(0.252 0.016 250);
+  --gray-4:  oklch(0.285 0.018 250);
+  --gray-5:  oklch(0.318 0.018 250);
+  --gray-6:  oklch(0.355 0.020 250);
+  --gray-7:  oklch(0.410 0.020 250);
+  --gray-8:  oklch(0.490 0.022 250);
+  --gray-9:  oklch(0.620 0.022 250);
+  --gray-10: oklch(0.700 0.020 250);
+  --gray-11: oklch(0.800 0.018 250);
+  --gray-12: oklch(0.960 0.008 250);
+
+  /* Fresh Sky trägt hier den Vollton — auf dunklem Grund ist der
+     Originalton hell genug, und der Text darauf wird dunkel. */
+  --accent-1:  oklch(0.205 0.020 232);
+  --accent-2:  oklch(0.258 0.040 232);
+  --accent-3:  oklch(0.305 0.055 232);
+  --accent-4:  oklch(0.350 0.070 232);
+  --accent-5:  oklch(0.400 0.085 232);
+  --accent-6:  oklch(0.465 0.100 232);
+  --accent-7:  oklch(0.560 0.120 232);
+  --accent-8:  oklch(0.640 0.135 232);
+  --accent-9:  oklch(0.720 0.130 232);
+  --accent-10: oklch(0.780 0.115 232);
+  --accent-11: oklch(0.820 0.100 232);
+  --accent-12: oklch(0.930 0.045 232);
+
+  --color-accent-fg: oklch(0.185 0.030 232);
+
+  --danger-bg:    oklch(0.288 0.055  25);
+  --danger-line:  oklch(0.520 0.130  25);
+  --danger-fg:    oklch(0.810 0.105  25);
+  --success-bg:   oklch(0.285 0.048 148);
+  --success-line: oklch(0.520 0.095 148);
+  --success-fg:   oklch(0.825 0.095 148);
+  --warning-bg:   oklch(0.292 0.055  85);
+  --warning-line: oklch(0.560 0.105  85);
+  --warning-fg:   oklch(0.860 0.105  85);
+
+  --chart-1: oklch(0.720 0.130 232);
+  --chart-2: oklch(0.750 0.150  50);
+  --chart-3: oklch(0.730 0.100 165);
+  --chart-4: oklch(0.830 0.130  85);
+  --chart-5: oklch(0.710 0.130 305);
+
+  --tier-fort-fg: oklch(0.800 0.110 300);
+  --tier-fort-bg: oklch(0.292 0.050 300);
+  --tier-exp-fg:  oklch(0.820 0.100  60);
+  --tier-exp-bg:  oklch(0.298 0.045  60);
+
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.30);
+  --shadow-md: 0 2px 8px oklch(0 0 0 / 0.40), 0 1px 2px oklch(0 0 0 / 0.24);
+  --shadow-lg: 0 8px 28px oklch(0 0 0 / 0.50), 0 2px 6px oklch(0 0 0 / 0.30);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  /* Graustufen gespiegelt: 1 ist jetzt die dunkelste Fläche,
+     12 der hellste Text. Die semantische Ebene oben bleibt
+     unverändert — nur diese Rohwerte werden getauscht. */
+  --gray-1:  oklch(0.185 0.012 250);
+  --gray-2:  oklch(0.215 0.014 250);
+  --gray-3:  oklch(0.252 0.016 250);
+  --gray-4:  oklch(0.285 0.018 250);
+  --gray-5:  oklch(0.318 0.018 250);
+  --gray-6:  oklch(0.355 0.020 250);
+  --gray-7:  oklch(0.410 0.020 250);
+  --gray-8:  oklch(0.490 0.022 250);
+  --gray-9:  oklch(0.620 0.022 250);
+  --gray-10: oklch(0.700 0.020 250);
+  --gray-11: oklch(0.800 0.018 250);
+  --gray-12: oklch(0.960 0.008 250);
+
+  /* Fresh Sky trägt hier den Vollton — auf dunklem Grund ist der
+     Originalton hell genug, und der Text darauf wird dunkel. */
+  --accent-1:  oklch(0.205 0.020 232);
+  --accent-2:  oklch(0.258 0.040 232);
+  --accent-3:  oklch(0.305 0.055 232);
+  --accent-4:  oklch(0.350 0.070 232);
+  --accent-5:  oklch(0.400 0.085 232);
+  --accent-6:  oklch(0.465 0.100 232);
+  --accent-7:  oklch(0.560 0.120 232);
+  --accent-8:  oklch(0.640 0.135 232);
+  --accent-9:  oklch(0.720 0.130 232);
+  --accent-10: oklch(0.780 0.115 232);
+  --accent-11: oklch(0.820 0.100 232);
+  --accent-12: oklch(0.930 0.045 232);
+
+  --color-accent-fg: oklch(0.185 0.030 232);
+
+  --danger-bg:    oklch(0.288 0.055  25);
+  --danger-line:  oklch(0.520 0.130  25);
+  --danger-fg:    oklch(0.810 0.105  25);
+  --success-bg:   oklch(0.285 0.048 148);
+  --success-line: oklch(0.520 0.095 148);
+  --success-fg:   oklch(0.825 0.095 148);
+  --warning-bg:   oklch(0.292 0.055  85);
+  --warning-line: oklch(0.560 0.105  85);
+  --warning-fg:   oklch(0.860 0.105  85);
+
+  --chart-1: oklch(0.720 0.130 232);
+  --chart-2: oklch(0.750 0.150  50);
+  --chart-3: oklch(0.730 0.100 165);
+  --chart-4: oklch(0.830 0.130  85);
+  --chart-5: oklch(0.710 0.130 305);
+
+  --tier-fort-fg: oklch(0.800 0.110 300);
+  --tier-fort-bg: oklch(0.292 0.050 300);
+  --tier-exp-fg:  oklch(0.820 0.100  60);
+  --tier-exp-bg:  oklch(0.298 0.045  60);
+
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.30);
+  --shadow-md: 0 2px 8px oklch(0 0 0 / 0.40), 0 1px 2px oklch(0 0 0 / 0.24);
+  --shadow-lg: 0 8px 28px oklch(0 0 0 / 0.50), 0 2px 6px oklch(0 0 0 / 0.30);
+}
+
+/* Wer Bewegung abgeschaltet hat, bekommt keine. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-instant: 1ms; --dur-fast: 1ms;
+    --dur-normal:  1ms; --dur-slow: 1ms;
+  }
+}

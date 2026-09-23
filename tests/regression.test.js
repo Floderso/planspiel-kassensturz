@@ -5,10 +5,19 @@
 // nicht unbemerkt verschieben. Wer Modellparameter bewusst ändert, muss die
 // Referenzwerte hier aktualisieren und die Änderung im Commit begründen.
 //
-// Referenzwerte erzeugt am 2026-06-11 nach (a) Tarif-Kalibrierung auf
-// § 32a EStG 2025, (b) Aufkommenskalibrierung: ESt auf Haushaltsebene
-// (zvE-Quote 0,79, Splitting 1,6), MwSt-Basisfaktor 1,68, ErbSt-Freibetrags-
-// quote 0,45, Gegenposten sonstige_einnahmen −120 Mrd.
+// Referenzwerte erneuert am 2026-09-12 nach der Fachprüfung
+// (entwurf/PRUEFUNG.md). Bewusst geänderte Modellparameter:
+//   • Effektivzins einheitlich 2,0 % in Haushalt UND Schuldenfortschreibung
+//     (vorher 1,06 % gegen 2,50 % — PRUEFUNG.md A4)
+//   • Zinsausgaben gesamtstaatlich 54 statt 30 Mrd. (nur Bund)
+//   • nominales BIP-Wachstum 2,5 % statt 1,5 % (PRUEFUNG.md F1)
+//   • Schuldenfortschreibung mit Primärsaldo statt Gesamtsaldo,
+//     jahresweise — keine Zinsdoppelzählung mehr (PRUEFUNG.md A5)
+//   • Gegenposten sonstige_einnahmen −144 statt −120 Mrd.
+//
+// Sichtbarste Folge: Die Schuldenquote steigt über fünf Perioden auf 84,9 %
+// statt auf 130,4 %. Vorher war r > g fest verdrahtet und jede Partie endete
+// in der Schuldenexplosion, unabhängig von den Entscheidungen der Teams.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -16,11 +25,11 @@ import { simulierePfad } from '../js/rechner/transition.js';
 import { PRESETS } from '../js/data.js';
 
 const REFERENZ = [
-  { label: '2025–2028', saldo: -115.8706, schuldenquote: 63.5,     gini: 0.37659, emissionen: 327, bip: 4470 },
-  { label: '2029–2032', saldo: -140.3865, schuldenquote: 75.7635,  gini: 0.37659, emissionen: 327, bip: 4747.1416 },
-  { label: '2033–2036', saldo: -174.8147, schuldenquote: 90.3687,  gini: 0.37659, emissionen: 327, bip: 5014.4771 },
-  { label: '2037–2040', saldo: -204.563,  schuldenquote: 108.4674, gini: 0.37659, emissionen: 327, bip: 5256.1485 },
-  { label: '2041–2044', saldo: -234.0431, schuldenquote: 130.3875, gini: 0.37659, emissionen: 327, bip: 5453.9871 },
+  { label: '2025–2028', saldo: -118.6396, schuldenquote: 63.5,    gini: 0.3766, emissionen: 327, bip: 4470 },
+  { label: '2029–2032', saldo: -140.1972, schuldenquote: 67.3979, gini: 0.3766, emissionen: 327, bip: 4937.004 },
+  { label: '2033–2036', saldo: -170.844,  schuldenquote: 72.0051, gini: 0.3766, emissionen: 327, bip: 5423.6073 },
+  { label: '2037–2040', saldo: -196.1634, schuldenquote: 77.9624, gini: 0.3766, emissionen: 327, bip: 5912.3686 },
+  { label: '2041–2044', saldo: -220.1891, schuldenquote: 84.917,  gini: 0.3766, emissionen: 327, bip: 6380.2732 },
 ];
 
 test('Status-quo-Pfad (5 Perioden) reproduziert die Referenzwerte', () => {

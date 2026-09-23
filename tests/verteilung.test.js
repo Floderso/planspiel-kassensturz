@@ -42,13 +42,31 @@ test('Gini ist skaleninvariant (Verdopplung aller Einkommen ändert nichts)', ()
   assert.ok(Math.abs(berechneGini(basis, DEZILE) - berechneGini(doppelt, DEZILE)) < 1e-12);
 });
 
-test('Palma: Gleichverteilung ergibt 1, Spreizung erhöht die Ratio', () => {
+test('Palma: Gleichverteilung ergibt 0,25, Spreizung erhöht die Ratio', () => {
+  // Palma (2011) = Einkommensanteil Top 10 % / Anteil Bottom 40 %.
+  // Bei Gleichverteilung entfallen auf die oberen 10 % genau 10 % des
+  // Einkommens und auf die unteren 40 % genau 40 % → 10/40 = 0,25.
+  //
+  // Der frühere Test verlangte hier 1 und zementierte damit die falsche
+  // Umsetzung (Verhältnis der Durchschnitte statt der Anteile), die den
+  // Index um Faktor 4 überhöhte. Siehe entwurf/PRUEFUNG.md A3.
   const gleich = Array(N).fill(30000);
   const p_gleich = berechnePalma(gleich);
-  assert.ok(Math.abs(p_gleich - 1) < 0.2, `Palma bei Gleichverteilung: ${p_gleich}`);
+  assert.ok(Math.abs(p_gleich - 0.25) < 0.05, `Palma bei Gleichverteilung: ${p_gleich}`);
 
   const gespreizt = Array.from({ length: N }, (_, i) => 10000 + i * 20000);
   assert.ok(berechnePalma(gespreizt) > p_gleich);
+});
+
+test('Palma liegt für Deutschland in international vergleichbarer Größenordnung', () => {
+  // Amtlich für DE: ~1,2 (verfügbare Äquivalenzeinkommen). Das Modell rechnet
+  // mit Haushaltseinkommen ohne Bedarfsgewichtung und liegt daher höher —
+  // aber es muss in der Nähe bleiben, nicht beim Vierfachen landen.
+  // Sobald das Äquivalenzgewicht genutzt wird (PRUEFUNG.md B3), sollte der
+  // Wert Richtung 1,2 wandern und dieser Korridor enger werden.
+  const netto_sq = DEZILE.map(d => d.brutto * 0.65);
+  const p = berechnePalma(netto_sq);
+  assert.ok(p > 0.8 && p < 2.5, `Palma ${p.toFixed(2)} außerhalb des plausiblen Bereichs 0,8–2,5`);
 });
 
 test('gewichteter Median: liegt zwischen Minimum und Maximum, reagiert auf Gewichte', () => {

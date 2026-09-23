@@ -16,7 +16,7 @@ const FORMEL_QUELLEN_VERT = {
     note:   'Gewichtet nach DEZILE[i].anzahl; D10a/b/c (2,05 / 1,64 / 0,41 Mio. HH) werden korrekt gewichtet'
   },
   berechnePalma: {
-    formel: 'Palma = Ø(Top 10%) / Ø(Bottom 40%)',
+    formel: 'Palma = Einkommensanteil(Top 10%) / Einkommensanteil(Bottom 40%)',
     ref:    'Palma (2011) Homogeneous Middles vs. Heterogeneous Tails · UNDP HDR 2013',
     note:   'Robuster gegenüber Mittelstand-Verzerrung als Gini; international gut vergleichbar'
   },
@@ -80,7 +80,12 @@ function berechnePalma(werte) {
   for (let j=pairs.length-1; j>=0; j--) {
     if (cum_top + pairs[j].n <= top_limit + 1e-9) { top_sum+=pairs[j].v*pairs[j].n; top_n+=pairs[j].n; cum_top+=pairs[j].n; }
   }
-  return (bot_n>0&&top_n>0) ? (top_sum/top_n)/(bot_sum/bot_n) : 0;
+  // Palma (2011): Verhältnis der EINKOMMENSANTEILE, nicht der Durchschnitte.
+  // Da beide Anteile denselben Nenner (Gesamteinkommen) haben, kürzt er sich —
+  // es bleibt die Summe oben geteilt durch die Summe unten. Die frühere Fassung
+  // teilte die Durchschnitte und lieferte damit das Vierfache: 6,87 statt ~1,7,
+  // während der Lehrbuchwert für Deutschland bei ~1,2 liegt (PRUEFUNG.md A3).
+  return (bot_sum > 0 && top_n > 0) ? top_sum / bot_sum : 0;
 }
 
 function berechneDezilDelta(dezile, params, est_dez, klima, bg, kg) {

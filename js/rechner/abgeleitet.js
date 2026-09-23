@@ -29,15 +29,23 @@ import { ZINS_SCHULDEN, BIP_WACHSTUM_NOMINAL, hankMultiplikator } from './transi
 // Quelle: SRU (2022) Wege zur Treibhausgasneutralität · IPCC AR6 SPM C.1.2
 const CO2_BUDGET_DE = 6600; // Mt CO₂e
 
-// GGI-Schulden-Schwellwert: 60 % BIP (Maastricht-Referenzwert)
-const GGI_SCHULD_REF = 60;
+// GGI-Schuldenkomponente: Skala von der Maastricht-Grenze bis zum kritischen Bereich.
+// Vorher war die Referenz allein 60 % — weil die Quote schon bei 63,5 % startet,
+// stand der Teilindex ab Periode 1 am Anschlag und blieb dort, während die Quote
+// auf 130 % stieg. Er maß im gesamten Spielbereich nichts (PRUEFUNG.md B4).
+// Jetzt: 60 % = kein Risiko, 150 % = voll ausgereizt, linear dazwischen.
+const GGI_SCHULD_REF  = 60;    // Maastricht-Referenzwert (Art. 126 AEUV)
+const GGI_SCHULD_KRIT = 150;   // Bereich, ab dem die Tragfähigkeit als erschöpft gilt
 
 function berechneAbgeleitet(result, zustand) {
   const D_t = zustand.schuldenquote;
 
   // ── Primärsaldo (Domar-Berechnung) ───────────────────────────────────
-  // Zinslast = Effektivzins × Schuldenstand / BIP (als % BIP)
-  const zinslast_bip = ZINS_SCHULDEN * D_t / 100;
+  // ALLE Größen hier in PROZENTPUNKTEN des BIP — D_t kommt bereits in Prozent.
+  // Vorher stand hier "× D_t / 100", eine Division zu viel: Die Zinslast kam mit
+  // 0,016 statt 1,59 Prozentpunkten an, und Primärsaldo, Domar-Ziel und S2-Lücke
+  // waren allesamt um Faktor 100 verrutscht (PRUEFUNG.md A1).
+  const zinslast_bip = ZINS_SCHULDEN * D_t;
   // Primärsaldo = Gesamtsaldo + Zinslast (beide als % BIP)
   const ps_t = result.saldo_bip_pct + zinslast_bip;
 
@@ -45,9 +53,9 @@ function berechneAbgeleitet(result, zustand) {
   // r − g < 0: Schulden stabilisieren sich ohne Primärüberschuss (Blanchard 2019)
   const r_minus_g = ZINS_SCHULDEN - BIP_WACHSTUM_NOMINAL;
 
-  // Notwendiger Primärüberschuss für D_t-Stabilisierung (% BIP)
-  // ps* = (r − g) × D_t / 100
-  const ps_star = r_minus_g * D_t / 100;
+  // Notwendiger Primärüberschuss für D_t-Stabilisierung (Prozentpunkte BIP)
+  // ps* = (r − g) × D_t      — D_t steht schon in Prozent
+  const ps_star = r_minus_g * D_t;
 
   // ── S2-Tragfähigkeitslücke (Blanchard-Lücke) ─────────────────────────
   // S2 > 0: tragfähig; S2 < 0: fiskalische Anpassung erforderlich
@@ -56,7 +64,8 @@ function berechneAbgeleitet(result, zustand) {
   // ── Generationengerechtigkeit-Index (GGI) ────────────────────────────
   // GGI = 0,5 × Schuldenkomponente + 0,5 × CO₂-Komponente
   // Beide normiert auf [0,1]: 0 = kein Risiko, 1 = vollständige Grenze überschritten
-  const ggi_schuld = Math.min(1, Math.max(0, D_t / GGI_SCHULD_REF)) * 0.5;
+  const ggi_schuld = Math.min(1, Math.max(0,
+    (D_t - GGI_SCHULD_REF) / (GGI_SCHULD_KRIT - GGI_SCHULD_REF))) * 0.5;
   const ggi_co2    = Math.min(1, Math.max(0, zustand.co2_kumulat / CO2_BUDGET_DE)) * 0.5;
   const ggi        = ggi_schuld + ggi_co2;
 
@@ -79,4 +88,4 @@ function berechneAbgeleitet(result, zustand) {
   };
 }
 
-export { berechneAbgeleitet, CO2_BUDGET_DE, GGI_SCHULD_REF };
+export { berechneAbgeleitet, CO2_BUDGET_DE, GGI_SCHULD_REF, GGI_SCHULD_KRIT };

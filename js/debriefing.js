@@ -7,8 +7,8 @@
 import { simulierePfad }  from './rechner/transition.js';
 import { KURS_KONFIG_DEFAULT, PRESETS } from './data.js';
 import { generiereTeamFeedback, bewerteLernziele, erzeugeKausalketten } from './feedback.js';
+import { holeSitzung } from './dienste/server.js';
 
-const API_BASE   = 'https://planspiel-api.aramisda2.workers.dev/api';
 const SESSION_ID = new URLSearchParams(location.search).get('session');
 
 const CHART_COLORS = ['#1B4FD8', '#166534', '#D97706', '#DC2626', '#7C3AED', '#0284C7'];
@@ -160,19 +160,12 @@ function init() {
 
 async function syncBackendSession(sessionId) {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
-
-    const res = await fetch(`${API_BASE}/sessions/${sessionId}`, { signal: controller.signal });
-    clearTimeout(timeoutId);
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const remoteSession = await res.json();
+    const remoteSession = await holeSitzung(sessionId, { zeitlimit: 3500 });
     safeRender(remoteSession);
     showNotice(`Cloud-Session "${esc(sessionId)}" erfolgreich geladen.`);
-  } catch (e) {
-    console.warn('Cloud-Sync nicht erfolgreich (Timeout oder Offline), nutze lokalen Stand:', e);
-    showNotice(`Cloud-Session "${esc(sessionId)}" nicht erreichbar (${e.name === 'AbortError' ? 'Timeout' : e.message}). Lokale/Demo-Daten aktiv.`);
+  } catch (fehler) {
+    console.warn('Cloud-Sync nicht erfolgreich, nutze lokalen Stand:', fehler);
+    showNotice(`Cloud-Session "${esc(sessionId)}" nicht erreichbar (${fehler.message}). Lokale/Demo-Daten aktiv.`);
   }
 }
 

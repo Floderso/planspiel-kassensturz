@@ -7,8 +7,11 @@
 
 import { simulierePfad } from './rechner/transition.js';
 import { KURS_KONFIG_DEFAULT, SCHOCK_BIBLIOTHEK } from './data.js';
-
-const API_BASE = 'https://planspiel-api.aramisda2.workers.dev/api';
+import {
+  erstelleSitzung, holeAdminSicht, setzePeriodeGesperrt, setzeFreigabe,
+  setzeSchocks, setzeWerkzeuge, sendeMatrikelnummern,
+} from './dienste/server.js';
+import { qrAdresse } from './konfig.js';
 
 // ── Komplexitätsstufe ─────────────────────────────────────────────────────────
 // Lebt nur clientseitig (URL-Parameter der join_url, kein Backend-Feld) — analog
@@ -36,16 +39,55 @@ function esc(str) {
 
 const urlParams    = new URLSearchParams(location.search);
 const SESSION_ID   = urlParams.get('session');
-const ADMIN_TOKEN  = urlParams.get('token');
+
+// ── Admin-Token ───────────────────────────────────────────────────────────────
+// Der Token steht im Fragment (#token=…), nicht im Query-String. Fragmente
+// schickt der Browser nie an einen Server: damit taucht der Token in keinem
+// Zugriffsprotokoll und in keinem Referrer mehr auf. Siehe entwurf/BETRIEB.md 1.5.
+//
+// Links von vor der Umstellung (?token=…) funktionieren weiter — sie werden
+// beim ersten Laden still ins Fragment umgeschrieben.
+
+function tokenSchluessel(sessionId) { return `kassensturz_admin_token_${sessionId}`; }
+
+function merkeAdminToken(sessionId, token) {
+  if (!sessionId || !token) return;
+  try { localStorage.setItem(tokenSchluessel(sessionId), token); } catch (_) {}
+}
+
+function ermittleAdminToken() {
+  const ausFragment = new URLSearchParams(location.hash.replace(/^#/, '')).get('token');
+  const ausQuery    = urlParams.get('token');   // Altlast, siehe oben
+  const gefunden    = ausFragment || ausQuery;
+
+  if (gefunden) {
+    merkeAdminToken(SESSION_ID, gefunden);
+    if (ausQuery) {
+      // aus der Adresszeile in das Fragment umziehen
+      const url = new URL(location.href);
+      url.searchParams.delete('token');
+      url.hash = `token=${gefunden}`;
+      history.replaceState({}, '', url.toString());
+    }
+    return gefunden;
+  }
+
+  // Kein Token im Link: der zuletzt für diese Session benutzte gilt weiter.
+  try { return SESSION_ID ? localStorage.getItem(tokenSchluessel(SESSION_ID)) : null; }
+  catch (_) { return null; }
+}
+
+const ADMIN_TOKEN  = ermittleAdminToken();
+
+// Laufender Zugang des Dashboards. Steht hier oben, damit adminFetch() ihn
+// als Vorgabewert lesen kann, egal wann es aufgerufen wird.
+let currentSessionId = null;
+let currentToken     = null;
+
+// Der Serverzugriff liegt vollstaendig in js/dienste/server.js. Hier steht
+// kein fetch, keine Adresse und kein HTTP-Verb mehr.
 
 // ── Hilfsfunktionen ───────────────────────────────────────────────────────────
-
-function randomToken(len = 12) {
-  return Array.from(crypto.getRandomValues(new Uint8Array(len)))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('')
-    .slice(0, len);
-}
 
 function copyToClipboard(text, btn) {
   navigator.clipboard.writeText(text).then(() => {
@@ -212,8 +254,11 @@ function initSetup() {
   // Standard-Teams
   addTeam('Team A'); addTeam('Team B'); addTeam('Team C');
 
-  // Admin-Token generieren
-  document.getElementById('f-admin-token').value = randomToken();
+  // Der echte Zugang wird vom Server erzeugt und erst nach "Session starten"
+  // eingesetzt. Vorher hier einen Code anzuzeigen, waere irrefuehrend — er
+  // haette mit dem Dashboard-Zugang nichts zu tun.
+  const tokenFeldSetup = document.getElementById('f-admin-token');
+  if (tokenFeldSetup) tokenFeldSetup.placeholder = 'wird beim Starten der Session erzeugt';
 
   // Toggle Sandbox
   const toggleBtn   = document.getElementById('toggle-sandbox');
@@ -316,31 +361,35 @@ async function createSession() {
   errorEl.textContent = '';
 
   try {
-    const res = await fetch(`${API_BASE}/sessions`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name,
-        perioden_anzahl:     perioden,
-        team_groesse:        groesse,
-        team_names:          teams,
-        sandbox:             sandboxOn,
-        min_teilnahme_quote: 0.5,
-        perioden_laenge_jahre,
-        lernziele,
-        perioden_werkzeuge:  setupScaffoldState,
-      }),
+    const data = await erstelleSitzung({
+      name,
+      perioden_anzahl:     perioden,
+      team_groesse:        groesse,
+      team_names:          teams,
+      sandbox:             sandboxOn,
+      min_teilnahme_quote: 0.5,
+      perioden_laenge_jahre,
+      lernziele,
+      perioden_werkzeuge:  setupScaffoldState,
     });
 
-    if (!res.ok) { throw new Error(await res.text()); }
-    const data = await res.json();
     saveLevel(data.session_id, level);
 
-    // Admin-URL mit Token in URL schreiben und Dashboard laden
+    // Adresszeile zur Wiedereinstiegs-URL machen: Session als Parameter,
+    // Token als Fragment. So bleibt der Link als Lesezeichen brauchbar, ohne
+    // dass der Token je an einen Server geht.
     const newUrl = new URL(location.href);
     newUrl.searchParams.set('session', data.session_id);
-    newUrl.searchParams.set('token',   data.admin_token);
+    newUrl.searchParams.delete('token');
+    newUrl.hash = `token=${data.admin_token}`;
     history.pushState({}, '', newUrl.toString());
+    merkeAdminToken(data.session_id, data.admin_token);
+
+    // Das Feld zeigte bisher einen lokal gewuerfelten Code, der mit dem
+    // echten Zugang nichts zu tun hatte. Jetzt steht dort der Token, der
+    // tatsaechlich ins Dashboard laesst.
+    const tokenFeld = document.getElementById('f-admin-token');
+    if (tokenFeld) tokenFeld.value = data.admin_token;
 
     // Matrikelnummern hochladen wenn vorhanden
     if (pendingMatrikeln.length > 0) {
@@ -370,8 +419,6 @@ async function createSession() {
 
 let pollInterval = null;
 let joinUrlGlobal = '';
-let currentSessionId   = null;
-let currentToken       = null;
 let schockPanelReady   = false;
 
 function startDashboard(sessionId, token, joinUrl, meta) {
@@ -404,7 +451,9 @@ function startDashboard(sessionId, token, joinUrl, meta) {
     const img       = document.getElementById('qr-img');
     if (!container || !img) return;
     if (container.style.display !== 'none') { container.style.display = 'none'; return; }
-    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinUrlGlobal)}`;
+    const adresse = qrAdresse(joinUrlGlobal);
+    if (!adresse) { alert('Kein QR-Dienst konfiguriert (konfig.js: qr_dienst).'); return; }
+    img.src = adresse;
     container.style.display = '';
   });
 
@@ -434,18 +483,15 @@ function startDashboard(sessionId, token, joinUrl, meta) {
 
 async function pollDashboard(sessionId, token) {
   try {
-    const res = await fetch(`${API_BASE}/sessions/${sessionId}/admin?token=${token}`);
-    if (!res.ok) {
-      const msg = document.getElementById('last-updated');
-      if (msg) msg.textContent = `Fehler beim Laden: HTTP ${res.status} — Token korrekt?`;
-      return;
-    }
-    const session = await res.json();
+    const session = await holeAdminSicht(sessionId, token);
     renderDashboard(session);
-  } catch (e) {
-    console.error('pollDashboard:', e);
+  } catch (fehler) {
+    console.error('pollDashboard:', fehler);
     const msg = document.getElementById('last-updated');
-    if (msg) msg.textContent = 'Netzwerkfehler: ' + e.message;
+    if (!msg) return;
+    msg.textContent = fehler.istNetzwerkfehler
+      ? 'Netzwerkfehler: ' + fehler.message
+      : `Fehler beim Laden: HTTP ${fehler.status} — Zugang korrekt?`;
   }
 }
 
@@ -702,31 +748,20 @@ function openTeamDetail(teamName, session, konfig) {
 
 async function adminToggleLock(teamName, periodeIdx, locked, konfig) {
   try {
-    const res = await fetch(
-      `${API_BASE}/sessions/${currentSessionId}/teams/${encodeURIComponent(teamName)}/lock?token=${currentToken}`,
-      {
-        method:  'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ periode_idx: periodeIdx, locked }),
-      }
-    );
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      alert('Fehler: ' + (data.error ?? res.statusText));
-      return;
-    }
+    await setzePeriodeGesperrt(currentSessionId, teamName, periodeIdx, locked, currentToken);
+
     // Dashboard + Modal mit frischen Daten neu rendern
-    const freshRes = await fetch(`${API_BASE}/sessions/${currentSessionId}/admin?token=${currentToken}`);
-    if (!freshRes.ok) return;
-    const freshSession = await freshRes.json();
+    const freshSession = await holeAdminSicht(currentSessionId, currentToken);
     renderDashboard(freshSession);
     openTeamDetail(teamName, freshSession, {
       ...konfig,
       schocks: freshSession.schocks ?? [],
     });
-  } catch (err) {
-    console.error('adminToggleLock:', err);
-    alert('Netzwerkfehler beim Ändern des Perioden-Status.');
+  } catch (fehler) {
+    console.error('adminToggleLock:', fehler);
+    alert(fehler.istNetzwerkfehler
+      ? 'Netzwerkfehler beim Ändern des Perioden-Status.'
+      : 'Fehler: ' + fehler.message);
   }
 }
 
@@ -772,19 +807,7 @@ async function setFreigabe(n) {
   const msgEl = document.getElementById('freigabe-msg');
   if (msgEl) { msgEl.textContent = ''; }
   try {
-    const res = await fetch(
-      `${API_BASE}/sessions/${currentSessionId}/freigabe?token=${currentToken}`,
-      {
-        method:  'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ perioden_freigegeben: n }),
-      }
-    );
-    const data = await res.json();
-    if (!res.ok) {
-      if (msgEl) { msgEl.style.color = 'var(--bad)'; msgEl.textContent = 'Fehler: ' + (data.error ?? res.statusText); }
-      return;
-    }
+    await setzeFreigabe(currentSessionId, n, currentToken);
     // Sofort neu laden damit Panel und Tabelle aktuell sind
     await pollDashboard(currentSessionId, currentToken);
     if (msgEl) { msgEl.style.color = 'var(--good)'; msgEl.textContent = `${n} Periode(n) freigegeben`; }
@@ -876,21 +899,12 @@ function renderSchockPanel(session) {
     newBtn.textContent = 'Speichere …';
     statusEl.textContent = '';
     try {
-      const res = await fetch(`${API_BASE}/sessions/${currentSessionId}/schocks?token=${currentToken}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ schocks }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        statusEl.style.color = 'var(--good)';
-        statusEl.textContent = `${data.count} Schock(s) gespeichert — Teams erhalten Update in ~5 Sek.`;
-      } else {
-        statusEl.style.color = 'var(--bad)';
-        statusEl.textContent = 'Fehler: ' + (data.error ?? res.statusText);
-      }
-    } catch (_) {
+      const data = await setzeSchocks(currentSessionId, schocks, currentToken);
+      statusEl.style.color = 'var(--good)';
+      statusEl.textContent = `${data.count} Schock(s) gespeichert — Teams erhalten Update in ~5 Sek.`;
+    } catch (fehler) {
       statusEl.style.color = 'var(--bad)';
-      statusEl.textContent = 'Netzwerkfehler';
+      statusEl.textContent = fehler.istNetzwerkfehler ? 'Netzwerkfehler' : 'Fehler: ' + fehler.message;
     } finally {
       newBtn.disabled = false;
       newBtn.textContent = 'Schocks speichern';
@@ -925,22 +939,12 @@ function renderScaffoldDashboard(session) {
       saveBtn.textContent = 'Speichere …';
       statusEl.textContent = '';
       try {
-        const res = await fetch(`${API_BASE}/sessions/${currentSessionId}/werkzeuge?token=${currentToken}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ perioden_werkzeuge: dashScaffoldState }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          statusEl.style.color = 'var(--good)';
-          statusEl.textContent = 'Werkzeug-Freigabe gespeichert — Teams erhalten Update in ~5 Sek.';
-        } else {
-          statusEl.style.color = 'var(--bad)';
-          statusEl.textContent = 'Fehler: ' + (data.error ?? res.statusText);
-        }
-      } catch (_) {
+        await setzeWerkzeuge(currentSessionId, dashScaffoldState, currentToken);
+        statusEl.style.color = 'var(--good)';
+        statusEl.textContent = 'Werkzeug-Freigabe gespeichert — Teams erhalten Update in ~5 Sek.';
+      } catch (fehler) {
         statusEl.style.color = 'var(--bad)';
-        statusEl.textContent = 'Netzwerkfehler';
+        statusEl.textContent = fehler.istNetzwerkfehler ? 'Netzwerkfehler' : 'Fehler: ' + fehler.message;
       } finally {
         saveBtn.disabled = false;
         saveBtn.textContent = 'Werkzeug-Freigabe speichern';
@@ -1004,21 +1008,13 @@ function setupCsvUpload(dropZoneId, fileInputId, statusId, onParsed) {
 
 async function uploadMatrikeln(sessionId, token, matrikeln, statusEl) {
   try {
-    const res = await fetch(`${API_BASE}/sessions/${sessionId}/matrikelnummern?token=${token}`, {
-      method:  'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ matrikelnummern: matrikeln }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      statusEl.textContent = `${data.count} Matrikelnummern gespeichert.`;
-    } else {
-      statusEl.className   = 'error';
-      statusEl.textContent = 'Fehler: ' + (data.error ?? res.statusText);
-    }
-  } catch (_) {
+    const data = await sendeMatrikelnummern(sessionId, matrikeln, token);
+    statusEl.textContent = `${data.count} Matrikelnummern gespeichert.`;
+  } catch (fehler) {
     statusEl.className   = 'error';
-    statusEl.textContent = 'Netzwerkfehler beim Speichern.';
+    statusEl.textContent = fehler.istNetzwerkfehler
+      ? 'Netzwerkfehler beim Speichern.'
+      : 'Fehler: ' + fehler.message;
   }
 }
 
@@ -1055,7 +1051,9 @@ if (SESSION_ID && ADMIN_TOKEN) {
     const img       = document.getElementById('qr-img');
     if (!container || !img) return;
     if (container.style.display !== 'none') { container.style.display = 'none'; return; }
-    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinUrlGlobal)}`;
+    const adresse = qrAdresse(joinUrlGlobal);
+    if (!adresse) { alert('Kein QR-Dienst konfiguriert (konfig.js: qr_dienst).'); return; }
+    img.src = adresse;
     container.style.display = '';
   });
 

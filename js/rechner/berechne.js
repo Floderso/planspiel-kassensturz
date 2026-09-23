@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: CC-BY-4.0
 // Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
-import { DEZILE, ELAST, BASIS_MAKRO, STAATSAUSGABEN, PRESETS, BASIS_AUFKOMMEN, ADMIN_QUOTE, AUSGABEN_TOTAL, BGE_LABOR_EFF, PERIOD_STATE_0 } from '../data.js';
+import { DEZILE, ELAST, BASIS_MAKRO, STAATSAUSGABEN, PRESETS, BASIS_AUFKOMMEN, ADMIN_QUOTE, AUSGABEN_TOTAL, BGE_LABOR_EFF, PERIOD_STATE_0, ZINS_EFFEKTIV } from '../data.js';
 import { estHaushalt, grenzsteuersatzHaushalt } from './einkommensteuer.js';
 import { berechneGini, berechneMedianGewichtet, berechnePalma, berechneDezilDelta, berechneNettoSQ } from './verteilung.js';
 
@@ -75,9 +75,11 @@ function berechne(params, zustand = null) {
   const lohnbasis_faktor = zustand ? (zustand.lohnbasis_faktor ?? 1.0) : 1.0;
 
   // Dynamische Zinslast: im Multi-Perioden-Modus aus aktuellem Schuldenstand ableiten.
-  // Effektivzins SQ: 30 Mrd. / (64 % × 4.200 Mrd.) ≈ 1,12 % (Altschulden nahe 0 %, Rollover ~2,5 %)
-  const schuld_sq_mrd = PERIOD_STATE_0.schuldenquote / 100 * PERIOD_STATE_0.bip; // 2.688 Mrd.
-  const zins_effektivrate = STAATSAUSGABEN.zinsen / schuld_sq_mrd;               // ≈ 0.01116
+  // Der Satz kommt aus data.js — DERSELBE, mit dem transition.js die Schulden
+  // fortschreibt. Vorher wurde er hier aus der Bundes-Zinsausgabe abgeleitet
+  // (1,06 %) und wich damit von den 2,5 % der Fortschreibung ab: rund 41 Mrd. €
+  // jährlich erhöhten die Schuldenquote, ohne den Saldo zu belasten (PRUEFUNG.md A4).
+  const zins_effektivrate = ZINS_EFFEKTIV;
   const zinsen_dyn = zustand
     ? (zustand.schuldenquote / 100 * zustand.bip) * zins_effektivrate
     : STAATSAUSGABEN.zinsen;

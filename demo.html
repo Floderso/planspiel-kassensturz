@@ -4,9 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kassensturz Planspiel — Prototyp-Demo</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Schriften: lokal, nicht von Google. Siehe css/schriften.css -->
+  <link rel="stylesheet" href="css/schriften.css">
   <style>
     :root {
       --bg:        #F1F3F7;
@@ -553,7 +552,11 @@
 
       const base     = location.origin + location.pathname.replace('demo.html', '');
       const joinUrl  = `${base}index.html?session=${data.session_id}&perioden=3&teams=3&sandbox=true&name=Demo-Session`;
-      const adminUrl = `${base}admin.html?session=${data.session_id}&token=${data.admin_token}`;
+      // Der Token gehoert ins Fragment, nicht in den Query-String: Fragmente
+      // erreichen keinen Server und landen daher in keinem Protokoll.
+      // admin.js liest zuerst #token= (dort Zeile 59); ?token= existiert nur
+      // noch als Rueckfallebene fuer alte Links.
+      const adminUrl = `${base}admin.html?session=${data.session_id}#token=${data.admin_token}`;
 
       document.getElementById('dl-admin').textContent = adminUrl;
       document.getElementById('dl-join').textContent  = joinUrl;
