@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kassensturz — Die Leitung</title>
+<link rel="stylesheet" href="css/schriften.css">
+<style>
+:root{
+  --filz:#3C4D46; --filz-tief:#33423C; --papier:#FBF8F0; --karton:#DECFAC;
+  --tinte:#161A16; --grau:#585F54; --grau-mappe:#545A50; --zettel:#F3E483;
+  --fin:#17406B; --gut:#125C36; --schlecht:#8E2418;
+  --gesperrt:#33413B; --gesperrt-schrift:#C6D2CB;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--filz);color:var(--papier);font-family:Inter,system-ui,sans-serif;
+  font-size:16px;line-height:1.45;font-variant-numeric:tabular-nums;
+  background-image:radial-gradient(circle at 18% 12%,rgba(255,255,255,.04),transparent 55%)}
+:focus-visible{outline:3px solid var(--zettel);outline-offset:3px;border-radius:2px}
+[hidden]{display:none !important}
+
+.kopf{padding:20px 24px 14px;max-width:1100px;margin:0 auto}
+.kopf h1{font-family:Newsreader,serif;font-size:30px;font-weight:500}
+.kopf p{color:#C8D2CB;font-size:14.5px;margin-top:4px;max-width:74ch}
+#laedt{max-width:1100px;margin:0 auto;padding:30px 24px;color:#C8D2CB;font-size:15px}
+main{max-width:1100px;margin:0 auto;padding:0 24px 56px}
+
+section{background:var(--papier);color:var(--tinte);padding:20px 22px 22px;margin-bottom:20px;
+  box-shadow:0 8px 24px rgba(0,0,0,.34)}
+section h2{font-family:Newsreader,serif;font-size:22px;font-weight:500;margin-bottom:3px}
+section .bu{font-size:13px;color:var(--grau);margin-bottom:14px;max-width:76ch}
+h3{font-size:15px;font-weight:700;margin:0}
+.leer{font-size:13.5px;color:var(--grau);font-style:italic}
+
+#meldung{margin:0 auto 18px;max-width:1100px;padding:11px 14px;border-left:4px solid;
+  font-size:14px;line-height:1.45}
+#meldung[data-art="gut"]{border-color:#7BD3A2;background:#22372D;color:#C6E8D5}
+#meldung[data-art="schlecht"]{border-color:#E8907E;background:#3A2621;color:#F3CEC6}
+
+/* Zulassung */
+#zulassung-zahl{font-size:13.5px;font-weight:600;margin-bottom:9px}
+#zulassung-liste{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px;max-height:150px;overflow-y:auto}
+.mnr{font-family:'JetBrains Mono',monospace;font-size:12px;padding:3px 7px;border-radius:2px;
+  background:#EDE7D6;color:var(--grau)}
+.mnr[data-drin="true"]{background:#DCEDE2;color:#0E4A2B;font-weight:700}
+#zulassung-legende{font-size:12px;color:var(--grau);margin-bottom:12px}
+form{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+input[type="text"],select{font:inherit;padding:9px 11px;border:1px solid #C6BEA8;
+  background:#F4F0E4;color:var(--tinte);min-width:170px}
+input:focus,select:focus{outline:none;border-color:var(--fin);box-shadow:0 0 0 2px rgba(23,64,107,.28)}
+button{font:inherit;cursor:pointer}
+.haupt{font-weight:700;background:var(--fin);color:var(--papier);border:0;padding:10px 20px}
+.haupt:hover{background:#1E5490}
+.klein-knopf{font-size:12.5px;background:transparent;border:1px solid var(--grau);
+  color:var(--grau);padding:5px 11px;border-radius:2px}
+.klein-knopf:hover{border-color:var(--tinte);color:var(--tinte)}
+.gefahr{background:var(--schlecht);color:var(--papier);border:0;padding:10px 18px;font-weight:700}
+.gefahr:hover{background:#A82C1D}
+
+/* Aufstellung */
+.kopfzeile{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;
+  flex-wrap:wrap;margin-bottom:12px}
+#zuordnung-lage{font-size:12.5px;padding:7px 11px;border-left:3px solid #C6BEA8;color:var(--grau)}
+#zuordnung-lage[data-offen="false"]{border-left-color:var(--gut);color:#0E4A2B}
+#teams-zahl{font-size:13px;color:var(--grau);margin-bottom:13px}
+#teams{display:grid;gap:13px;grid-template-columns:repeat(auto-fill,minmax(min(100%,248px),1fr))}
+.team{border:1px solid #D5CEBC;border-top:4px solid #C6BEA8;padding:12px 13px;background:#FDFBF5}
+.team[data-vollstaendig="true"]{border-top-color:var(--gut)}
+.team h3{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.team .anz{font-family:Newsreader,serif;font-size:14px;font-weight:400;color:var(--fin)}
+.team .bel{font-size:12px;color:var(--grau);margin-top:2px}
+.leute{list-style:none;margin-top:10px;display:grid;gap:4px}
+.person{width:100%;text-align:left;background:#F1ECDE;border:1px solid transparent;
+  padding:7px 9px;display:flex;justify-content:space-between;gap:9px;align-items:baseline}
+.person:hover{border-color:var(--fin);background:var(--papier)}
+.pn{font-size:13.5px;font-weight:600}
+.pr{font-size:11.5px;color:var(--grau);white-space:nowrap}
+
+/* Personenblatt */
+#personenblatt{position:fixed;inset:0;background:rgba(20,26,22,.72);display:grid;
+  place-items:center;padding:20px;z-index:10;overflow-y:auto}
+#personenblatt .karte{background:var(--papier);color:var(--tinte);max-width:520px;width:100%;
+  padding:22px 24px 24px;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+#blatt-name{font-family:Newsreader,serif;font-size:25px;font-weight:500;margin-bottom:12px}
+#blatt-daten dl{display:grid;grid-template-columns:auto 1fr;gap:5px 16px;font-size:13.5px;
+  padding-bottom:14px;border-bottom:1px solid #D5CEBC;margin-bottom:16px}
+#blatt-daten dt{color:var(--grau)}
+#blatt-daten dd{font-weight:600}
+.werkzeug{border-top:1px solid #E2DCCB;padding-top:13px;margin-top:13px}
+.werkzeug:first-of-type{border-top:0;margin-top:0;padding-top:0}
+.werkzeug h4{font-size:13px;font-weight:700;margin-bottom:4px}
+.werkzeug p{font-size:12.5px;color:var(--grau);margin-bottom:9px;line-height:1.45}
+.werkzeug form,.werkzeug .reihe{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+#blatt-zu{margin-top:18px;background:transparent;border:1px solid var(--grau);color:var(--grau);
+  padding:9px 18px}
+#kennwort-hinweis{font-size:12.5px;color:var(--grau);font-style:italic;line-height:1.45}
+
+/* Eingriffe */
+#eingriffe{font-size:12.5px;color:var(--grau);max-height:220px;overflow-y:auto}
+.ei{padding:4px 0;border-bottom:1px dotted #D5CEBC}
+.ei time{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--grau);
+  margin-right:9px}
+
+/* Perioden */
+.tabellenraum{overflow-x:auto}
+#perioden-tabelle{width:100%;border-collapse:collapse;font-size:13.5px;min-width:480px}
+#perioden-tabelle th{font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--grau);text-align:left;border-bottom:1px solid var(--tinte);padding:0 10px 5px 0}
+#perioden-tabelle td{padding:7px 10px 7px 0;border-bottom:1px dotted #D5CEBC;vertical-align:middle}
+#perioden-tabelle .nr{font-family:'JetBrains Mono',monospace;font-weight:700;width:2.5em}
+#perioden-tabelle .fertig{font-family:'JetBrains Mono',monospace;color:var(--grau);white-space:nowrap}
+.marke{font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;
+  padding:3px 8px;border-radius:2px;background:#EDE7D6;color:var(--grau);white-space:nowrap}
+tr[data-zustand="offen"] .marke{background:#DCEDE2;color:#0E4A2B}
+tr[data-zustand="geschlossen"] .marke{background:#E2E8EF;color:#173A66}
+tr[data-zustand="gesperrt"] .marke{background:#EDE7D6;color:var(--grau)}
+.laenge{width:4.4em;min-width:0;padding:5px 7px}
+.frist{min-width:0;width:12.5em;padding:5px 7px;font-size:12.5px}
+
+/* Leitstand */
+#leitstand{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr))}
+.lt{border:1px solid #D5CEBC;border-left:4px solid #C6BEA8;padding:12px 13px;background:#FDFBF5}
+.lt[data-haengt="true"]{border-left-color:#B8791A;background:#FBF4E6}
+.lt h3{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.lt .anz{font-family:Newsreader,serif;font-size:14px;font-weight:400;color:var(--fin)}
+.lz{font-size:12px;color:var(--grau);margin-top:3px}
+.lk{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.lk span{font-size:11.5px;padding:4px 8px;background:#F1ECDE;border-radius:2px;
+  font-family:'JetBrains Mono',monospace}
+.lk b{font-family:Inter,sans-serif;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--grau);display:block;font-weight:600}
+.lnav{margin-top:10px}
+.lnav a{font-size:12.5px;color:var(--fin);font-weight:600}
+
+/* Ereignisse und Werkzeuge */
+.raster{width:100%;border-collapse:collapse;font-size:13.5px;min-width:560px}
+.raster th{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--grau);
+  text-align:left;border-bottom:1px solid var(--tinte);padding:0 10px 5px 0}
+.raster td{padding:8px 10px 8px 0;border-bottom:1px dotted #D5CEBC;vertical-align:top}
+.raster .nr{font-family:'JetBrains Mono',monospace;font-weight:700;width:2.5em}
+.raster .j{font-family:'JetBrains Mono',monospace;color:var(--grau);white-space:nowrap}
+.raster select{min-width:0;width:100%;max-width:300px;padding:6px 8px;font-size:13px}
+.raster .fest{font-weight:600}
+.raster .fest small{display:block;font-weight:400;font-size:11.5px;color:var(--grau)}
+.wirkung{list-style:none;font-size:12.5px;line-height:1.5}
+.wirkung li[data-wirkt="false"]{color:var(--grau)}
+.wirkung li[data-wirkt="false"]::after{content:' — im Modell nicht gerechnet';font-style:italic}
+.wirkung .q{color:var(--grau);font-size:11.5px;margin-top:3px}
+.raster .stl{font-size:12.5px;color:var(--grau)}
+</style>
+</head>
+<body>
+
+<header class="kopf">
+  <h1>Die Leitung</h1>
+  <p>Zulassung, Aufstellung und die Werkzeuge für den Fall, dass im Seminar etwas klemmt.
+     Jeder Eingriff wird vermerkt.</p>
+</header>
+
+<p id="laedt">Wird geladen …</p>
+<p id="meldung" role="status" hidden></p>
+
+<main id="leitung" hidden>
+
+  <section aria-labelledby="h-zul">
+    <h2 id="h-zul">Zulassung</h2>
+    <p class="bu">Wer beitreten darf. Ist die Liste leer, darf jede Matrikelnummer beitreten.</p>
+    <p id="zulassung-zahl"></p>
+    <div id="zulassung-liste"></div>
+    <p id="zulassung-legende" hidden>Grün: hat sich bereits eingetragen.</p>
+    <form id="nachzuegler-form">
+      <label for="nachzuegler" class="bu" style="margin:0">Nachzügler zulassen</label>
+      <input type="text" id="nachzuegler" inputmode="numeric" autocomplete="off"
+             placeholder="Matrikelnummer">
+      <button type="submit" class="haupt">Zulassen</button>
+    </form>
+  </section>
+
+  <section aria-labelledby="h-auf">
+    <div class="kopfzeile">
+      <div>
+        <h2 id="h-auf">Aufstellung</h2>
+        <p class="bu">Wer sitzt wo, und welche Ressorts fehlen noch.</p>
+      </div>
+      <button type="button" id="zuordnung-knopf" class="haupt"></button>
+    </div>
+    <p id="zuordnung-lage"></p>
+    <p id="teams-zahl"></p>
+    <div id="teams"></div>
+  </section>
+
+  <section aria-labelledby="h-per">
+    <div class="kopfzeile">
+      <div>
+        <h2 id="h-per">Perioden</h2>
+        <p class="bu">Der Takt des Kurses. Eine Frist sperrt nichts — sie sagt, bis wann
+           gerechnet wird. Geschlossen wird von Hand.</p>
+      </div>
+      <div style="text-align:right">
+        <p id="freigabe-zahl" class="bu" style="margin-bottom:6px"></p>
+        <button type="button" id="freigabe-weiter" class="haupt"></button>
+      </div>
+    </div>
+    <div class="tabellenraum">
+      <table id="perioden-tabelle">
+        <thead><tr><th>Nr.</th><th>Zustand</th><th>Länge</th><th>Frist</th><th>fertig</th></tr></thead>
+        <tbody id="perioden"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-erg">
+    <h2 id="h-erg">Ereignisse</h2>
+    <p class="bu">Ein Ereignis trifft alle Teams. Setzen lässt es sich nur, solange noch niemand
+       die Periode gesehen hat — danach steht es fest.</p>
+    <div class="tabellenraum">
+      <table id="ereignis-tabelle" class="raster">
+        <thead><tr><th>Nr.</th><th>Jahre</th><th>Ereignis</th><th>Wirkung im Modell</th></tr></thead>
+        <tbody id="ereignisse"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-wz">
+    <h2 id="h-wz">Werkzeuge</h2>
+    <p class="bu">Ab welcher Runde die Teams was einstellen dürfen. Gesperrtes sehen sie
+       zugeklappt. Was einmal offen war, bleibt offen.</p>
+    <div class="tabellenraum">
+      <table id="werkzeug-tabelle" class="raster">
+        <thead><tr><th>Werkzeug</th><th>Ressort</th><th>Stellgrößen</th><th>offen ab</th></tr></thead>
+        <tbody id="werkzeuge"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-lst">
+    <h2 id="h-lst">Leitstand</h2>
+    <p class="bu">Wo jedes Team steht. Die Zahlen sind nachgespielt — mit denselben
+       Funktionen wie am Tisch, nicht mit einer zweiten Rechnung.</p>
+    <p id="leitstand-zahl" class="bu"></p>
+    <div id="leitstand"></div>
+  </section>
+
+  <section aria-labelledby="h-ein">
+    <h2 id="h-ein">Eingriffe</h2>
+    <p class="bu">Was hier verändert wurde — mit Zeitpunkt. Auch zum eigenen Schutz.</p>
+    <div id="eingriffe"></div>
+  </section>
+
+</main>
+
+<div id="personenblatt" hidden role="dialog" aria-modal="true" aria-labelledby="blatt-name">
+  <div class="karte">
+    <h2 id="blatt-name" tabindex="-1"></h2>
+    <div id="blatt-daten"></div>
+
+    <div class="werkzeug">
+      <h4>In ein anderes Team setzen</h4>
+      <p>Das bisherige Ressort wird frei — das Team muss es neu vergeben.</p>
+      <div class="reihe">
+        <label for="umsetzen-ziel" class="bu" style="margin:0">Zielteam</label>
+        <select id="umsetzen-ziel"></select>
+        <button type="button" id="umsetzen" class="klein-knopf">Umsetzen</button>
+      </div>
+    </div>
+
+    <div class="werkzeug" id="ressort-frei">
+      <h4>Ressort freigeben</h4>
+      <p id="ressort-frei-text"></p>
+      <button type="button" id="ressort-frei-knopf" class="klein-knopf">Freigeben</button>
+    </div>
+
+    <div class="werkzeug">
+      <h4>Zugang zurücksetzen</h4>
+      <p id="kennwort-hinweis"></p>
+    </div>
+
+    <div class="werkzeug">
+      <h4>Aus dem Kurs entfernen</h4>
+      <p>Stimmen aus abgeschlossenen Runden bleiben im Protokoll stehen. Die Matrikelnummer
+         bleibt zugelassen — die Person kann sich neu anmelden.</p>
+      <button type="button" id="entfernen" class="gefahr">Entfernen</button>
+    </div>
+
+    <button type="button" id="blatt-zu">Schließen</button>
+  </div>
+</div>
+
+<script src="konfig.js"></script>
+<script type="module" src="js/leitung.js"></script>
+</body>
+</html>

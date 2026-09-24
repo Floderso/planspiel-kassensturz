@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<!-- KONZEPTBILD, nicht funktionsfaehig. Zahlen echt aus der Engine. -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Die Waage — Konzeptbild</title>
+<link rel="stylesheet" href="../../css/schriften.css">
+<style>
+:root{
+  --creme:#F6F1E4; --creme-tief:#EBE3D0; --tinte:#1E1B14; --grau:#5C5546;
+  --messing:#846A1D; --messing-hell:#C8A53F; --linie:#C9BEA3;
+  --ein:#1F5D4A; --aus:#8E3620;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--creme);color:var(--tinte);font-family:Inter,system-ui,sans-serif;
+  font-size:16px;line-height:1.45;font-variant-numeric:tabular-nums}
+.hinweis{background:var(--tinte);color:var(--creme);font-size:13px;padding:6px 20px}
+
+.kopf{text-align:center;padding:24px 20px 10px}
+.kopf h1{font-family:Newsreader,serif;font-size:34px;font-weight:500;letter-spacing:-.01em}
+.kopf p{color:var(--grau);font-size:14px;margin-top:4px}
+
+/* ── Die Waage selbst ───────────────────────────────────────────────────── */
+.buehne{padding:8px 20px 0;display:flex;justify-content:center}
+svg.waage{width:100%;max-width:820px;height:auto}
+.zeile-werte{display:flex;justify-content:center;gap:clamp(20px,9vw,140px);
+  padding:2px 20px 4px;flex-wrap:wrap;text-align:center}
+.zeile-werte div{min-width:150px}
+.zeile-werte .kat{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--grau)}
+.zeile-werte .sum{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.zeile-werte .sum em{font-style:normal;font-size:13px;font-weight:400;color:var(--grau)}
+.ein .sum{color:var(--ein)}.aus .sum{color:var(--aus)}
+
+.ablesung{text-align:center;padding:14px 20px 26px;border-bottom:1px solid var(--linie)}
+.ablesung .neigung{font-family:Newsreader,serif;font-size:clamp(24px,4.4vw,38px);
+  font-weight:500;letter-spacing:-.02em;max-width:26ch;margin:0 auto;line-height:1.14}
+.ablesung .neigung b{color:var(--aus);font-weight:600}
+.ablesung .mess{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--grau);margin-top:8px}
+
+/* ── Gewichte: die Stellgroessen ────────────────────────────────────────── */
+.tisch{padding:22px 20px 36px;display:grid;gap:26px;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));max-width:1200px;margin:0 auto}
+.fach h2{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--messing);
+  border-bottom:1px solid var(--linie);padding-bottom:5px;margin-bottom:12px}
+.gewicht{display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px dotted var(--linie)}
+.klotz{flex:none;border:1.5px solid var(--messing);border-radius:2px 2px 4px 4px;
+  background:linear-gradient(180deg,#E3C86E,var(--messing-hell) 40%,var(--messing));
+  position:relative;box-shadow:0 1px 2px rgba(0,0,0,.24)}
+.klotz::before{content:'';position:absolute;left:50%;top:-5px;width:40%;height:6px;
+  margin-left:-20%;border:1.5px solid var(--messing);border-bottom:0;border-radius:4px 4px 0 0;
+  background:var(--messing-hell)}
+.gewicht .bez{flex:1;font-size:14px}
+.gewicht .bez small{display:block;color:var(--grau);font-size:12px}
+.gewicht .wert{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;
+  text-align:right;white-space:nowrap}
+.gewicht.neu{background:#F1E9D3;margin:0 -8px;padding:7px 8px}
+.gewicht.neu .wert{color:var(--aus)}
+.gewicht.neu .bez::after{content:' · neu aufgelegt';font-size:11px;color:var(--messing);
+  letter-spacing:.04em}
+
+.fuss{border-top:1px solid var(--linie);padding:18px 20px 44px;max-width:1200px;margin:0 auto;
+  display:grid;gap:22px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.fuss h3{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--messing);margin-bottom:6px}
+.fuss p{font-size:14px;color:var(--grau);max-width:58ch}
+.fuss b{color:var(--tinte)}
+</style>
+</head>
+<body>
+<p class="hinweis">Konzeptbild 3 von 10 — nicht bedienbar. Alle Zahlen echt aus der Simulation gerechnet.</p>
+
+<header class="kopf">
+  <h1>Die Waage</h1>
+  <p>Kabinett Team A · Runde 1 von 5 · jedes Gewicht ist eine Entscheidung</p>
+</header>
+
+<div class="buehne">
+<svg class="waage" viewBox="0 0 820 300" role="img"
+     aria-label="Eine Balkenwaage. Die rechte Schale mit den Ausgaben hängt 69 Milliarden Euro tiefer als die linke mit den Einnahmen.">
+  <!-- Saeule und Sockel -->
+  <path d="M390 250 h40 l16 32 h-72 z" fill="#C8A53F" stroke="#7E6318" stroke-width="2"/>
+  <rect x="402" y="96" width="16" height="156" fill="#C8A53F" stroke="#7E6318" stroke-width="2"/>
+  <circle cx="410" cy="96" r="13" fill="#E3C86E" stroke="#7E6318" stroke-width="2"/>
+  <!-- Zeiger: Nullstellung gestrichelt, Istlage voll -->
+  <path d="M410 96 v-46" stroke="#C9BEA3" stroke-width="2" stroke-dasharray="5 5"/>
+  <g transform="rotate(7 410 96)">
+    <path d="M410 96 v-52" stroke="#1E1B14" stroke-width="3" stroke-linecap="round"/>
+    <path d="M410 44 l-7 13 h14 z" fill="#1E1B14"/>
+  </g>
+  <!-- Balken, um den Drehpunkt geneigt -->
+  <g transform="rotate(7 410 96)">
+    <rect x="110" y="90" width="600" height="11" rx="5"
+          fill="#C8A53F" stroke="#7E6318" stroke-width="2"/>
+    <!-- linke Schale: Einnahmen -->
+    <path d="M150 101 l-46 54 M150 101 l46 54" stroke="#7E6318" stroke-width="2" fill="none"/>
+    <path d="M78 155 h144 l-24 40 h-96 z" fill="#EBE3D0" stroke="#1F5D4A" stroke-width="2.5"/>
+    <!-- rechte Schale: Ausgaben -->
+    <path d="M670 101 l-46 54 M670 101 l46 54" stroke="#7E6318" stroke-width="2" fill="none"/>
+    <path d="M598 155 h144 l-24 40 h-96 z" fill="#EBE3D0" stroke="#8E3620" stroke-width="2.5"/>
+    <!-- Gewichte auf der schweren Seite -->
+    <rect x="626" y="132" width="26" height="22" rx="2" fill="#C8A53F" stroke="#7E6318" stroke-width="1.5"/>
+    <rect x="658" y="126" width="26" height="28" rx="2" fill="#C8A53F" stroke="#7E6318" stroke-width="1.5"/>
+    <rect x="690" y="138" width="26" height="16" rx="2" fill="#C8A53F" stroke="#7E6318" stroke-width="1.5"/>
+    <rect x="120" y="138" width="26" height="16" rx="2" fill="#C8A53F" stroke="#7E6318" stroke-width="1.5"/>
+    <rect x="152" y="130" width="26" height="24" rx="2" fill="#C8A53F" stroke="#7E6318" stroke-width="1.5"/>
+  </g>
+</svg>
+</div>
+
+<div class="zeile-werte">
+  <div class="ein"><p class="kat">Einnahmen</p><p class="sum">1.694,6 <em>Mrd. €</em></p></div>
+  <div class="aus"><p class="kat">Ausgaben</p><p class="sum">1.763,7 <em>Mrd. €</em></p></div>
+</div>
+
+<div class="ablesung">
+  <p class="neigung">Die Waage hängt rechts. Es fehlen <b>69 Milliarden Euro</b>.</p>
+  <p class="mess">vor dem Beschluss: −119 · erlaubt nach Schuldenbremse: −16 · Neigung 7°</p>
+</div>
+
+<main class="tisch">
+  <section class="fach">
+    <h2>Gewichte, die einnehmen</h2>
+    <div class="gewicht"><i class="klotz" style="width:30px;height:20px"></i>
+      <p class="bez">Grundfreibetrag <small>mindert das Aufkommen</small></p><p class="wert">12.348 €</p></div>
+    <div class="gewicht"><i class="klotz" style="width:34px;height:24px"></i>
+      <p class="bez">Eingangssteuersatz</p><p class="wert">14,0 %</p></div>
+    <div class="gewicht neu"><i class="klotz" style="width:46px;height:40px"></i>
+      <p class="bez">Spitzensteuersatz</p><p class="wert">62,0 %</p></div>
+    <div class="gewicht"><i class="klotz" style="width:44px;height:36px"></i>
+      <p class="bez">Umsatzsteuer, Regelsatz</p><p class="wert">19,0 %</p></div>
+    <div class="gewicht"><i class="klotz" style="width:28px;height:18px"></i>
+      <p class="bez">Erbschaftsteuer</p><p class="wert">20 %</p></div>
+    <div class="gewicht"><i class="klotz" style="width:36px;height:26px"></i>
+      <p class="bez">Körperschaftsteuer</p><p class="wert">15,0 %</p></div>
+    <div class="gewicht neu"><i class="klotz" style="width:40px;height:30px"></i>
+      <p class="bez">CO₂-Preis</p><p class="wert">140 €/t</p></div>
+  </section>
+
+  <section class="fach">
+    <h2>Gewichte, die ausgeben</h2>
+    <div class="gewicht"><i class="klotz" style="width:52px;height:46px"></i>
+      <p class="bez">Renten <small>größter einzelner Posten</small></p><p class="wert">386,0 Mrd. €</p></div>
+    <div class="gewicht"><i class="klotz" style="width:34px;height:24px"></i>
+      <p class="bez">Bürgergeld</p><p class="wert">37,2 Mrd. €</p></div>
+    <div class="gewicht"><i class="klotz" style="width:38px;height:28px"></i>
+      <p class="bez">Kindergeld</p><p class="wert">52,8 Mrd. €</p></div>
+    <div class="gewicht neu"><i class="klotz" style="width:32px;height:22px"></i>
+      <p class="bez">Klimageld</p><p class="wert">23,9 Mrd. €</p></div>
+    <div class="gewicht"><i class="klotz" style="width:30px;height:20px"></i>
+      <p class="bez">Zinsen auf Altschulden</p><p class="wert">42,1 Mrd. €</p></div>
+    <div class="gewicht"><i class="klotz" style="width:48px;height:42px"></i>
+      <p class="bez">Übrige Ausgaben</p><p class="wert">1.221,7 Mrd. €</p></div>
+  </section>
+</main>
+
+<footer class="fuss">
+  <div><h3>Die Idee</h3>
+    <p>Der Saldo ist keine Zahl, er ist eine <b>Lage</b>. Man sieht das Ungleichgewicht, bevor man
+       es liest — und jede Entscheidung ist ein Gewicht, das sichtbar auf eine Seite wandert.
+       Der Name des Planspiels wird wörtlich genommen.</p></div>
+  <div><h3>Was das gut kann</h3>
+    <p>Keine Vorkenntnis nötig: eine hängende Waage versteht jeder. Größenverhältnisse werden
+       körperlich statt numerisch. Der gestrichelte Nullzeiger macht das Soll sichtbar, ohne zu mahnen.</p></div>
+  <div><h3>Was das kostet</h3>
+    <p>Nur <b>eine</b> Kennzahl passt auf die Waage. Gini, Emissionen und BIP haben hier keinen Ort
+       und bräuchten eine zweite Bühne — das ist die offene Frage dieses Ansatzes.</p></div>
+</footer>
+</body>
+</html>

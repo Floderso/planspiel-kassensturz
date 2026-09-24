@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Startoberfläche — 5 Gestaltungskonzepte</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <!-- Schriften: lokal, nicht von Google. Siehe css/schriften.css -->
+  <link rel="stylesheet" href="css/schriften.css">
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .font-serif-news { font-family: 'Newsreader', Georgia, serif; }
+    .font-mono-num { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 p-4 md:p-8 antialiased">
+
+  <div class="max-w-5xl mx-auto">
+    <!-- Header -->
+    <header class="border-b-2 border-slate-900 pb-4 mb-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-3">
+      <div>
+        <div class="text-xs font-bold uppercase tracking-widest text-indigo-700 font-mono-num">Kassensturz Planspiel · Redesign-Vorschau</div>
+        <h1 class="text-2xl md:text-3xl font-bold font-serif-news text-slate-950 mt-1">5 Gestaltungskonzepte: Nachrichtenportal statt Slider-Flut</h1>
+      </div>
+      <div class="text-xs text-slate-500 text-right font-mono-num">
+        Periode 1 · Jahr 2025 · Bundeskabinett
+      </div>
+    </header>
+
+    <!-- Concept Tabs Selector -->
+    <div class="flex flex-wrap gap-2 mb-6 border-b border-slate-200 pb-3" id="concept-tabs">
+      <button onclick="setConcept(1)" id="tab-1" class="tab-btn px-4 py-2 rounded-lg text-xs font-semibold bg-slate-900 text-white shadow-sm transition">1. Digitales Leitmedium</button>
+      <button onclick="setConcept(2)" id="tab-2" class="tab-btn px-4 py-2 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition">2. Kabinetts-Briefing</button>
+      <button onclick="setConcept(3)" id="tab-3" class="tab-btn px-4 py-2 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition">3. Live News-Ticker</button>
+      <button onclick="setConcept(4)" id="tab-4" class="tab-btn px-4 py-2 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition">4. Magazin & Werkbank</button>
+      <button onclick="setConcept(5)" id="tab-5" class="tab-btn px-4 py-2 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition">5. Themen-Explorer</button>
+    </div>
+
+    <!-- Live Preview Container -->
+    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-6 mb-6">
+
+      <!-- Concept 1: Digitales Leitmedium -->
+      <div id="view-1" class="concept-view">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Konzept 1: Frontpage mit Ressort-Dossiers & persönlicher Watchlist</span>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-500 font-medium">Meine Watchlist anpassen:</span>
+            <button onclick="toggleWatchlist('schulden')" id="pin-schulden" class="px-2 py-1 text-[11px] rounded font-mono-num font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">✓ Saldo</button>
+            <button onclick="toggleWatchlist('waehler')" id="pin-waehler" class="px-2 py-1 text-[11px] rounded font-mono-num font-semibold bg-indigo-100 text-indigo-800 border border-indigo-300">✓ Wähler</button>
+            <button onclick="toggleWatchlist('gini')" id="pin-gini" class="px-2 py-1 text-[11px] rounded font-mono-num font-semibold bg-slate-100 text-slate-600 border border-slate-300">+ Gini</button>
+            <button onclick="toggleWatchlist('co2')" id="pin-co2" class="px-2 py-1 text-[11px] rounded font-mono-num font-semibold bg-slate-100 text-slate-600 border border-slate-300">+ CO₂</button>
+          </div>
+        </div>
+
+        <!-- Pinned Metrics Bar -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 bg-slate-50 p-3 rounded-lg border border-slate-200" id="watchlist-bar">
+          <div id="w-schulden" class="bg-white p-3 rounded border border-slate-200">
+            <div class="text-[10px] text-slate-500 uppercase font-semibold">Haushaltssaldo (Art. 109 GG)</div>
+            <div class="text-lg font-bold font-mono-num text-red-600 mt-1">-119 Mrd. € <span class="text-xs text-red-500 font-normal">(-2,6 % BIP)</span></div>
+          </div>
+          <div id="w-waehler" class="bg-white p-3 rounded border border-slate-200">
+            <div class="text-[10px] text-slate-500 uppercase font-semibold">Sonntagsfrage (Zustimmung)</div>
+            <div class="text-lg font-bold font-mono-num text-indigo-700 mt-1">48 % <span class="text-xs text-slate-500 font-normal">Solide</span></div>
+          </div>
+          <div id="w-gini" class="bg-white p-3 rounded border border-slate-200 hidden">
+            <div class="text-[10px] text-slate-500 uppercase font-semibold">Gini-Ungleichheit</div>
+            <div class="text-lg font-bold font-mono-num text-slate-800 mt-1">0,298 <span class="text-xs text-slate-500 font-normal">Status Quo</span></div>
+          </div>
+          <div id="w-co2" class="bg-white p-3 rounded border border-slate-200 hidden">
+            <div class="text-[10px] text-slate-500 uppercase font-semibold">Restliches CO₂-Budget</div>
+            <div class="text-lg font-bold font-mono-num text-emerald-700 mt-1">1.820 Mt <span class="text-xs text-slate-500 font-normal">56 % übrig</span></div>
+          </div>
+        </div>
+
+        <!-- Newspaper Headline Grid -->
+        <div class="grid md:grid-cols-3 gap-6 mb-6">
+          <!-- Main Story (Col 1-2) -->
+          <div class="md:col-span-2 border-r border-slate-200 pr-0 md:pr-6">
+            <span class="text-xs font-bold text-red-700 uppercase tracking-widest font-mono-num">Fiskal-Alarm</span>
+            <h2 class="text-2xl md:text-3xl font-bold font-serif-news text-slate-900 mt-1 leading-snug">
+              Haushaltsloch reißt Schuldenbremse: Bundesrechnungshof rügt Kabinett
+            </h2>
+            <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+              Die Zinslasten für Altschulden steigen, während Steuereinnahmen hinter den Erwartungen zurückbleiben. Das Bundesverfassungsgericht droht mit Klagen aus Karlsruhe, sollte das Defizit nicht binnen dieser Periode konsolidiert werden.
+            </p>
+            <div class="mt-4 p-3 bg-indigo-50 border border-indigo-100 rounded-lg flex items-center justify-between">
+              <span class="text-xs text-indigo-900 font-medium">Reaktion des Kabinetts erforderlich:</span>
+              <button onclick="openDossier('fiskus')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-semibold shadow-sm transition">
+                Dossier & Reformhebel öffnen →
+              </button>
+            </div>
+          </div>
+
+          <!-- Secondary Stories / Ressorts (Col 3) -->
+          <div class="flex flex-col gap-4">
+            <div class="p-3 border border-slate-200 rounded-lg hover:border-indigo-400 transition cursor-pointer" onclick="openDossier('steuern')">
+              <span class="text-[10px] font-bold text-indigo-600 uppercase font-mono-num">Ressort Finanzen</span>
+              <h3 class="text-sm font-semibold font-serif-news text-slate-900 mt-1">Debatte um Spitzensteuer & Freibetrag</h3>
+              <p class="text-xs text-slate-500 mt-1">Ökonomen streiten über Arbeitsangebot vs. Umverteilung.</p>
+              <span class="text-[11px] text-indigo-600 font-semibold mt-2 inline-block">2 Hebel anpassen →</span>
+            </div>
+
+            <div class="p-3 border border-slate-200 rounded-lg hover:border-emerald-400 transition cursor-pointer" onclick="openDossier('klima')">
+              <span class="text-[10px] font-bold text-emerald-700 uppercase font-mono-num">Ressort Klima</span>
+              <h3 class="text-sm font-semibold font-serif-news text-slate-900 mt-1">CO₂-Preis steigt auf 55 €: Kommt das Klimageld?</h3>
+              <p class="text-xs text-slate-500 mt-1">Bürger fordern Pro-Kopf-Rückzahlung der Einnahmen.</p>
+              <span class="text-[11px] text-emerald-700 font-semibold mt-2 inline-block">2 Hebel anpassen →</span>
+            </div>
+
+            <div class="p-3 border border-slate-200 rounded-lg hover:border-amber-400 transition cursor-pointer" onclick="openDossier('wirtschaft')">
+              <span class="text-[10px] font-bold text-amber-700 uppercase font-mono-num">Ressort Wirtschaft</span>
+              <h3 class="text-sm font-semibold font-serif-news text-slate-900 mt-1">Standortkrise: Industrie mahnt Investitionsimpuls an</h3>
+              <p class="text-xs text-slate-500 mt-1">BDI fordert Senkung der Körperschaftsteuer.</p>
+              <span class="text-[11px] text-amber-700 font-semibold mt-2 inline-block">2 Hebel anpassen →</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Reform Dossier Drawer (Simuliert) -->
+        <div id="dossier-panel" class="p-4 bg-slate-100 rounded-lg border border-slate-300 hidden">
+          <div class="flex justify-between items-center mb-3">
+            <h4 class="text-sm font-bold text-slate-900" id="dossier-title">Reform-Dossier</h4>
+            <button onclick="closeDossier()" class="text-xs text-slate-500 hover:text-slate-900 font-semibold">✕ Schließen</button>
+          </div>
+          <div id="dossier-content" class="text-xs text-slate-600">
+            <!-- Dynamischer Inhalt -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Concept 2: Kabinetts-Briefing (Agenda / Executive) -->
+      <div id="view-2" class="concept-view hidden">
+        <div class="border-b border-slate-100 pb-3 mb-4 flex justify-between items-center">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Konzept 2: Digitales Kabinetts-Briefing (TOP-Agenda & Widget-Baukasten)</span>
+          <button class="px-2 py-1 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded text-xs text-slate-700 font-medium">+ Widget hinzufügen</button>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-6">
+          <!-- Left: Agenda (TOP) -->
+          <div class="md:col-span-2 space-y-3">
+            <div class="text-xs font-bold uppercase text-slate-400 font-mono-num">Heutige Tagesordnungspunkte (Entscheidungen)</div>
+
+            <div class="border border-slate-200 p-4 rounded-lg bg-white hover:border-slate-400 transition">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold font-mono-num text-indigo-700">TOP 1 · Finanzen</span>
+                <span class="text-[11px] px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold">Dringend</span>
+              </div>
+              <div class="font-serif-news text-base font-bold text-slate-900 mt-1">Gesetzesentwurf: Konsolidierung der Mehrwertsteuer</div>
+              <p class="text-xs text-slate-600 mt-1">Erhöhung um 1–3 PP spült bis zu 30 Mrd. € in die Kassen, dämpft aber den Konsum unterer Einkommen.</p>
+              <div class="mt-3 flex items-center gap-3">
+                <input type="range" min="16" max="23" value="19" class="w-48">
+                <span class="text-xs font-mono-num font-bold">19 %</span>
+                <span class="text-[11px] text-slate-500">(Status Quo)</span>
+              </div>
+            </div>
+
+            <div class="border border-slate-200 p-4 rounded-lg bg-white hover:border-slate-400 transition">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold font-mono-num text-emerald-700">TOP 2 · Klima</span>
+                <span class="text-[11px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">Offen</span>
+              </div>
+              <div class="font-serif-news text-base font-bold text-slate-900 mt-1">CO₂-Pfad & soziales Klimageld</div>
+              <p class="text-xs text-slate-600 mt-1">Entscheide über den CO₂-Preispfad (55–150 €) und ob Einnahmen als Bürgerbonus rückvergütet werden.</p>
+              <div class="mt-3 flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                  <input type="checkbox" checked class="rounded">
+                  <span class="text-xs font-medium">Klimageld aktivieren</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <input type="range" min="45" max="150" value="70" class="w-32">
+                  <span class="text-xs font-mono-num font-bold">70 €/t</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Auswertungs-Widgets -->
+          <div class="space-y-4">
+            <div class="text-xs font-bold uppercase text-slate-400 font-mono-num">Mein Überwachungs-Cockpit</div>
+            <div class="p-3 border border-slate-200 rounded-lg bg-slate-50">
+              <div class="text-[11px] font-semibold text-slate-700 flex justify-between">
+                <span>Sonntagsfrage</span>
+                <span class="text-indigo-600 font-bold font-mono-num">48 %</span>
+              </div>
+              <div class="w-full bg-slate-200 h-2 rounded-full mt-2 overflow-hidden">
+                <div class="bg-indigo-600 h-full" style="width: 48%;"></div>
+              </div>
+            </div>
+            <div class="p-3 border border-slate-200 rounded-lg bg-slate-50">
+              <div class="text-[11px] font-semibold text-slate-700">Kausalketten-Blitzanalyse</div>
+              <div class="text-xs text-slate-600 mt-1 italic">„Strikte Konsolidierung dämpft Kaufkraft im untersten Dezil (Lewbel/Pendakur).“</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Concept 3: Live News-Ticker -->
+      <div id="view-3" class="concept-view hidden">
+        <div class="border-b border-slate-100 pb-3 mb-4 flex justify-between items-center">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Konzept 3: Chronologischer News-Feed mit integrierten Handlungs-Optionen</span>
+          <span class="text-xs font-mono-num text-emerald-600 font-semibold">● LIVE TICKER</span>
+        </div>
+
+        <div class="space-y-4 max-w-3xl mx-auto">
+          <!-- News Event 1 -->
+          <div class="border-l-4 border-red-500 bg-slate-50 p-4 rounded-r-lg shadow-xs">
+            <div class="flex justify-between text-xs text-slate-500 font-mono-num">
+              <span>09:42 Uhr · Handelsblatt</span>
+              <span class="text-red-600 font-bold">Fiskal-Druck</span>
+            </div>
+            <h3 class="font-serif-news text-base font-bold text-slate-900 mt-1">Körperschaftsteuer treibt erste DAX-Konzerne ins Ausland</h3>
+            <p class="text-xs text-slate-600 mt-1">Investitionen sinken im dritten Quartal in Folge. Der BDI fordert Steuersenkungen.</p>
+            <div class="mt-3 pt-2 border-t border-slate-200 flex items-center justify-between">
+              <span class="text-xs font-medium text-slate-700">Gegenmaßnahme ergreifen:</span>
+              <button class="text-xs bg-slate-900 text-white px-3 py-1 rounded font-semibold hover:bg-slate-800">KSt-Hebel anpassen (15 %) →</button>
+            </div>
+          </div>
+
+          <!-- News Event 2 -->
+          <div class="border-l-4 border-indigo-500 bg-slate-50 p-4 rounded-r-lg shadow-xs">
+            <div class="flex justify-between text-xs text-slate-500 font-mono-num">
+              <span>08:15 Uhr · Süddeutsche Zeitung</span>
+              <span class="text-indigo-600 font-bold">Soziales</span>
+            </div>
+            <h3 class="font-serif-news text-base font-bold text-slate-900 mt-1">Verteilungskampf: Reicht das Bürgergeld noch gegen Inflation?</h3>
+            <p class="text-xs text-slate-600 mt-1">Sozialverbände mahnen Mindestsicherung an, während Wirtschaftsrat vor Lohnabstand warnt.</p>
+            <div class="mt-3 pt-2 border-t border-slate-200 flex items-center justify-between">
+              <span class="text-xs font-medium text-slate-700">Regelsatz überprüfen:</span>
+              <button class="text-xs bg-slate-900 text-white px-3 py-1 rounded font-semibold hover:bg-slate-800">Bürgergeld einstellen (563 €) →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Concept 4: Magazin & Werkbank -->
+      <div id="view-4" class="concept-view hidden">
+        <div class="border-b border-slate-100 pb-3 mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Konzept 4: Zwei-Seiten-Magazin (Story links, interaktive Werkbank rechts)</span>
+        </div>
+        <div class="grid md:grid-cols-2 gap-8 items-start">
+          <!-- Story Side -->
+          <div class="prose prose-slate text-xs leading-relaxed font-serif-news text-slate-700">
+            <span class="text-[10px] font-sans font-bold text-slate-400 uppercase tracking-widest">Leitartikel der Woche</span>
+            <h2 class="text-2xl font-bold font-serif-news text-slate-950 mt-1">Der Preis des Wandels: Zwischen Schuldenbremse und Investitionsstau</h2>
+            <p class="mt-2">
+              Deutschland steht vor einem Dilemma. Jahrzehntelang wurde die Infrastruktur auf Verschleiß gefahren. Brücken bröckeln, Kitas fehlen, die Energienetze ächzen. Gleichzeitig pocht die Verfassung auf strikte Einhaltung der Schuldenbremse.
+            </p>
+            <p class="mt-2">
+              Klicke auf die Schlüsselwörter, um Reformoptionen in die Werkbank rechts zu laden:
+              <a href="javascript:void(0)" onclick="openWerkbank('invest')" class="font-sans font-semibold text-indigo-700 underline mx-1">[Investitionsprogramm]</a>,
+              <a href="javascript:void(0)" onclick="openWerkbank('steuer')" class="font-sans font-semibold text-indigo-700 underline mx-1">[Spitzensteuersatz]</a> oder
+              <a href="javascript:void(0)" onclick="openWerkbank('co2')" class="font-sans font-semibold text-indigo-700 underline mx-1">[CO₂-Abgabe]</a>.
+            </p>
+          </div>
+
+          <!-- Werkbank Side -->
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-5" id="werkbank-box">
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono-num mb-2">Reformwerkbank</div>
+            <div id="werkbank-content" class="text-xs text-slate-500 italic">
+              Wähle links im Leitartikel einen Begriff oder klicke unten auf ein Dossier, um Hebel in die Werkbank zu laden.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Concept 5: Themen-Explorer -->
+      <div id="view-5" class="concept-view hidden">
+        <div class="border-b border-slate-100 pb-3 mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Konzept 5: Themen-Kacheln mit integriertem Suchfilter & anpassbaren Widgets</span>
+        </div>
+
+        <!-- Search / Topic Filter -->
+        <div class="mb-6">
+          <div class="relative">
+            <input type="text" placeholder="Worüber möchtest du entscheiden? (z.B. Steuern, Bürgergeld, CO2, Schulden...)" class="w-full pl-4 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:outline-indigo-600 font-medium">
+            <span class="absolute right-3 top-2.5 text-slate-400 text-xs">🔍</span>
+          </div>
+
+          <!-- Topic Badges -->
+          <div class="flex flex-wrap gap-2 mt-3">
+            <button class="px-3 py-1 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded-full text-xs font-semibold hover:bg-indigo-100">🏛️ Steuern & Abgaben (4)</button>
+            <button class="px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full text-xs font-semibold hover:bg-emerald-100">🌱 Klima & Energie (2)</button>
+            <button class="px-3 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-full text-xs font-semibold hover:bg-amber-100">🤝 Soziale Sicherung (3)</button>
+            <button class="px-3 py-1 bg-sky-50 text-sky-800 border border-sky-200 rounded-full text-xs font-semibold hover:bg-sky-100">🏗️ Öffentliche Investitionen (2)</button>
+          </div>
+        </div>
+
+        <!-- Selected Topic Preview (Clean, isolated card) -->
+        <div class="border border-slate-200 rounded-xl p-5 bg-white shadow-xs">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-[10px] font-bold text-indigo-600 font-mono-num uppercase">Fokussiertes Thema</span>
+              <h3 class="font-serif-news text-lg font-bold text-slate-900 mt-1">Einkommensteuer & Spitzensteuersatz</h3>
+            </div>
+            <span class="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded font-mono-num">2 Hebel aktiv</span>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-6 mt-4 pt-4 border-t border-slate-100">
+            <div>
+              <div class="flex justify-between text-xs font-semibold">
+                <span>Spitzensteuersatz (§ 32a EStG)</span>
+                <span class="font-mono-num text-indigo-600">45 %</span>
+              </div>
+              <input type="range" min="42" max="55" value="45" class="w-full mt-2">
+              <div class="text-[11px] text-slate-500 mt-1">Saez/Chetty Arbeitsangebotselastizität dämpft Aufkommen ab 48%.</div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs font-semibold">
+                <span>Grundfreibetrag (Existenzminimum)</span>
+                <span class="font-mono-num text-indigo-600">12.348 €</span>
+              </div>
+              <input type="range" min="11500" max="15000" value="12348" class="w-full mt-2">
+              <div class="text-[11px] text-slate-500 mt-1">Entlastet die unteren und mittleren Einkommen spürbar.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Comparison Summary Footer -->
+    <div class="bg-slate-100 rounded-xl p-4 border border-slate-200 text-xs text-slate-600">
+      <strong class="text-slate-800">Kernidee aller 5 Vorschläge:</strong> 
+      Kein Ertrinken mehr in 20 Slidern auf einmal! Die Studierenden wählen erst den <em>politischen Handlungsbereich</em> (Pull-Prinzip) und bestimmen selbst über <em>Pins/Widgets</em>, welche Kennzahlen sie überwachen möchten.
+    </div>
+  </div>
+
+  <script>
+    function setConcept(num) {
+      document.querySelectorAll('.concept-view').forEach(v => v.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('bg-slate-900', 'text-white');
+        b.classList.add('bg-white', 'text-slate-700');
+      });
+      document.getElementById('view-' + num).classList.remove('hidden');
+      const activeTab = document.getElementById('tab-' + num);
+      activeTab.classList.remove('bg-white', 'text-slate-700');
+      activeTab.classList.add('bg-slate-900', 'text-white');
+    }
+
+    function toggleWatchlist(metric) {
+      const el = document.getElementById('w-' + metric);
+      const btn = document.getElementById('pin-' + metric);
+      if (!el || !btn) return;
+      const isHidden = el.classList.contains('hidden');
+      if (isHidden) {
+        el.classList.remove('hidden');
+        btn.classList.remove('bg-slate-100', 'text-slate-600', 'border-slate-300');
+        btn.classList.add('bg-indigo-100', 'text-indigo-800', 'border-indigo-300');
+        btn.textContent = '✓ ' + metric.charAt(0).toUpperCase() + metric.slice(1);
+      } else {
+        el.classList.add('hidden');
+        btn.classList.add('bg-slate-100', 'text-slate-600', 'border-slate-300');
+        btn.classList.remove('bg-indigo-100', 'text-indigo-800', 'border-indigo-300');
+        btn.textContent = '+ ' + metric.charAt(0).toUpperCase() + metric.slice(1);
+      }
+    }
+
+    function openDossier(topic) {
+      const p = document.getElementById('dossier-panel');
+      const t = document.getElementById('dossier-title');
+      const c = document.getElementById('dossier-content');
+      p.classList.remove('hidden');
+      if (topic === 'fiskus') {
+        t.textContent = 'Dossier: Haushaltskonsolidierung & Schuldenbremse';
+        c.innerHTML = `
+          <p class="mb-3">Wähle gezielte Konsolidierungshebel, um das Defizit unter die -0,35 % BIP-Grenze zu bringen:</p>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white p-3 rounded border border-slate-200">
+              <span class="font-semibold">Mehrwertsteuer-Regelsatz</span>
+              <input type="range" min="17" max="23" value="19" class="w-full mt-2">
+            </div>
+            <div class="bg-white p-3 rounded border border-slate-200">
+              <span class="font-semibold">Investitionsimpuls (Mrd. €)</span>
+              <input type="range" min="0" max="40" value="0" class="w-full mt-2">
+            </div>
+          </div>
+        `;
+      } else if (topic === 'steuern') {
+        t.textContent = 'Dossier: Einkommensteuer & Spitzensteuersatz';
+        c.innerHTML = `
+          <p class="mb-3">Justiere die Steuerprogression für Entlastung oder Mehreinnahmen:</p>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white p-3 rounded border border-slate-200">
+              <span class="font-semibold">Spitzensteuer (§ 32a EStG)</span>
+              <input type="range" min="42" max="55" value="45" class="w-full mt-2">
+            </div>
+            <div class="bg-white p-3 rounded border border-slate-200">
+              <span class="font-semibold">Grundfreibetrag (€)</span>
+              <input type="range" min="11500" max="14000" value="12348" class="w-full mt-2">
+            </div>
+          </div>
+        `;
+      } else if (topic === 'klima') {
+        t.textContent = 'Dossier: CO₂-Preis & Klimageld';
+        c.innerHTML = `
+          <div class="bg-white p-3 rounded border border-slate-200">
+            <span class="font-semibold">CO₂-Preis (€/t)</span>
+            <input type="range" min="45" max="150" value="55" class="w-full mt-2">
+          </div>
+        `;
+      } else {
+        t.textContent = 'Dossier: Standort & Unternehmenssteuern';
+        c.innerHTML = `
+          <div class="bg-white p-3 rounded border border-slate-200">
+            <span class="font-semibold">Körperschaftsteuer (KSt)</span>
+            <input type="range" min="10" max="25" value="15" class="w-full mt-2">
+          </div>
+        `;
+      }
+    }
+
+    function closeDossier() {
+      document.getElementById('dossier-panel').classList.add('hidden');
+    }
+
+    function openWerkbank(type) {
+      const box = document.getElementById('werkbank-content');
+      if (type === 'invest') {
+        box.innerHTML = `
+          <strong class="text-slate-900">Hebel: Öffentlicher Investitionsimpuls</strong>
+          <p class="text-xs text-slate-600 mt-1">Brücken, Schiene, Kitas, Glasfaser. Wirkt über den Fiskalmultiplikator (Gechert/Heimberger μ = 1,2).</p>
+          <div class="mt-3">
+            <input type="range" min="0" max="40" value="15" class="w-full">
+            <div class="text-right font-mono-num font-bold text-indigo-600 mt-1">+15 Mrd. €/Jahr</div>
+          </div>
+        `;
+      } else if (type === 'steuer') {
+        box.innerHTML = `
+          <strong class="text-slate-900">Hebel: Spitzensteuersatz</strong>
+          <p class="text-xs text-slate-600 mt-1">Greift ab 66.761 € ZVE. Saez/Chetty Elastizität ε = 0,20 dämpft Aufkommen bei hohen Sätzen.</p>
+          <div class="mt-3">
+            <input type="range" min="42" max="55" value="48" class="w-full">
+            <div class="text-right font-mono-num font-bold text-indigo-600 mt-1">48 %</div>
+          </div>
+        `;
+      } else {
+        box.innerHTML = `
+          <strong class="text-slate-900">Hebel: CO₂-Preis mit Klimageld</strong>
+          <p class="text-xs text-slate-600 mt-1">Höhere Bepreisung lenkt Emissionen. Bei aktivem Klimageld werden 70 % pauschal pro Kopf erstattet.</p>
+          <div class="mt-3">
+            <input type="range" min="45" max="150" value="85" class="w-full">
+            <div class="text-right font-mono-num font-bold text-emerald-600 mt-1">85 €/t (mit Klimageld)</div>
+          </div>
+        `;
+      }
+    }
+  </script>
+</body>
+</html>

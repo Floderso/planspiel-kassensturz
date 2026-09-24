@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kassensturz — Die Aufstellung</title>
+<link rel="stylesheet" href="css/schriften.css">
+<style>
+/* Gesperrte Kacheln tragen Information, die man zum HANDELN braucht — dass
+   Team 20 voll ist, muss man lesen koennen, um Team 21 zu nehmen. Darum sind
+   sie hier nicht "ausgegraut" im ueblichen Sinn, sondern dunkler hinterlegt
+   und mit hellem Text: gemessen 5,4:1 statt 3,4:1. */
+:root{
+  --gesperrt:#33413B; --gesperrt-schrift:#C6D2CB;
+  --filz:#3C4D46; --filz-tief:#33423C; --papier:#FBF8F0; --karton:#DECFAC;
+  --tinte:#161A16; --grau:#585F54; --grau-mappe:#545A50; --zettel:#F3E483;
+  --fin:#17406B; --soz:#7D1C4B; --umw:#155A41; --wir:#7A3E0C;
+  --gut:#125C36; --schlecht:#8E2418;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--filz);color:var(--papier);font-family:Inter,system-ui,sans-serif;
+  font-size:16px;line-height:1.45;font-variant-numeric:tabular-nums;
+  background-image:radial-gradient(circle at 18% 12%,rgba(255,255,255,.04),transparent 55%),
+                   radial-gradient(circle at 84% 80%,rgba(0,0,0,.16),transparent 55%)}
+:focus-visible{outline:3px solid var(--zettel);outline-offset:3px;border-radius:2px}
+[hidden]{display:none !important}
+
+.kopf{padding:20px 24px 14px;max-width:1100px;margin:0 auto}
+.kopf h1{font-family:Newsreader,serif;font-size:30px;font-weight:500}
+.kopf p{color:#C8D2CB;font-size:14.5px;margin-top:4px;max-width:70ch}
+
+#laedt{max-width:1100px;margin:0 auto;padding:30px 24px;color:#C8D2CB;font-size:15px}
+#laedt a{color:var(--zettel)}
+
+main{max-width:1100px;margin:0 auto;padding:0 24px 56px}
+
+/* ── Schrittleiste ──────────────────────────────────────────────────────── */
+#schritte{list-style:none;display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px;
+  border-top:1px solid #4F6058;border-bottom:1px solid #4F6058;padding:12px 0}
+#schritte li{display:flex;align-items:center;gap:8px;font-size:13px;color:#AFBEB5;
+  padding-right:14px}
+#schritte .nr{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
+  font-size:11px;font-weight:700;background:#46564F;color:#D2DCD6;flex:none}
+#schritte li[data-stand="jetzt"]{color:var(--zettel);font-weight:600}
+#schritte li[data-stand="jetzt"] .nr{background:var(--zettel);color:#2B2605}
+#schritte li[data-stand="fertig"]{color:#8FD3AC}
+#schritte li[data-stand="fertig"] .nr{background:var(--gut);color:var(--papier)}
+
+section{margin-bottom:28px}
+h2{font-family:Newsreader,serif;font-size:22px;font-weight:500;margin-bottom:3px}
+.bu{font-size:13.5px;color:#C8D2CB;margin-bottom:14px;max-width:76ch}
+
+/* ── Teamraster ─────────────────────────────────────────────────────────── */
+#raster{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(122px,1fr))}
+.kachel{font:inherit;text-align:left;background:var(--karton);color:var(--tinte);
+  border:2px solid transparent;border-radius:2px 7px 2px 2px;padding:11px 11px 9px;
+  cursor:pointer;display:grid;gap:3px;box-shadow:3px 4px 10px rgba(0,0,0,.28)}
+.kachel:hover:not(:disabled){box-shadow:4px 6px 14px rgba(0,0,0,.36);transform:translateY(-1px)}
+.kachel:disabled{background:var(--gesperrt);color:var(--gesperrt-schrift);
+  cursor:not-allowed;box-shadow:none}
+.kachel[data-meins="true"]{border-color:var(--gut);background:#EBE3C6}
+.tname{font-weight:700;font-size:15px}
+.tanzeige{font-size:11.5px;color:var(--grau-mappe);overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap}
+.punkte{display:flex;gap:4px;margin-top:2px}
+.punkte i{width:9px;height:9px;border-radius:50%;background:rgba(0,0,0,.2)}
+.punkte i.voll{background:var(--gut)}
+.kachel:disabled .punkte i{background:rgba(255,255,255,.22)}
+.kachel:disabled .punkte i.voll{background:#9DBBAC}
+.tbelegung{font-size:11px;color:var(--grau-mappe)}
+.kachel:disabled .tbelegung{color:var(--gesperrt-schrift)}
+
+#zuordnung-hinweis{font-size:12.5px;color:#C8D2CB;margin-top:11px;
+  border-left:3px solid #4F6058;padding-left:10px}
+#zuordnung-hinweis[data-offen="false"]{border-left-color:var(--zettel);color:var(--zettel)}
+
+/* ── Ressorts ───────────────────────────────────────────────────────────── */
+#ressorts{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,232px),1fr))}
+.ressort{font:inherit;text-align:left;background:var(--papier);color:var(--tinte);
+  border:0;border-top:5px solid;border-radius:2px;padding:13px 13px 11px;cursor:pointer;
+  display:grid;gap:4px;box-shadow:4px 6px 14px rgba(0,0,0,.3);position:relative}
+.ressort:hover:not(:disabled){transform:translateY(-2px)}
+.ressort:disabled{background:var(--gesperrt);color:var(--gesperrt-schrift);
+  cursor:not-allowed;box-shadow:none}
+.r-fin{border-top-color:var(--fin)}.r-wir{border-top-color:var(--wir)}
+.r-soz{border-top-color:var(--soz)}.r-umw{border-top-color:var(--umw)}
+.ressort[aria-pressed="true"]{outline:3px solid var(--gut);outline-offset:-3px}
+.rkurz{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--grau)}
+.ressort:disabled .rkurz{color:var(--gesperrt-schrift)}
+.rname{font-size:16px;font-weight:700;line-height:1.2}
+.rsatz{font-size:12.5px;color:var(--grau);line-height:1.35}
+.ressort:disabled .rsatz{color:var(--gesperrt-schrift)}
+.rwer{font-size:12px;font-weight:600;margin-top:4px;padding-top:7px;border-top:1px dotted #CFC8B4}
+.ressort[aria-pressed="true"] .rwer{color:var(--gut)}
+.ressort:disabled .rwer{border-top-color:#54655D}
+
+/* ── Warten ─────────────────────────────────────────────────────────────── */
+#warten{background:var(--filz-tief);border:1px solid #4F6058;padding:18px 20px}
+#warten .gross{font-family:Newsreader,serif;font-size:23px;font-weight:500;margin-bottom:5px}
+#warten p{font-size:14.5px;color:#C8D2CB;max-width:64ch}
+#warten b{color:var(--zettel);font-size:1.1em}
+#warten .klein{font-size:12.5px;color:#AFBEB5;margin-top:6px}
+
+/* ── Name ───────────────────────────────────────────────────────────────── */
+#namensfeld{background:var(--papier);color:var(--tinte);padding:20px;
+  box-shadow:0 10px 26px rgba(0,0,0,.38)}
+#namensfeld h2{color:var(--tinte)}
+#namensfeld .bu{color:var(--grau)}
+#name-vorschau{font-family:Newsreader,serif;font-size:24px;margin:10px 0 14px;
+  padding:11px 13px;background:#F1ECDE;border-left:4px solid var(--gut)}
+#name-vorschau .system{color:var(--grau);font-size:.62em;font-family:Inter,sans-serif}
+#namensform{display:flex;gap:9px;flex-wrap:wrap}
+#anzeigename{font:inherit;flex:1;min-width:210px;padding:10px 11px;border:1px solid #C6BEA8;
+  background:#F4F0E4;color:var(--tinte)}
+#anzeigename:focus{outline:none;border-color:var(--fin);box-shadow:0 0 0 2px rgba(23,64,107,.28)}
+#namensform button{font:inherit;font-weight:700;background:var(--fin);color:var(--papier);
+  border:0;padding:10px 20px;cursor:pointer}
+#namensform button:hover{background:#1E5490}
+#namensfeld .regel{font-size:12px;color:var(--grau);margin-top:9px}
+
+#meldung{margin:16px 0;padding:10px 13px;border-left:4px solid;font-size:13.5px;line-height:1.45}
+#meldung[data-art="gut"]{border-color:#7BD3A2;background:#22372D;color:#C6E8D5}
+#meldung[data-art="schlecht"]{border-color:#E8907E;background:#3A2621;color:#F3CEC6}
+
+#weiter{display:inline-block;font-weight:700;font-size:15px;background:var(--zettel);
+  color:#2B2605;padding:12px 24px;text-decoration:none;border-radius:2px;margin-top:6px}
+#weiter:hover{background:#F7EA9A}
+
+.fuss{max-width:1100px;margin:0 auto;padding:0 24px 44px;font-size:12.5px;color:#AFBEB5}
+</style>
+</head>
+<body>
+
+<header class="kopf">
+  <h1>Die Aufstellung</h1>
+  <p>Erst das Team, dann das Ressort. Ihr verabredet euch im Raum — hier tragt ihr nur ein,
+     was ihr besprochen habt.</p>
+</header>
+
+<p id="laedt">Wird geladen …</p>
+
+<main id="aufstellung" hidden>
+  <ol id="schritte"></ol>
+
+  <p id="meldung" role="status" hidden></p>
+
+  <section>
+    <h2>Welches Team?</h2>
+    <p class="bu">Sagt euch eine Nummer und wählt sie alle.</p>
+    <div id="raster"></div>
+    <p id="zuordnung-hinweis"></p>
+  </section>
+
+  <section id="abschnitt-ressort" hidden>
+    <h2>Welches Ressort?</h2>
+    <p class="bu">Du bearbeitest nur deines — abgestimmt wird über alle.</p>
+    <div id="ressorts"></div>
+  </section>
+
+  <section id="abschnitt-warten" hidden>
+    <div id="warten"></div>
+  </section>
+
+  <section id="namensfeld" hidden>
+    <h2>Wie wollt ihr heißen?</h2>
+    <p class="bu">Der Name steht neben eurer Teamnummer, er ersetzt sie nicht.</p>
+    <p id="name-vorschau"></p>
+    <form id="namensform">
+      <label for="anzeigename" class="visually-hidden" style="position:absolute;left:-9999px">Teamname</label>
+      <input type="text" id="anzeigename" maxlength="40" autocomplete="off"
+             placeholder="z. B. Die Haushaltsretter">
+      <button type="submit">Namen setzen</button>
+    </form>
+    <p class="regel">3 bis 40 Zeichen. Keine Adressen, keine Matrikelnummern.</p>
+  </section>
+
+  <a id="weiter" href="index.html" hidden>Weiter an den Verhandlungstisch</a>
+</main>
+
+<p class="fuss">Die Teamnummer bleibt euer Schlüssel im System — der selbstgewählte Name ist
+   der, unter dem ihr auftretet.</p>
+
+<script src="konfig.js"></script>
+<script type="module" src="js/aufstellung.js"></script>
+</body>
+</html>

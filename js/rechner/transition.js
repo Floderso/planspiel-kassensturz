@@ -22,11 +22,14 @@
 //   Zinssatz:           Bundesbank DP 28/2018 · BMF Finanzplan 2025–2029
 //   Demografie:         Destatis 14. Bev.-Vorausberechnung 2021 · DEMOGRAFIE_KURVE in data.js
 
-import { DEZILE, DEMOGRAFIE_KURVE, PERIOD_STATE_0, KURS_KONFIG_DEFAULT } from '../data.js';
+import { DEZILE, DEMOGRAFIE_KURVE, PERIOD_STATE_0, KURS_KONFIG_DEFAULT,
+         ZINS_EFFEKTIV, BIP_WACHSTUM_NOMINAL_JAHR } from '../data.js';
 import { berechne } from './berechne.js';
 
-const BIP_WACHSTUM_NOMINAL = 0.015;  // Ø nominales BIP-Wachstum je Jahr (Bundesbank)
-const ZINS_SCHULDEN        = 0.025;  // Ø Effektivzins auf Bestandsschulden (Rollover-Effekt)
+// Zins und Wachstum kommen aus data.js — EINE Quelle für alle Module.
+// Vorher standen hier eigene Werte, die denen in berechne.js widersprachen.
+const BIP_WACHSTUM_NOMINAL = BIP_WACHSTUM_NOMINAL_JAHR;
+const ZINS_SCHULDEN        = ZINS_EFFEKTIV;
 const INVEST_MULTIPLIKATOR = 1.2;    // Fiskalmultiplikator öffentl. Investitionen (Gechert/Heimberger)
 const HANK_MPC_BENCHMARK   = 0.45;  // Rep.-Agent-Benchmark MPC (Kaplan/Moll/Violante 2018)
 const DICE_D2              = 0.00267; // DICE-Schadensparameter d₂ (Nordhaus 2023; kalibriert AR6)
@@ -65,7 +68,10 @@ function diceKlimaMalus(co2_kumulat) {
   return (1 - damage_now) / (1 - damage_base);
 }
 
-// Wendet einen Schock auf eine Kopie von zustand an (nicht-destruktiv)
+// Wendet einen Schock auf eine Kopie von zustand an (nicht-destruktiv).
+// Gerechnet werden bip_malus, schuld_bonus und zins_bonus. invest_malus und
+// co2_reduktion stehen in SCHOCK_BIBLIOTHEK, wirken hier aber NICHT — wer sie
+// anzeigt, muss das dazusagen (schockWirkung() in js/spielkern.js tut es).
 function applySchock(zustand, schock) {
   if (!schock) return zustand;
   const s = { ...zustand };
@@ -95,9 +101,18 @@ function berechneTransition(prevState, prevResult, nextStartJahr, n) {
                    * labor_bonus * invest_impuls_bonus * klima_malus;
 
   // ── SCHULDENQUOTE ─────────────────────────────────────────────────────
+  // Lehrbuchform der Schuldendynamik, jahresweise:
+  //     D(t+1) = D(t) × (1 + r) − PB
+  // mit PB = PRIMÄRsaldo. Entscheidend ist, dass hier der Primärsaldo steht
+  // und nicht der Gesamtsaldo: Der Gesamtsaldo enthält die Zinsausgabe bereits,
+  // sie würde über (1 + r) ein zweites Mal anfallen (PRUEFUNG.md A5).
   const zins = ZINS_SCHULDEN + (prevState._zins_bonus || 0);
   const schuld_curr = prevState.schuldenquote / 100 * prevState.bip;
-  const schuld_next = schuld_curr * Math.pow(1 + zins, n) - prevResult.saldo * n;
+  const primaersaldo = prevResult.saldo + (prevResult.zinsen_dyn ?? 0);
+  let schuld_next = schuld_curr;
+  for (let jahr = 0; jahr < n; jahr++) {
+    schuld_next = schuld_next * (1 + zins) - primaersaldo;
+  }
   const schuldenquote_next = Math.max(0, schuld_next / bip_next * 100);
 
   // ── CO₂-KUMULAT ──────────────────────────────────────────────────────
@@ -155,4 +170,4 @@ function simulierePfad(perioden_params, kursKonfig = KURS_KONFIG_DEFAULT) {
   return ergebnisse;
 }
 
-export { berechneTransition, simulierePfad, getDemoForYear, diceKlimaMalus, hankMultiplikator, ZINS_SCHULDEN, BIP_WACHSTUM_NOMINAL };
+export { berechneTransition, simulierePfad, applySchock, getDemoForYear, diceKlimaMalus, hankMultiplikator, ZINS_SCHULDEN, BIP_WACHSTUM_NOMINAL };

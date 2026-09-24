@@ -7,8 +7,11 @@
 
 import { simulierePfad } from './rechner/transition.js';
 import { KURS_KONFIG_DEFAULT, SCHOCK_BIBLIOTHEK } from './data.js';
-
-const API_BASE = 'https://planspiel-api.aramisda2.workers.dev/api';
+import {
+  erstelleSitzung, holeAdminSicht, setzePeriodeGesperrt, setzeFreigabe,
+  setzeSchocks, setzeWerkzeuge, sendeMatrikelnummern,
+} from './dienste/server.js';
+import { qrAdresse } from './konfig.js';
 
 // ── Komplexitätsstufe ─────────────────────────────────────────────────────────
 // Lebt nur clientseitig (URL-Parameter der join_url, kein Backend-Feld) — analog
@@ -36,16 +39,55 @@ function esc(str) {
 
 const urlParams    = new URLSearchParams(location.search);
 const SESSION_ID   = urlParams.get('session');
-const ADMIN_TOKEN  = urlParams.get('token');
+
+// ── Admin-Token ───────────────────────────────────────────────────────────────
+// Der Token steht im Fragment (#token=…), nicht im Query-String. Fragmente
+// schickt der Browser nie an einen Server: damit taucht der Token in keinem
+// Zugriffsprotokoll und in keinem Referrer mehr auf. Siehe entwurf/BETRIEB.md 1.5.
+//
+// Links von vor der Umstellung (?token=…) funktionieren weiter — sie werden
+// beim ersten Laden still ins Fragment umgeschrieben.
+
+function tokenSchluessel(sessionId) { return `kassensturz_admin_token_${sessionId}`; }
+
+function merkeAdminToken(sessionId, token) {
+  if (!sessionId || !token) return;
+  try { localStorage.setItem(tokenSchluessel(sessionId), token); } catch (_) {}
+}
+
+function ermittleAdminToken() {
+  const ausFragment = new URLSearchParams(location.hash.replace(/^#/, '')).get('token');
+  const ausQuery    = urlParams.get('token');   // Altlast, siehe oben
+  const gefunden    = ausFragment || ausQuery;
+
+  if (gefunden) {
+    merkeAdminToken(SESSION_ID, gefunden);
+    if (ausQuery) {
+      // aus der Adresszeile in das Fragment umziehen
+      const url = new URL(location.href);
+      url.searchParams.delete('token');
+      url.hash = `token=${gefunden}`;
+      history.replaceState({}, '', url.toString());
+    }
+    return gefunden;
+  }
+
+  // Kein Token im Link: der zuletzt für diese Session benutzte gilt weiter.
+  try { return SESSION_ID ? localStorage.getItem(tokenSchluessel(SESSION_ID)) : null; }
+  catch (_) { return null; }
+}
+
+const ADMIN_TOKEN  = ermittleAdminToken();
+
+// Laufender Zugang des Dashboards. Steht hier oben, damit adminFetch() ihn
+// als Vorgabewert lesen kann, egal wann es aufgerufen wird.
+let currentSessionId = null;
+let currentToken     = null;
+
+// Der Serverzugriff liegt vollstaendig in js/dienste/server.js. Hier steht
+// kein fetch, keine Adresse und kein HTTP-Verb mehr.
 
 // ── Hilfsfunktionen ───────────────────────────────────────────────────────────
-
-function randomToken(len = 12) {
-  return Array.from(crypto.getRandomValues(new Uint8Array(len)))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('')
-    .slice(0, len);
-}
 
 function copyToClipboard(text, btn) {
   navigator.clipboard.writeText(text).then(() => {
@@ -79,12 +121,144 @@ function getTeamNames() {
     .filter(Boolean);
 }
 
+// ── Didaktisches Scaffolding (Werkzeug-Steuerung je Periode) ──────────────────
+
+const RESSORTS = [
+  { id: 'finanzen',   name: 'Finanzen & Steuern',      icon: '', color: '#2563EB' },
+  { id: 'soziales',   name: 'Arbeit & Soziales',       icon: '', color: '#0D9488' },
+  { id: 'klima',      name: 'Klima & Transformation',  icon: '', color: '#16A34A' },
+  { id: 'wirtschaft', name: 'Wirtschaft & Standort',   icon: '', color: '#EA580C' }
+];
+
+const SCAFFOLD_PRESETS = {
+  scaffolding: (n) => {
+    const m = {};
+    for (let i = 0; i < n; i++) {
+      if (i === 0) m[i] = ['finanzen'];
+      else if (i === 1) m[i] = ['finanzen', 'soziales'];
+      else if (i === 2) m[i] = ['finanzen', 'soziales', 'klima'];
+      else m[i] = ['finanzen', 'soziales', 'klima', 'wirtschaft'];
+    }
+    return m;
+  },
+  klima: (n) => {
+    const m = {};
+    for (let i = 0; i < n; i++) {
+      if (i <= 1) m[i] = ['finanzen', 'klima'];
+      else m[i] = ['finanzen', 'soziales', 'klima', 'wirtschaft'];
+    }
+    return m;
+  },
+  soziales: (n) => {
+    const m = {};
+    for (let i = 0; i < n; i++) {
+      if (i <= 1) m[i] = ['finanzen', 'soziales'];
+      else m[i] = ['finanzen', 'soziales', 'klima', 'wirtschaft'];
+    }
+    return m;
+  },
+  all: (n) => {
+    const m = {};
+    for (let i = 0; i < n; i++) {
+      m[i] = ['finanzen', 'soziales', 'klima', 'wirtschaft'];
+    }
+    return m;
+  }
+};
+
+let setupScaffoldState = SCAFFOLD_PRESETS.scaffolding(5);
+let dashScaffoldState = null;
+
+function renderScaffoldMatrix(containerId, stateMap, numPeriods, onChange) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  let html = `
+    <table class="scaffold-table">
+      <thead>
+        <tr>
+          <th>Periode</th>
+          ${RESSORTS.map(r => `<th style="color:${r.color}">${esc(r.name)}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  for (let i = 0; i < numPeriods; i++) {
+    const activeRessorts = stateMap[i] || stateMap[String(i)] || [];
+    html += `
+      <tr>
+        <td style="font-weight:600; text-align:left;">
+          Periode ${i + 1}
+        </td>
+        ${RESSORTS.map(r => {
+          const isActive = activeRessorts.includes(r.id);
+          return `
+            <td>
+              <div class="scaffold-cell-check ${isActive ? 'active' : 'inactive'}"
+                   data-periode="${i}" data-ressort="${r.id}" title="${isActive ? 'Klicken zum Sperren' : 'Klicken zum Freischalten'}">
+                <span>${isActive ? 'Aktiv' : 'Gesperrt'}</span>
+              </div>
+            </td>
+          `;
+        }).join('')}
+      </tr>
+    `;
+  }
+
+  html += `</tbody></table>`;
+  container.innerHTML = html;
+
+  container.querySelectorAll('.scaffold-cell-check').forEach(cell => {
+    cell.onclick = () => {
+      const pIdx = parseInt(cell.dataset.periode);
+      const rId = cell.dataset.ressort;
+      let list = stateMap[pIdx] || stateMap[String(pIdx)] || [];
+      if (list.includes(rId)) {
+        list = list.filter(id => id !== rId);
+      } else {
+        list = [...list, rId];
+      }
+      stateMap[pIdx] = list;
+      if (onChange) onChange(stateMap);
+      renderScaffoldMatrix(containerId, stateMap, numPeriods, onChange);
+    };
+  });
+}
+
+function wireScaffoldPresets(presetsContainerId, matrixContainerId, getState, setState, getNumPeriods) {
+  const container = document.getElementById(presetsContainerId);
+  if (!container) return;
+
+  container.querySelectorAll('.preset-pill').forEach(pill => {
+    pill.onclick = () => {
+      container.querySelectorAll('.preset-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+
+      const preset = pill.dataset.preset;
+      const n = getNumPeriods();
+      if (preset !== 'custom' && SCAFFOLD_PRESETS[preset]) {
+        const newState = SCAFFOLD_PRESETS[preset](n);
+        setState(newState);
+        renderScaffoldMatrix(matrixContainerId, newState, n, (updated) => {
+          setState(updated);
+          container.querySelectorAll('.preset-pill').forEach(p => p.classList.remove('active'));
+          container.querySelector('[data-preset="custom"]')?.classList.add('active');
+        });
+      }
+    };
+  });
+}
+
 function initSetup() {
   // Standard-Teams
   addTeam('Team A'); addTeam('Team B'); addTeam('Team C');
 
-  // Admin-Token generieren
-  document.getElementById('f-admin-token').value = randomToken();
+  // Der echte Zugang wird vom Server erzeugt und erst nach "Session starten"
+  // eingesetzt. Vorher hier einen Code anzuzeigen, waere irrefuehrend — er
+  // haette mit dem Dashboard-Zugang nichts zu tun.
+  const tokenFeldSetup = document.getElementById('f-admin-token');
+  if (tokenFeldSetup) tokenFeldSetup.placeholder = 'wird beim Starten der Session erzeugt';
 
   // Toggle Sandbox
   const toggleBtn   = document.getElementById('toggle-sandbox');
@@ -105,6 +279,40 @@ function initSetup() {
       document.getElementById('f-admin-token').value,
       document.getElementById('btn-copy-token')
     );
+  });
+
+  // Scaffolding Setup initialisieren
+  const getPeriodsCount = () => Math.max(1, Math.min(12, +document.getElementById('f-perioden').value || 5));
+  setupScaffoldState = SCAFFOLD_PRESETS.scaffolding(getPeriodsCount());
+
+  renderScaffoldMatrix('scaffold-matrix-setup', setupScaffoldState, getPeriodsCount(), (updated) => {
+    setupScaffoldState = updated;
+    document.querySelectorAll('#scaffold-presets-setup .preset-pill').forEach(p => p.classList.remove('active'));
+    document.querySelector('#scaffold-presets-setup [data-preset="custom"]')?.classList.add('active');
+  });
+
+  wireScaffoldPresets('scaffold-presets-setup', 'scaffold-matrix-setup',
+    () => setupScaffoldState,
+    (s) => { setupScaffoldState = s; },
+    getPeriodsCount
+  );
+
+  document.getElementById('f-perioden').addEventListener('input', () => {
+    const n = getPeriodsCount();
+    const activePill = document.querySelector('#scaffold-presets-setup .preset-pill.active');
+    const presetKey = activePill?.dataset.preset || 'scaffolding';
+    if (presetKey !== 'custom' && SCAFFOLD_PRESETS[presetKey]) {
+      setupScaffoldState = SCAFFOLD_PRESETS[presetKey](n);
+    } else {
+      for (let i = 0; i < n; i++) {
+        if (!setupScaffoldState[i]) setupScaffoldState[i] = ['finanzen', 'soziales', 'klima', 'wirtschaft'];
+      }
+    }
+    renderScaffoldMatrix('scaffold-matrix-setup', setupScaffoldState, n, (updated) => {
+      setupScaffoldState = updated;
+      document.querySelectorAll('#scaffold-presets-setup .preset-pill').forEach(p => p.classList.remove('active'));
+      document.querySelector('#scaffold-presets-setup [data-preset="custom"]')?.classList.add('active');
+    });
   });
 
   // CSV-Upload im Setup-Formular (wird nach Session-Erstellung hochgeladen)
@@ -153,30 +361,35 @@ async function createSession() {
   errorEl.textContent = '';
 
   try {
-    const res = await fetch(`${API_BASE}/sessions`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name,
-        perioden_anzahl:     perioden,
-        team_groesse:        groesse,
-        team_names:          teams,
-        sandbox:             sandboxOn,
-        min_teilnahme_quote: 0.5,
-        perioden_laenge_jahre,
-        lernziele,
-      }),
+    const data = await erstelleSitzung({
+      name,
+      perioden_anzahl:     perioden,
+      team_groesse:        groesse,
+      team_names:          teams,
+      sandbox:             sandboxOn,
+      min_teilnahme_quote: 0.5,
+      perioden_laenge_jahre,
+      lernziele,
+      perioden_werkzeuge:  setupScaffoldState,
     });
 
-    if (!res.ok) { throw new Error(await res.text()); }
-    const data = await res.json();
     saveLevel(data.session_id, level);
 
-    // Admin-URL mit Token in URL schreiben und Dashboard laden
+    // Adresszeile zur Wiedereinstiegs-URL machen: Session als Parameter,
+    // Token als Fragment. So bleibt der Link als Lesezeichen brauchbar, ohne
+    // dass der Token je an einen Server geht.
     const newUrl = new URL(location.href);
     newUrl.searchParams.set('session', data.session_id);
-    newUrl.searchParams.set('token',   data.admin_token);
+    newUrl.searchParams.delete('token');
+    newUrl.hash = `token=${data.admin_token}`;
     history.pushState({}, '', newUrl.toString());
+    merkeAdminToken(data.session_id, data.admin_token);
+
+    // Das Feld zeigte bisher einen lokal gewuerfelten Code, der mit dem
+    // echten Zugang nichts zu tun hatte. Jetzt steht dort der Token, der
+    // tatsaechlich ins Dashboard laesst.
+    const tokenFeld = document.getElementById('f-admin-token');
+    if (tokenFeld) tokenFeld.value = data.admin_token;
 
     // Matrikelnummern hochladen wenn vorhanden
     if (pendingMatrikeln.length > 0) {
@@ -191,7 +404,8 @@ async function createSession() {
     const laengenParam = Array.isArray(perioden_laenge_jahre)
       ? perioden_laenge_jahre.join(',')
       : String(perioden_laenge_jahre);
-    const join_url = `${origin}index.html?session=${data.session_id}&perioden=${perioden}&teams=${groesse}&sandbox=${sandboxOn}&name=${encodeURIComponent(name)}&laengen=${laengenParam}&level=${level}`;
+    const werkzeugeParam = encodeURIComponent(JSON.stringify(setupScaffoldState));
+    const join_url = `${origin}index.html?session=${data.session_id}&perioden=${perioden}&teams=${groesse}&sandbox=${sandboxOn}&name=${encodeURIComponent(name)}&laengen=${laengenParam}&level=${level}&werkzeuge=${werkzeugeParam}`;
 
     startDashboard(data.session_id, data.admin_token, join_url, { name, perioden, groesse, teams });
   } catch (e) {
@@ -205,8 +419,6 @@ async function createSession() {
 
 let pollInterval = null;
 let joinUrlGlobal = '';
-let currentSessionId   = null;
-let currentToken       = null;
 let schockPanelReady   = false;
 
 function startDashboard(sessionId, token, joinUrl, meta) {
@@ -239,7 +451,9 @@ function startDashboard(sessionId, token, joinUrl, meta) {
     const img       = document.getElementById('qr-img');
     if (!container || !img) return;
     if (container.style.display !== 'none') { container.style.display = 'none'; return; }
-    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinUrlGlobal)}`;
+    const adresse = qrAdresse(joinUrlGlobal);
+    if (!adresse) { alert('Kein QR-Dienst konfiguriert (konfig.js: qr_dienst).'); return; }
+    img.src = adresse;
     container.style.display = '';
   });
 
@@ -269,18 +483,15 @@ function startDashboard(sessionId, token, joinUrl, meta) {
 
 async function pollDashboard(sessionId, token) {
   try {
-    const res = await fetch(`${API_BASE}/sessions/${sessionId}/admin?token=${token}`);
-    if (!res.ok) {
-      const msg = document.getElementById('last-updated');
-      if (msg) msg.textContent = `Fehler beim Laden: HTTP ${res.status} — Token korrekt?`;
-      return;
-    }
-    const session = await res.json();
+    const session = await holeAdminSicht(sessionId, token);
     renderDashboard(session);
-  } catch (e) {
-    console.error('pollDashboard:', e);
+  } catch (fehler) {
+    console.error('pollDashboard:', fehler);
     const msg = document.getElementById('last-updated');
-    if (msg) msg.textContent = 'Netzwerkfehler: ' + e.message;
+    if (!msg) return;
+    msg.textContent = fehler.istNetzwerkfehler
+      ? 'Netzwerkfehler: ' + fehler.message
+      : `Fehler beim Laden: HTTP ${fehler.status} — Zugang korrekt?`;
   }
 }
 
@@ -322,13 +533,15 @@ function renderDashboard(session) {
     ? session.perioden_laenge_jahre.join(',')
     : String(session.perioden_laenge_jahre ?? 4);
   const adminOrigin  = location.origin + location.pathname.replace('admin.html', '');
+  const werkzeugeParam2 = session.perioden_werkzeuge ? `&werkzeuge=${encodeURIComponent(JSON.stringify(session.perioden_werkzeuge))}` : '';
   const freshJoinUrl = `${adminOrigin}index.html?session=${session.id}`
     + `&perioden=${session.perioden_anzahl}`
     + `&teams=${session.team_groesse}`
     + `&sandbox=${session.sandbox}`
     + `&name=${encodeURIComponent(session.name)}`
     + `&laengen=${laengenParam2}`
-    + `&level=${loadLevel(session.id)}`;
+    + `&level=${loadLevel(session.id)}`
+    + werkzeugeParam2;
   if (joinUrlGlobal !== freshJoinUrl) {
     joinUrlGlobal = freshJoinUrl;
     const joinDisplay = document.getElementById('join-url-display');
@@ -393,6 +606,13 @@ function renderDashboard(session) {
 
   // Freigabe-Panel bei jedem Poll aktualisieren
   renderFreigabePanel(session);
+
+  // Scaffolding-Steuerung aktualisieren
+  try {
+    renderScaffoldDashboard(session);
+  } catch (e) {
+    console.error('renderScaffoldDashboard:', e);
+  }
 
   // Schock-Panel einmalig initialisieren (Fehler dürfen Tabelle nicht blockieren)
   if (!schockPanelReady) {
@@ -528,31 +748,20 @@ function openTeamDetail(teamName, session, konfig) {
 
 async function adminToggleLock(teamName, periodeIdx, locked, konfig) {
   try {
-    const res = await fetch(
-      `${API_BASE}/sessions/${currentSessionId}/teams/${encodeURIComponent(teamName)}/lock?token=${currentToken}`,
-      {
-        method:  'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ periode_idx: periodeIdx, locked }),
-      }
-    );
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      alert('Fehler: ' + (data.error ?? res.statusText));
-      return;
-    }
+    await setzePeriodeGesperrt(currentSessionId, teamName, periodeIdx, locked, currentToken);
+
     // Dashboard + Modal mit frischen Daten neu rendern
-    const freshRes = await fetch(`${API_BASE}/sessions/${currentSessionId}/admin?token=${currentToken}`);
-    if (!freshRes.ok) return;
-    const freshSession = await freshRes.json();
+    const freshSession = await holeAdminSicht(currentSessionId, currentToken);
     renderDashboard(freshSession);
     openTeamDetail(teamName, freshSession, {
       ...konfig,
       schocks: freshSession.schocks ?? [],
     });
-  } catch (err) {
-    console.error('adminToggleLock:', err);
-    alert('Netzwerkfehler beim Ändern des Perioden-Status.');
+  } catch (fehler) {
+    console.error('adminToggleLock:', fehler);
+    alert(fehler.istNetzwerkfehler
+      ? 'Netzwerkfehler beim Ändern des Perioden-Status.'
+      : 'Fehler: ' + fehler.message);
   }
 }
 
@@ -598,19 +807,7 @@ async function setFreigabe(n) {
   const msgEl = document.getElementById('freigabe-msg');
   if (msgEl) { msgEl.textContent = ''; }
   try {
-    const res = await fetch(
-      `${API_BASE}/sessions/${currentSessionId}/freigabe?token=${currentToken}`,
-      {
-        method:  'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ perioden_freigegeben: n }),
-      }
-    );
-    const data = await res.json();
-    if (!res.ok) {
-      if (msgEl) { msgEl.style.color = 'var(--bad)'; msgEl.textContent = 'Fehler: ' + (data.error ?? res.statusText); }
-      return;
-    }
+    await setzeFreigabe(currentSessionId, n, currentToken);
     // Sofort neu laden damit Panel und Tabelle aktuell sind
     await pollDashboard(currentSessionId, currentToken);
     if (msgEl) { msgEl.style.color = 'var(--good)'; msgEl.textContent = `${n} Periode(n) freigegeben`; }
@@ -702,25 +899,65 @@ function renderSchockPanel(session) {
     newBtn.textContent = 'Speichere …';
     statusEl.textContent = '';
     try {
-      const res = await fetch(`${API_BASE}/sessions/${currentSessionId}/schocks?token=${currentToken}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ schocks }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        statusEl.style.color = 'var(--good)';
-        statusEl.textContent = `${data.count} Schock(s) gespeichert — Teams erhalten Update in ~5 Sek.`;
-      } else {
-        statusEl.style.color = 'var(--bad)';
-        statusEl.textContent = 'Fehler: ' + (data.error ?? res.statusText);
-      }
-    } catch (_) {
+      const data = await setzeSchocks(currentSessionId, schocks, currentToken);
+      statusEl.style.color = 'var(--good)';
+      statusEl.textContent = `${data.count} Schock(s) gespeichert — Teams erhalten Update in ~5 Sek.`;
+    } catch (fehler) {
       statusEl.style.color = 'var(--bad)';
-      statusEl.textContent = 'Netzwerkfehler';
+      statusEl.textContent = fehler.istNetzwerkfehler ? 'Netzwerkfehler' : 'Fehler: ' + fehler.message;
     } finally {
       newBtn.disabled = false;
       newBtn.textContent = 'Schocks speichern';
     }
+  });
+}
+
+// ── Didaktisches Scaffolding im Dashboard ─────────────────────────────────────
+
+let dashScaffoldReady = false;
+
+function renderScaffoldDashboard(session) {
+  const panel = document.getElementById('scaffold-panel-dash');
+  if (!panel) return;
+
+  const n = session.perioden_anzahl ?? 5;
+  if (!dashScaffoldState) {
+    dashScaffoldState = session.perioden_werkzeuge || SCAFFOLD_PRESETS.scaffolding(n);
+  }
+
+  if (!dashScaffoldReady) {
+    wireScaffoldPresets('scaffold-presets-dash', 'scaffold-matrix-dash',
+      () => dashScaffoldState,
+      (s) => { dashScaffoldState = s; },
+      () => n
+    );
+
+    const saveBtn = document.getElementById('btn-save-scaffold');
+    const statusEl = document.getElementById('scaffold-status');
+    saveBtn?.addEventListener('click', async () => {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Speichere …';
+      statusEl.textContent = '';
+      try {
+        await setzeWerkzeuge(currentSessionId, dashScaffoldState, currentToken);
+        statusEl.style.color = 'var(--good)';
+        statusEl.textContent = 'Werkzeug-Freigabe gespeichert — Teams erhalten Update in ~5 Sek.';
+      } catch (fehler) {
+        statusEl.style.color = 'var(--bad)';
+        statusEl.textContent = fehler.istNetzwerkfehler ? 'Netzwerkfehler' : 'Fehler: ' + fehler.message;
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Werkzeug-Freigabe speichern';
+      }
+    });
+
+    dashScaffoldReady = true;
+  }
+
+  renderScaffoldMatrix('scaffold-matrix-dash', dashScaffoldState, n, (updated) => {
+    dashScaffoldState = updated;
+    document.querySelectorAll('#scaffold-presets-dash .preset-pill').forEach(p => p.classList.remove('active'));
+    document.querySelector('#scaffold-presets-dash [data-preset="custom"]')?.classList.add('active');
   });
 }
 
@@ -771,21 +1008,13 @@ function setupCsvUpload(dropZoneId, fileInputId, statusId, onParsed) {
 
 async function uploadMatrikeln(sessionId, token, matrikeln, statusEl) {
   try {
-    const res = await fetch(`${API_BASE}/sessions/${sessionId}/matrikelnummern?token=${token}`, {
-      method:  'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ matrikelnummern: matrikeln }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      statusEl.textContent = `${data.count} Matrikelnummern gespeichert.`;
-    } else {
-      statusEl.className   = 'error';
-      statusEl.textContent = 'Fehler: ' + (data.error ?? res.statusText);
-    }
-  } catch (_) {
+    const data = await sendeMatrikelnummern(sessionId, matrikeln, token);
+    statusEl.textContent = `${data.count} Matrikelnummern gespeichert.`;
+  } catch (fehler) {
     statusEl.className   = 'error';
-    statusEl.textContent = 'Netzwerkfehler beim Speichern.';
+    statusEl.textContent = fehler.istNetzwerkfehler
+      ? 'Netzwerkfehler beim Speichern.'
+      : 'Fehler: ' + fehler.message;
   }
 }
 
@@ -822,7 +1051,9 @@ if (SESSION_ID && ADMIN_TOKEN) {
     const img       = document.getElementById('qr-img');
     if (!container || !img) return;
     if (container.style.display !== 'none') { container.style.display = 'none'; return; }
-    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinUrlGlobal)}`;
+    const adresse = qrAdresse(joinUrlGlobal);
+    if (!adresse) { alert('Kein QR-Dienst konfiguriert (konfig.js: qr_dienst).'); return; }
+    img.src = adresse;
     container.style.display = '';
   });
 

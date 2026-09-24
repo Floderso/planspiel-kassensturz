@@ -3,6 +3,9 @@
 // Kassensturz · Planspiel — Regelbasiertes Feedback je Team
 
 import { CO2_BUDGET_DE } from './rechner/abgeleitet.js';
+import { erzeugeKausalketten } from './rechner/explainer.js';
+
+export { erzeugeKausalketten };
 
 /**
  * Erzeugt eine kurze Texteinschätzung anhand des letzten simulierePfad()-Eintrags.

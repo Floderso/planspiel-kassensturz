@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tiefenebenen — Entwurf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400..700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="mockup.css">
+<link rel="stylesheet" href="tiefe.css">
+<style>
+  .blatt { max-width: 880px; margin-inline: auto; padding: var(--space-8) var(--space-5) var(--space-16); }
+  .blatt > h1 { font-size: var(--text-2xl); margin-bottom: var(--space-2); }
+  .blatt > .vorwort { color: var(--color-fg-muted); margin-bottom: var(--space-10); max-width: var(--measure); }
+  .muster { margin-bottom: var(--space-12); }
+  .muster__kopf { margin-bottom: var(--space-4); }
+  .muster__nr {
+    font-family: var(--font-mono); font-size: var(--text-xs);
+    color: var(--color-fg-subtle); letter-spacing: 0.08em;
+  }
+  .muster__name { font-size: var(--text-xl); font-weight: var(--weight-semibold); margin: var(--space-1) 0; }
+  .muster__herkunft { font-size: var(--text-sm); color: var(--color-fg-muted); }
+  .muster__herkunft b { color: var(--color-fg); font-weight: var(--weight-semibold); }
+</style>
+</head>
+<body>
+<div class="blatt">
+
+<h1>Vier Muster, die der Oberfläche Tiefe geben</h1>
+<p class="vorwort">
+  Alle vier stammen aus laufenden Produkten, nicht aus meiner
+  Fantasie. Jedes ist hier mit echten Daten aus deinem Projekt
+  gefüllt. Die Herkunft steht jeweils darunter.
+</p>
+
+<!-- ═══ 1 ═══ -->
+<section class="muster">
+  <div class="muster__kopf">
+    <div class="muster__nr">EBENE 3 — WARUM IST DAS SO</div>
+    <h2 class="muster__name">Herleitung auf Abruf</h2>
+    <p class="muster__herkunft">
+      Nach <b>Beautiful UI „Thinking / Expandable traces"</b> (MIT-Lizenz),
+      geschichtet wie die <b>Stripe-Dokumentation</b>: die Erklärung steht
+      neben dem Objekt, nicht in einem eigenen Bereich.
+    </p>
+  </div>
+
+  <div class="karte kennzahl">
+    <div class="kennzahl__name">Haushaltssaldo</div>
+    <div class="kennzahl__zeile">
+      <span class="kennzahl__wert">−116</span>
+      <span class="delta delta--gut">+18,4</span>
+    </div>
+    <div class="kennzahl__fuss">
+      <span class="urteil urteil--schlecht">Defizit</span>
+      <span class="kennzahl__grenze">Bremse: −0,35 %</span>
+    </div>
+
+    <div class="herleitung">
+      <button class="herleitung__schalter" aria-expanded="true" aria-controls="h-saldo">
+        <span class="herleitung__pfeil" aria-hidden="true">▸</span>
+        Wie kommt diese Zahl zustande?
+      </button>
+      <div class="herleitung__inhalt" id="h-saldo">
+        <ol class="kette">
+          <li class="kette__schritt">
+            <span class="kette__was">Grundfreibetrag 11 784 → 12 348 €</span>
+            <span class="kette__wert"> · −4,1 Mrd.</span>
+            <code class="kette__formel">§ 32a EStG Formeltarif, Zone 1</code>
+          </li>
+          <li class="kette__schritt">
+            <span class="kette__was">Arbeitsangebot reagiert auf den Grenzsatz</span>
+            <span class="kette__wert"> · +1,2 Mrd.</span>
+            <code class="kette__formel">labor_factor = 1 + ε × Δ(1 − GS) / (1 − GS_SQ), ε = 0,20</code>
+          </li>
+          <li class="kette__schritt">
+            <span class="kette__was">Mehrkonsum erhöht die Mehrwertsteuer</span>
+            <span class="kette__wert"> · +0,8 Mrd.</span>
+            <code class="kette__formel">MwSt = Konsum × (0,70 × t_reg/(1+t_reg) + 0,30 × t_erm/(1+t_erm))</code>
+          </li>
+          <li class="kette__schritt">
+            <span class="kette__was">Spitzensteuersatz unverändert bei 45 %</span>
+            <span class="kette__wert"> · ±0,0</span>
+          </li>
+          <li class="kette__schritt kette__schritt--ergebnis">
+            <span class="kette__was"><b>Saldo der Periode</b></span>
+            <span class="kette__wert"> · <b>−116,0 Mrd. €</b></span>
+          </li>
+        </ol>
+
+        <div class="quellen">
+          <article class="quelle">
+            <div class="quelle__kopf">
+              <span class="quelle__art">Elastizität Arbeitsangebot</span>
+              <span class="quelle__jahr">2014–2025</span>
+            </div>
+            <code class="quelle__formel">labor_factor = 1 + ε × Δ(1 − GS) / (1 − GS_SQ)</code>
+            <p class="quelle__ref">
+              Saez/Chetty/Gruber Konsens · ifo Schnelldienst 01/2025 ·
+              Piketty/Saez/Stantcheva (2014), American Economic Review
+            </p>
+            <p class="quelle__note">
+              ε = 0,20 (intensive margin, konservativ); D10c: ε = 0,40 plus
+              Avoidance- und Wegzugs-Korrektur
+            </p>
+          </article>
+
+          <article class="quelle">
+            <div class="quelle__kopf">
+              <span class="quelle__art">Mehrwertsteuer-Konsumanteil</span>
+              <span class="quelle__jahr">2009–2024</span>
+            </div>
+            <code class="quelle__formel">MwSt = Konsum × (0,70 × t_reg/(1+t_reg) + 0,30 × t_erm/(1+t_erm))</code>
+            <p class="quelle__ref">
+              Destatis VGR 2024 (rund 70 % Regelsatz-Konsum) ·
+              Lewbel/Pendakur (2009), Journal of Public Economics
+            </p>
+            <p class="quelle__note">
+              70/30-Aufteilung grob; feiner auflösbar mit EVS-Einzeldaten.
+              VAT-Gap-Korrekturfaktor 0,963 (CASE 2024)
+            </p>
+          </article>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 2 ═══ -->
+<section class="muster">
+  <div class="muster__kopf">
+    <div class="muster__nr">EBENE 4 — WAS VERLANGT DIE LAGE</div>
+    <h2 class="muster__name">Entscheidungskarte statt Banner</h2>
+    <p class="muster__herkunft">
+      Nach <b>Beautiful UI „Approval Card"</b> (MIT-Lizenz). Heute laufen
+      die Schocks aus deiner Schock-Bibliothek als Hinweisbanner durch,
+      auf das man nichts erwidern kann.
+    </p>
+  </div>
+
+  <div class="karte entscheidung">
+    <div class="entscheidung__kopf">
+      <span class="rubrik">Externer Schock</span>
+      <span class="entscheidung__zaehler">Entscheidung 1 / 2</span>
+    </div>
+    <h3 class="entscheidung__frage">Energiepreise springen um 40 Prozent</h3>
+    <p class="entscheidung__lage">
+      Der Bundesrat verlangt bis Freitag eine Antwort. Jede Option kostet
+      etwas — Geld, Zustimmung oder Klimaziel. Ihr könnt nur eine wählen.
+    </p>
+
+    <div class="optionen">
+      <button class="option" aria-pressed="true">
+        <span class="option__zeichen" aria-hidden="true">✓</span>
+        <span>
+          <span class="option__titel">Pendlerpauschale befristet anheben</span><br>
+          <span class="option__folge">Entlastet die Fläche, belastet das CO₂-Budget</span>
+        </span>
+        <span class="option__kosten delta delta--schlecht">−6,2 Mrd.</span>
+      </button>
+
+      <button class="option" aria-pressed="false">
+        <span class="option__zeichen" aria-hidden="true"></span>
+        <span>
+          <span class="option__titel">Strompreisbremse für Haushalte</span><br>
+          <span class="option__folge">Trifft die unteren Dezile genauer, teurer</span>
+        </span>
+        <span class="option__kosten delta delta--schlecht">−11,0 Mrd.</span>
+      </button>
+
+      <button class="option" aria-pressed="false">
+        <span class="option__zeichen" aria-hidden="true"></span>
+        <span>
+          <span class="option__titel">Nichts tun</span><br>
+          <span class="option__folge">Haushalt bleibt unberührt, Zustimmung fällt</span>
+        </span>
+        <span class="option__kosten delta delta--schlecht">−4,8 Punkte</span>
+      </button>
+    </div>
+
+    <div class="lage__fuss">
+      <button class="knopf knopf--voll">Entscheidung eintragen</button>
+      <span class="urteil">Wirkt ab Periode 2</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 3 ═══ -->
+<section class="muster">
+  <div class="muster__kopf">
+    <div class="muster__nr">EBENE 2 — WER HAT WAS GETAN</div>
+    <h2 class="muster__name">Kabinettsprotokoll</h2>
+    <p class="muster__herkunft">
+      Nach dem <b>Aktivitätsprotokoll in Linear</b>. Das Planspiel wird in
+      Teams gespielt — heute sieht niemand, wer welchen Hebel bewegt hat.
+      Fürs Debriefing ist genau das die interessante Frage.
+    </p>
+  </div>
+
+  <div class="karte" style="padding: var(--space-5)">
+    <ol class="protokoll">
+      <li class="eintrag eintrag--wichtig">
+        <span class="eintrag__wann">gerade eben</span>
+        <span class="eintrag__wer">Lena</span> hat den Spitzensteuersatz auf
+        <span class="eintrag__wert">45,0 %</span> gestellt
+        <span class="delta delta--neutral">±0,0</span>
+      </li>
+      <li class="eintrag">
+        <span class="eintrag__wann">vor 4 Min.</span>
+        <span class="eintrag__wer">Jonas</span> hat den Grundfreibetrag von
+        <span class="eintrag__wert">11 784 €</span> auf
+        <span class="eintrag__wert">12 348 €</span> angehoben
+        <span class="delta delta--schlecht">−4,1 Mrd.</span>
+      </li>
+      <li class="eintrag">
+        <span class="eintrag__wann">vor 7 Min.</span>
+        <span class="eintrag__wer">Lena</span> hat das Finanzressort geöffnet
+      </li>
+      <li class="eintrag eintrag--wichtig">
+        <span class="eintrag__wann">vor 12 Min.</span>
+        Periode 1 wurde freigegeben — <span class="eintrag__wer">2 von 4</span>
+        Stimmen liegen vor
+      </li>
+      <li class="eintrag">
+        <span class="eintrag__wann">vor 15 Min.</span>
+        <span class="eintrag__wer">Mirko</span> ist dem Team beigetreten
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ═══ 4 ═══ -->
+<section class="muster">
+  <div class="muster__kopf">
+    <div class="muster__nr">EBENE 2 — WAS HABEN WIR VERÄNDERT</div>
+    <h2 class="muster__name">Periodenvergleich</h2>
+    <p class="muster__herkunft">
+      Nach <b>Beautiful UI „Diff Table"</b> (MIT-Lizenz). Beim
+      Periodenwechsel Zeile für Zeile statt einer Gesamtzahl — unveränderte
+      Hebel treten zurück, ohne zu verschwinden.
+    </p>
+  </div>
+
+  <div class="karte" style="padding: var(--space-5)">
+    <table class="vergleich">
+      <caption>Was sich von Periode 1 zu Periode 2 geändert hat — 3 von 14 Hebeln</caption>
+      <thead>
+        <tr>
+          <th scope="col">Hebel</th>
+          <th scope="col">Periode 1</th>
+          <th scope="col">Periode 2</th>
+          <th scope="col">Wirkung auf den Saldo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr data-stand="geaendert">
+          <td>Grundfreibetrag</td>
+          <td class="alt">11 784 €</td>
+          <td><span class="pfeil" aria-hidden="true">→</span><span class="neu">12 348 €</span></td>
+          <td><span class="delta delta--schlecht">−4,1 Mrd.</span></td>
+        </tr>
+        <tr data-stand="geaendert">
+          <td>CO₂-Preis</td>
+          <td class="alt">55 €/t</td>
+          <td><span class="pfeil" aria-hidden="true">→</span><span class="neu">72 €/t</span></td>
+          <td><span class="delta delta--gut">+9,4 Mrd.</span></td>
+        </tr>
+        <tr data-stand="geaendert">
+          <td>Körperschaftsteuer</td>
+          <td class="alt">15,0 %</td>
+          <td><span class="pfeil" aria-hidden="true">→</span><span class="neu">16,5 %</span></td>
+          <td><span class="delta delta--gut">+13,1 Mrd.</span></td>
+        </tr>
+        <tr data-stand="gleich">
+          <td>Spitzensteuersatz</td>
+          <td class="alt">45,0 %</td>
+          <td>unverändert</td>
+          <td>±0,0</td>
+        </tr>
+        <tr data-stand="gleich">
+          <td>Eingangssteuersatz</td>
+          <td class="alt">14,0 %</td>
+          <td>unverändert</td>
+          <td>±0,0</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<button class="knopf knopf--gross" id="thema-schalter" aria-pressed="false">
+  <span aria-hidden="true">◐</span> Hörsaal-Modus umschalten
+</button>
+
+</div>
+<script>
+  const t = document.getElementById('thema-schalter');
+  t.addEventListener('click', () => {
+    const d = document.documentElement.dataset.theme === 'dark';
+    document.documentElement.dataset.theme = d ? 'light' : 'dark';
+    t.setAttribute('aria-pressed', String(!d));
+  });
+
+  document.querySelectorAll('.herleitung__schalter').forEach(s => {
+    s.addEventListener('click', () => {
+      const offen = s.getAttribute('aria-expanded') === 'true';
+      s.setAttribute('aria-expanded', String(!offen));
+      document.getElementById(s.getAttribute('aria-controls')).hidden = offen;
+    });
+  });
+
+  document.querySelectorAll('.option').forEach(o => {
+    o.addEventListener('click', () => {
+      o.closest('.optionen').querySelectorAll('.option').forEach(x => {
+        x.setAttribute('aria-pressed', 'false');
+        x.querySelector('.option__zeichen').textContent = '';
+      });
+      o.setAttribute('aria-pressed', 'true');
+      o.querySelector('.option__zeichen').textContent = '✓';
+    });
+  });
+</script>
+</body>
+</html>

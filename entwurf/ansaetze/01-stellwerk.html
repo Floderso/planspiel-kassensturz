@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<!-- KONZEPTBILD, nicht funktionsfaehig. Zahlen echt aus der Engine
+     (Status quo und Variante Spitzensteuer 62 %, CO2 140 EUR/t). -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Das Stellwerk — Konzeptbild</title>
+<link rel="stylesheet" href="../../css/schriften.css">
+<style>
+:root{
+  --stahl:#20262B; --stahl-tief:#161A1E; --pult:#2E3840; --kante:#4A5760;
+  --email:#E8E6DF; --messing:#C9A227; --messing-tief:#8A6F16;
+  --hp0:#D14A3C; --hp1:#3E9B5F; --hp2:#E0A93B; --lampe:#F2EFE6;
+  /* Schriftfarben eigens geloest: die Emailtoene der Lampen halten als
+     Text auf dem Gleisbild 4,5:1 nicht. Gemessen gegen #20262B. */
+  --hp0-schrift:#DA6D61; --hp1-schrift:#449E64;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--stahl-tief);color:var(--email);
+  font-family:Inter,system-ui,sans-serif;font-size:16px;line-height:1.45;
+  font-variant-numeric:tabular-nums}
+.hinweis{background:var(--messing);color:#1A1509;font-size:13px;padding:6px 20px;
+  font-weight:600;letter-spacing:.02em}
+
+.kopf{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap;
+  padding:14px 20px;border-bottom:2px solid var(--kante);background:var(--stahl)}
+.kopf h1{font-size:19px;letter-spacing:.06em;text-transform:uppercase;font-weight:700}
+.kopf .betrieb{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--messing);
+  letter-spacing:.12em}
+.kopf .zeit{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:12px;color:#93A2AC}
+
+/* ── Signalbild: vier Hauptsignale, eines je Kennzahl ───────────────────── */
+.gleisbild{background:var(--stahl);padding:22px 20px 26px;border-bottom:2px solid var(--kante);
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,208px),1fr));gap:20px}
+.signal{display:grid;grid-template-columns:34px 1fr;gap:14px;align-items:start}
+.mast{background:var(--pult);border:1px solid var(--kante);border-radius:4px;
+  padding:6px 0;display:grid;gap:5px;justify-items:center;box-shadow:inset 0 1px 0 #5A6972}
+.lampe{width:18px;height:18px;border-radius:50%;background:#12161A;
+  border:1px solid #000;box-shadow:inset 0 1px 2px rgba(0,0,0,.9)}
+.lampe.an-rot{background:var(--hp0);box-shadow:0 0 12px rgba(209,74,60,.75),inset 0 1px 0 rgba(255,255,255,.35)}
+.lampe.an-gruen{background:var(--hp1);box-shadow:0 0 12px rgba(62,155,95,.75),inset 0 1px 0 rgba(255,255,255,.35)}
+.lampe.an-gelb{background:var(--hp2);box-shadow:0 0 12px rgba(224,169,59,.75),inset 0 1px 0 rgba(255,255,255,.35)}
+.signal .name{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#93A2AC}
+.signal .wert{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.05;margin-top:2px}
+.signal .wert em{font-style:normal;font-size:13px;font-weight:400;color:#93A2AC;letter-spacing:0}
+.signal .begriff{font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:4px;letter-spacing:.06em}
+.begriff.frei{color:var(--hp1-schrift)}.begriff.halt{color:var(--hp0-schrift)}
+.begriff.lang{color:var(--hp2)}
+
+/* ── Fahrstrasse: die Verriegelung ──────────────────────────────────────── */
+.fahrstrasse{background:#182025;border-bottom:2px solid var(--kante);padding:12px 20px;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.fahrstrasse .titel{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#93A2AC}
+.strang{display:flex;align-items:center;gap:0;flex:1;min-width:260px}
+.strang span{height:5px;flex:1;background:var(--kante)}
+.strang span.gestellt{background:var(--hp1)}
+.strang b{width:11px;height:11px;transform:rotate(45deg);background:var(--kante);flex:none;margin:0 -2px}
+.strang b.gestellt{background:var(--hp1)}
+.verriegelt{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--hp2);
+  border:1px solid var(--hp2);padding:3px 9px;letter-spacing:.06em}
+
+/* ── Das Pult: Hebel ────────────────────────────────────────────────────── */
+.pult{padding:26px 20px 34px;background:
+  linear-gradient(180deg,var(--pult) 0%,#242C33 100%);
+  display:flex;gap:14px;overflow-x:auto;align-items:flex-end}
+.hebel{flex:none;width:76px;text-align:center}
+.schacht{height:172px;position:relative;background:#171D22;border:1px solid var(--kante);
+  border-radius:3px;box-shadow:inset 0 2px 6px rgba(0,0,0,.7)}
+.schacht::before{content:'';position:absolute;left:50%;top:10px;bottom:10px;width:3px;
+  margin-left:-1.5px;background:#0D1114}
+.stange{position:absolute;left:50%;width:7px;margin-left:-3.5px;bottom:14px;
+  background:linear-gradient(90deg,#8E9BA4,#D6DEE3 45%,#79868F);border-radius:3px}
+.knauf{position:absolute;left:50%;width:30px;height:30px;margin-left:-15px;border-radius:50%;
+  border:2px solid #6E5A10;
+  background:radial-gradient(circle at 34% 30%,#F0D66B,var(--messing) 55%,var(--messing-tief));
+  box-shadow:0 2px 5px rgba(0,0,0,.6)}
+.hebel .bez{font-size:11px;line-height:1.25;color:#B7C3CA;margin-top:10px;min-height:2.6em}
+.hebel .val{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;margin-top:5px}
+.hebel.umgelegt .knauf{border-color:#7E2A20;
+  background:radial-gradient(circle at 34% 30%,#F08C7E,var(--hp0) 55%,#8E2E24)}
+.hebel.umgelegt .val{color:var(--hp2)}
+.hebel .delta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--hp2);margin-top:2px}
+
+.fuss{padding:18px 20px 40px;background:var(--stahl-tief);border-top:2px solid var(--kante);
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:20px}
+.fuss h2{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--messing);
+  margin-bottom:7px}
+.fuss p{font-size:14px;color:#B7C3CA;max-width:60ch}
+.fuss dl{font-size:13px;display:grid;grid-template-columns:auto 1fr;gap:3px 12px}
+.fuss dt{color:#93A2AC}.fuss dd{font-family:'JetBrains Mono',monospace;text-align:right}
+</style>
+</head>
+<body>
+
+<p class="hinweis">Konzeptbild 1 von 10 — nicht bedienbar. Alle Zahlen echt aus der Simulation gerechnet.</p>
+
+<header class="kopf">
+  <span class="betrieb">Stw Kb</span>
+  <h1>Das Stellwerk</h1>
+  <span class="zeit">Kabinett Team A · Runde 1/5 · Fahrplan 2025–2028</span>
+</header>
+
+<section class="gleisbild" aria-label="Signalbild">
+  <div class="signal">
+    <div class="mast"><i class="lampe an-gelb"></i><i class="lampe"></i><i class="lampe"></i></div>
+    <div><p class="name">Haushalt</p>
+      <p class="wert">−69 <em>Mrd. €</em></p>
+      <p class="begriff lang">Hp2 — Langsamfahrt, +50 ggü. Start</p></div>
+  </div>
+  <div class="signal">
+    <div class="mast"><i class="lampe"></i><i class="lampe an-gruen"></i><i class="lampe"></i></div>
+    <div><p class="name">Ungleichheit</p>
+      <p class="wert">0,351 <em>Gini</em></p>
+      <p class="begriff frei">Hp1 — Fahrt frei, −0,026</p></div>
+  </div>
+  <div class="signal">
+    <div class="mast"><i class="lampe"></i><i class="lampe an-gruen"></i><i class="lampe"></i></div>
+    <div><p class="name">Emissionen</p>
+      <p class="wert">244 <em>Mio. t</em></p>
+      <p class="begriff frei">Hp1 — Fahrt frei, −83</p></div>
+  </div>
+  <div class="signal">
+    <div class="mast"><i class="lampe an-rot"></i><i class="lampe"></i><i class="lampe"></i></div>
+    <div><p class="name">Schuldenbremse</p>
+      <p class="wert">1,55 <em>% des BIP</em></p>
+      <p class="begriff halt">Hp0 — Halt, Grenze 0,35 %</p></div>
+  </div>
+</section>
+
+<div class="fahrstrasse">
+  <span class="titel">Fahrstraße Runde 1</span>
+  <span class="strang">
+    <b class="gestellt"></b><span class="gestellt"></span>
+    <b class="gestellt"></b><span class="gestellt"></span>
+    <b class="gestellt"></b><span></span>
+    <b></b><span></span><b></b>
+  </span>
+  <span class="verriegelt">3 von 5 Ressorts eingestellt — noch nicht verriegelt</span>
+</div>
+
+<div class="pult" aria-label="Stellhebel">
+  <div class="hebel"><div class="schacht"><i class="stange" style="height:118px"></i><i class="knauf" style="bottom:120px"></i></div>
+    <p class="bez">Grundfreibetrag</p><p class="val">12.348 €</p></div>
+  <div class="hebel"><div class="schacht"><i class="stange" style="height:52px"></i><i class="knauf" style="bottom:54px"></i></div>
+    <p class="bez">Eingangssatz</p><p class="val">14,0 %</p></div>
+  <div class="hebel umgelegt"><div class="schacht"><i class="stange" style="height:146px"></i><i class="knauf" style="bottom:148px"></i></div>
+    <p class="bez">Spitzensatz</p><p class="val">62,0 %</p><p class="delta">+17,0</p></div>
+  <div class="hebel"><div class="schacht"><i class="stange" style="height:96px"></i><i class="knauf" style="bottom:98px"></i></div>
+    <p class="bez">Umsatzsteuer</p><p class="val">19,0 %</p></div>
+  <div class="hebel"><div class="schacht"><i class="stange" style="height:70px"></i><i class="knauf" style="bottom:72px"></i></div>
+    <p class="bez">Erbschaftsteuer</p><p class="val">20 %</p></div>
+  <div class="hebel"><div class="schacht"><i class="stange" style="height:84px"></i><i class="knauf" style="bottom:86px"></i></div>
+    <p class="bez">Körperschaft&shy;steuer</p><p class="val">15,0 %</p></div>
+  <div class="hebel"><div class="schacht"><i class="stange" style="height:104px"></i><i class="knauf" style="bottom:106px"></i></div>
+    <p class="bez">Rentenbeitrag</p><p class="val">18,6 %</p></div>
+  <div class="hebel"><div class="schacht"><i class="stange" style="height:112px"></i><i class="knauf" style="bottom:114px"></i></div>
+    <p class="bez">Bürgergeld</p><p class="val">563 €</p></div>
+  <div class="hebel umgelegt"><div class="schacht"><i class="stange" style="height:156px"></i><i class="knauf" style="bottom:158px"></i></div>
+    <p class="bez">CO₂-Preis</p><p class="val">140 €/t</p><p class="delta">+85</p></div>
+  <div class="hebel"><div class="schacht"><i class="stange" style="height:140px"></i><i class="knauf" style="bottom:142px"></i></div>
+    <p class="bez">Klimageld</p><p class="val">ja</p></div>
+</div>
+
+<footer class="fuss">
+  <div><h2>Die Idee</h2>
+    <p>Politik ist Verriegelung. Kein Hebel steht für sich: wer den Spitzensatz umlegt,
+       stellt zugleich eine Fahrstraße, die andere Wege sperrt. Das Stellwerk zeigt nicht
+       nur, <b>was</b> eingestellt ist, sondern <b>was dadurch unmöglich wurde</b> — und erst
+       wenn alle Ressorts eingestellt sind, lässt sich die Runde verriegeln.</p></div>
+  <div><h2>Was das kostet</h2>
+    <p>Hohe Lernschwelle: Signalbegriffe (Hp0/Hp1/Hp2) sind eine zweite Sprache neben der
+       Ökonomie. Dunkles Pult heißt außerdem, jeder Kontrast muss von Hand gelöst werden.</p></div>
+  <div><h2>Kennzahlen der Runde</h2>
+    <dl><dt>Einnahmen</dt><dd>1.694,6 Mrd. €</dd>
+        <dt>Ausgaben</dt><dd>1.763,7 Mrd. €</dd>
+        <dt>Saldo</dt><dd>−69,1 Mrd. €</dd>
+        <dt>Zusatzlast</dt><dd>37,7 Mrd. €</dd>
+        <dt>Armutsrisiko</dt><dd>15,0 %</dd></dl></div>
+</footer>
+</body>
+</html>

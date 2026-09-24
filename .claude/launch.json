@@ -1,0 +1,14 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "planspiel",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "werkzeug/entwicklungsserver.js",
+        "8020"
+      ],
+      "port": 8020
+    }
+  ]
+}

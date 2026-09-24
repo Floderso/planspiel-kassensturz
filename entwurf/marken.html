@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marken und Urteile — Varianten</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400..700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="mockup.css">
+<style>
+  /* Nur für diese Vergleichsseite. */
+  .blatt { max-width: 860px; margin-inline: auto; padding: var(--space-8) var(--space-5) var(--space-16); }
+  .blatt > h1 { font-size: var(--text-2xl); margin-bottom: var(--space-2); }
+  .blatt > p  { color: var(--color-fg-muted); margin-bottom: var(--space-8); max-width: var(--measure); }
+
+  .probe { margin-bottom: var(--space-10); }
+  .probe__kopf { display: flex; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-3); }
+  .probe__buchstabe {
+    width: 1.75rem; height: 1.75rem; flex: none; display: grid; place-items: center;
+    border-radius: var(--radius-full); background: var(--color-fg); color: var(--color-bg);
+    font-size: var(--text-sm); font-weight: var(--weight-bold);
+  }
+  .probe__name { font-size: var(--text-lg); font-weight: var(--weight-semibold); }
+  .probe__was  { font-size: var(--text-sm); color: var(--color-fg-muted); margin-left: auto; text-align: right; }
+  .probe__feld { padding: var(--space-5); }
+  .reihe { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4); }
+  .reihe:last-child { margin-bottom: 0; }
+
+  /* ═══ A — wie jetzt: blasse Tönung ═══ */
+  .v-a .rubrik          { background: var(--danger-bg);  color: var(--danger-fg); }
+  .v-a .urteil--schlecht{ background: var(--danger-bg);  color: var(--danger-fg); }
+  .v-a .urteil--gut     { background: var(--success-bg); color: var(--success-fg); }
+  .v-a .marke-stufe--fort { background: var(--tier-fort-bg); color: var(--tier-fort-fg); }
+  .v-a .marke-stufe--exp  { background: var(--tier-exp-bg);  color: var(--tier-exp-fg); }
+
+  /* ═══ B — Vollton, weißer Text ═══ */
+  .v-b .rubrik          { background: var(--danger-fg);  color: var(--gray-1); }
+  .v-b .urteil--schlecht{ background: var(--danger-fg);  color: var(--gray-1); }
+  .v-b .urteil--gut     { background: var(--success-fg); color: var(--gray-1); }
+  .v-b .marke-stufe--fort { background: var(--tier-fort-fg); color: var(--gray-1); }
+  .v-b .marke-stufe--exp  { background: var(--tier-exp-fg);  color: var(--gray-1); }
+
+  /* ═══ C — umrandet, ohne Fläche ═══ */
+  .v-c .rubrik, .v-c .urteil--schlecht {
+    background: none; color: var(--danger-fg); box-shadow: inset 0 0 0 1px var(--danger-fg);
+  }
+  .v-c .urteil--gut {
+    background: none; color: var(--success-fg); box-shadow: inset 0 0 0 1px var(--success-fg);
+  }
+  .v-c .marke-stufe--fort {
+    background: none; color: var(--tier-fort-fg); box-shadow: inset 0 0 0 1px var(--tier-fort-fg);
+  }
+  .v-c .marke-stufe--exp {
+    background: none; color: var(--tier-exp-fg); box-shadow: inset 0 0 0 1px var(--tier-exp-fg);
+  }
+
+  /* ═══ D — nur Text, gar keine Fläche ═══ */
+  .v-d .rubrik, .v-d .urteil--schlecht, .v-d .urteil--gut,
+  .v-d .marke-stufe--fort, .v-d .marke-stufe--exp {
+    background: none; padding-inline: 0;
+    font-weight: var(--weight-bold);
+  }
+  .v-d .rubrik, .v-d .urteil--schlecht { color: var(--danger-fg); }
+  .v-d .urteil--gut     { color: var(--success-fg); }
+  .v-d .marke-stufe--fort { color: var(--tier-fort-fg); }
+  .v-d .marke-stufe--exp  { color: var(--tier-exp-fg); }
+
+  /* ═══ E — kräftigere Tönung, gleiche Bauart wie heute ═══ */
+  .v-e .rubrik, .v-e .urteil--schlecht {
+    background: oklch(0.880 0.070 25); color: var(--danger-fg);
+  }
+  .v-e .urteil--gut     { background: oklch(0.880 0.055 148); color: var(--success-fg); }
+  .v-e .marke-stufe--fort { background: oklch(0.885 0.055 300); color: var(--tier-fort-fg); }
+  .v-e .marke-stufe--exp  { background: oklch(0.890 0.060 60);  color: var(--tier-exp-fg); }
+</style>
+</head>
+<body>
+<div class="blatt">
+
+<h1>Marken, Rubriken und Urteile</h1>
+<p>
+  Fünf Varianten desselben Bausteins. A ist der aktuelle Stand — das,
+  was dir zu blass war. Alle fünf sind gegen WCAG&nbsp;2.2&nbsp;AA
+  gerechnet und bestehen. Unten lässt sich der Hörsaal-Modus
+  umschalten; gerade bei diesen Flächen lohnt der Blick.
+</p>
+
+<!-- A -->
+<section class="probe v-a">
+  <div class="probe__kopf">
+    <span class="probe__buchstabe">A</span>
+    <span class="probe__name">Blasse Tönung</span>
+    <span class="probe__was">aktueller Stand</span>
+  </div>
+  <div class="karte probe__feld">
+    <div class="reihe">
+      <span class="rubrik">Verfassungsstreit</span>
+      <span class="urteil urteil--schlecht">Schuldenbremse verfehlt</span>
+      <span class="urteil urteil--gut">entlastet</span>
+    </div>
+    <div class="reihe">
+      <span>Spitzensteuersatz</span>
+      <span class="marke-stufe marke-stufe--fort">Fortgeschr.</span>
+      <span class="marke-stufe marke-stufe--exp">Experte</span>
+    </div>
+  </div>
+</section>
+
+<!-- B -->
+<section class="probe v-b">
+  <div class="probe__kopf">
+    <span class="probe__buchstabe">B</span>
+    <span class="probe__name">Vollton</span>
+    <span class="probe__was">kräftige Fläche, weißer Text</span>
+  </div>
+  <div class="karte probe__feld">
+    <div class="reihe">
+      <span class="rubrik">Verfassungsstreit</span>
+      <span class="urteil urteil--schlecht">Schuldenbremse verfehlt</span>
+      <span class="urteil urteil--gut">entlastet</span>
+    </div>
+    <div class="reihe">
+      <span>Spitzensteuersatz</span>
+      <span class="marke-stufe marke-stufe--fort">Fortgeschr.</span>
+      <span class="marke-stufe marke-stufe--exp">Experte</span>
+    </div>
+  </div>
+</section>
+
+<!-- C -->
+<section class="probe v-c">
+  <div class="probe__kopf">
+    <span class="probe__buchstabe">C</span>
+    <span class="probe__name">Umrandet</span>
+    <span class="probe__was">keine Fläche, 1px Kontur</span>
+  </div>
+  <div class="karte probe__feld">
+    <div class="reihe">
+      <span class="rubrik">Verfassungsstreit</span>
+      <span class="urteil urteil--schlecht">Schuldenbremse verfehlt</span>
+      <span class="urteil urteil--gut">entlastet</span>
+    </div>
+    <div class="reihe">
+      <span>Spitzensteuersatz</span>
+      <span class="marke-stufe marke-stufe--fort">Fortgeschr.</span>
+      <span class="marke-stufe marke-stufe--exp">Experte</span>
+    </div>
+  </div>
+</section>
+
+<!-- D -->
+<section class="probe v-d">
+  <div class="probe__kopf">
+    <span class="probe__buchstabe">D</span>
+    <span class="probe__name">Nur Text</span>
+    <span class="probe__was">gar keine Fläche, fett gesetzt</span>
+  </div>
+  <div class="karte probe__feld">
+    <div class="reihe">
+      <span class="rubrik">Verfassungsstreit</span>
+      <span class="urteil urteil--schlecht">Schuldenbremse verfehlt</span>
+      <span class="urteil urteil--gut">entlastet</span>
+    </div>
+    <div class="reihe">
+      <span>Spitzensteuersatz</span>
+      <span class="marke-stufe marke-stufe--fort">Fortgeschr.</span>
+      <span class="marke-stufe marke-stufe--exp">Experte</span>
+    </div>
+  </div>
+</section>
+
+<!-- E -->
+<section class="probe v-e">
+  <div class="probe__kopf">
+    <span class="probe__buchstabe">E</span>
+    <span class="probe__name">Kräftigere Tönung</span>
+    <span class="probe__was">wie A, nur deutlich satter</span>
+  </div>
+  <div class="karte probe__feld">
+    <div class="reihe">
+      <span class="rubrik">Verfassungsstreit</span>
+      <span class="urteil urteil--schlecht">Schuldenbremse verfehlt</span>
+      <span class="urteil urteil--gut">entlastet</span>
+    </div>
+    <div class="reihe">
+      <span>Spitzensteuersatz</span>
+      <span class="marke-stufe marke-stufe--fort">Fortgeschr.</span>
+      <span class="marke-stufe marke-stufe--exp">Experte</span>
+    </div>
+  </div>
+</section>
+
+<button class="knopf knopf--gross" id="thema-schalter" aria-pressed="false">
+  <span aria-hidden="true">◐</span> Hörsaal-Modus umschalten
+</button>
+
+</div>
+<script>
+  const s = document.getElementById('thema-schalter');
+  s.addEventListener('click', () => {
+    const d = document.documentElement.dataset.theme === 'dark';
+    document.documentElement.dataset.theme = d ? 'light' : 'dark';
+    s.setAttribute('aria-pressed', String(!d));
+  });
+</script>
+</body>
+</html>

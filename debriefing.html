@@ -3,10 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kassensturz Planspiel — Auswertung</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <title>Kassensturz Planspiel — Debriefing-Cockpit</title>
+  <!-- Laufzeitkonfiguration: die EINZIGE Stelle mit Adressen.
+       Wird beim Ausrollen je Umgebung ersetzt. -->
+  <script src="konfig.js"></script>
+  <!-- Schriften: lokal, nicht von Google. Siehe css/schriften.css -->
+  <link rel="stylesheet" href="css/schriften.css">
   <style>
     :root {
       --bg:        #F1F3F7;
@@ -24,6 +26,12 @@
       --bad-bg:    #FEF2F2;
       --warn:      #92400E;
       --radius:    6px;
+
+      /* Chart-Palette */
+      --chart-1: #1B4FD8;
+      --chart-2: #166534;
+      --chart-3: #D97706;
+      --chart-4: #DC2626;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Inter', system-ui, sans-serif; font-size: 13px; background: var(--bg); color: var(--ink); min-height: 100vh; }
@@ -33,7 +41,7 @@
       display: flex; align-items: center; gap: 16px; padding: 0 24px;
       border-bottom: 1px solid #374151;
     }
-    .logo { font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 14px; color: #F9FAFB; }
+    .logo { font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 14px; color: #F9FAFB; text-decoration: none; }
     .logo span { color: #60A5FA; }
     .header-badge { background: #1e3a5f; color: #93c5fd; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; letter-spacing: .3px; }
     #session-name-header { color: #9CA3AF; font-size: 12px; }
@@ -42,15 +50,176 @@
     .btn-export-csv:hover { background: #2d4f7c; }
     .btn-export-pdf { background: transparent; color: #9CA3AF; border: 1px solid #374151; }
     .btn-export-pdf:hover { border-color: #6B7280; color: #D1D5DB; }
+    .btn-demo { background: #374151; color: #F3F4F6; border: 1px solid #4B5563; }
+    .btn-demo:hover { background: #4B5563; }
 
-    main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 60px; }
+    main { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; }
 
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin-bottom: 24px; }
-    .card-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
-    .card-sub { font-size: 11px; color: var(--muted); margin-bottom: 18px; }
+    .session-banner {
+      background: #EFF6FF;
+      border: 1px solid #BFDBFE;
+      color: #1E40AF;
+      border-radius: var(--radius);
+      padding: 10px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 22px; margin-bottom: 22px; }
+    .card-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
+    .card-sub { font-size: 11px; color: var(--muted); margin-bottom: 16px; }
 
     #loading { text-align: center; padding: 80px 24px; color: var(--muted); font-size: 14px; }
-    #error-msg { text-align: center; padding: 40px 24px; color: var(--bad); display: none; }
+    #error-msg { text-align: center; padding: 20px; color: var(--bad); display: none; }
+
+    /* Moderationsleitfaden */
+    .guide-phase {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 10px;
+      background: var(--surface-2);
+      overflow: hidden;
+    }
+    .guide-header {
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      user-select: none;
+    }
+    .guide-header:hover { background: #EEF2F6; }
+    .guide-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+    .badge-phase-1 { background: #E0E7FF; color: #3730A3; }
+    .badge-phase-2 { background: #FEF3C7; color: #92400E; }
+    .badge-phase-3 { background: #DCFCE7; color: #166534; }
+    .badge-phase-4 { background: #FCE7F3; color: #9D174D; }
+
+    .guide-body {
+      padding: 14px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .guide-body.hidden { display: none; }
+    .guide-goal {
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .guide-questions {
+      margin-top: 6px;
+      padding-left: 18px;
+      color: var(--ink-2);
+    }
+    .guide-questions li { margin-bottom: 4px; }
+
+    /* Chart Toolbar & Multi-Team Chart */
+    .chart-toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .metric-btn {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 5px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .15s;
+    }
+    .metric-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .metric-btn.active { background: var(--accent); color: white; border-color: var(--accent); font-weight: 600; }
+    .chart-svg-wrap {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      overflow-x: auto;
+    }
+    .chart-legend { display: flex; gap: 16px; margin-top: 10px; font-size: 11px; flex-wrap: wrap; }
+    .chart-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+    .chart-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    /* Head-to-Head */
+    .h2h-controls {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 18px;
+      background: var(--surface-2);
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .h2h-select {
+      padding: 6px 12px;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: white;
+      font-family: inherit;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .h2h-vs { font-weight: 700; color: var(--muted); font-size: 12px; }
+    .h2h-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 800px) {
+      .h2h-grid { grid-template-columns: 1fr; }
+    }
+    .h2h-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .h2h-card-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .h2h-stat-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11.5px;
+      margin-bottom: 12px;
+    }
+    .h2h-stat-table td {
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .h2h-stat-table td:last-child {
+      text-align: right;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+    }
 
     /* Comparison Table */
     .cmp-table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -86,7 +255,7 @@
     .no-data-row { text-align: center; color: var(--muted); padding: 40px; }
 
     @media print {
-      header .btn-export, header a { display: none !important; }
+      header .btn-export, header a, .session-banner { display: none !important; }
       body { background: white; }
       .card { border: 1px solid #ccc; box-shadow: none; break-inside: avoid; }
       .feedback-grid { grid-template-columns: repeat(2, 1fr); }
@@ -96,13 +265,14 @@
 <body>
 
 <header>
-  <div class="logo">Kassensturz <span>Planspiel</span></div>
-  <div class="header-badge">Auswertung</div>
+  <a href="index.html" class="logo">Kassensturz <span>Planspiel</span></a>
+  <div class="header-badge">Debriefing-Cockpit</div>
   <span id="session-name-header"></span>
   <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+    <button class="btn-export btn-demo" id="btn-demo-header">▶ Demo-Kursdaten</button>
     <button class="btn-export btn-export-csv" id="btn-csv">↓ CSV</button>
     <button class="btn-export btn-export-pdf" onclick="window.print()">↓ PDF drucken</button>
-    <a href="demo.html" style="color:#6B7280;font-size:11px;text-decoration:none;border-left:1px solid #374151;padding-left:10px;margin-left:2px">← Übersicht</a>
+    <a href="index.html" style="color:#93C5FD;font-size:11px;text-decoration:none;border-left:1px solid #374151;padding-left:10px;margin-left:2px">← Zum Planspiel</a>
   </div>
 </header>
 
@@ -111,6 +281,68 @@
   <div id="error-msg"></div>
   <div id="content" style="display:none">
 
+    <!-- Session Info Banner (bei lokaler Ansicht) -->
+    <div id="session-banner" class="session-banner" style="display:none;">
+      <span id="session-banner-text"></span>
+      <button class="btn-export btn-demo" id="btn-toggle-demo" style="font-size:11px; padding:3px 8px;">Demo-Kursdaten laden</button>
+    </div>
+
+    <!-- 1. Didaktischer Moderationsleitfaden für die Lehrperson -->
+    <div class="card" id="card-guide">
+      <div class="card-title">
+        Didaktischer Moderationsleitfaden
+        <span style="font-size:11px; font-weight:400; color:var(--muted);">3D / 4-Phasen-Modell (Kriz &amp; Thiagarajan)</span>
+      </div>
+      <div class="card-sub">Strukturierte Leitfragen für die 20-minütige Plenumsdiskussion nach Abschluss der Simulationsrunden.</div>
+      <div id="guide-container"></div>
+    </div>
+
+    <!-- 2. Multi-Team Verlaufs-Chart (SVG) -->
+    <div class="card">
+      <div class="card-title">
+        Multi-Team Verlaufsanalyse
+        <span style="font-size:11px; font-weight:400; color:var(--muted);">simulierePfad() aller Teams</span>
+      </div>
+      <div class="card-sub">Entwicklungspfade über alle Perioden im direkten Vergleich für Beamer-Projektionen.</div>
+      
+      <div class="chart-toolbar">
+        <span style="font-size:11px; font-weight:600; color:var(--ink-2); margin-right:4px;">Metrik:</span>
+        <button class="metric-btn active" data-metric="schuldenquote">Schuldenquote (%)</button>
+        <button class="metric-btn" data-metric="saldo">Haushaltssaldo (Mrd. €)</button>
+        <button class="metric-btn" data-metric="gini">Gini-Ungleichheit</button>
+        <button class="metric-btn" data-metric="bip">BIP (Mrd. €)</button>
+      </div>
+
+      <div class="chart-svg-wrap">
+        <div id="multi-chart-container"></div>
+      </div>
+      <div class="chart-legend" id="multi-chart-legend"></div>
+    </div>
+
+    <!-- 3. Interaktiver Head-to-Head Vergleich -->
+    <div class="card">
+      <div class="card-title">
+        Head-to-Head Team-Vergleich
+        <span style="font-size:11px; font-weight:400; color:var(--muted);">Direkte Gegenüberstellung zweier Denkschulen</span>
+      </div>
+      <div class="card-sub">Wähle zwei Teams aus, um deren Hebelentscheidungen, Makro-Ergebnisse und Kausalketten direkt zu vergleichen.</div>
+
+      <div class="h2h-controls">
+        <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600;">
+          Team 1:
+          <select class="h2h-select" id="h2h-select-1"></select>
+        </label>
+        <span class="h2h-vs">VS.</span>
+        <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600;">
+          Team 2:
+          <select class="h2h-select" id="h2h-select-2"></select>
+        </label>
+      </div>
+
+      <div class="h2h-grid" id="h2h-grid-container"></div>
+    </div>
+
+    <!-- 4. Ergebnisvergleich aller Teams -->
     <div class="card">
       <div class="card-title">Ergebnisvergleich aller Teams</div>
       <div class="card-sub">KPI-Werte der letzten gespeicherten Periode. * = bester Wert im Kurs.</div>
@@ -134,15 +366,16 @@
       </div>
     </div>
 
+    <!-- 5. Team-Karten mit Kausalketten -->
     <div class="card">
-      <div class="card-title">Team-Einschätzungen</div>
-      <div class="card-sub">Regelbasierte Auswertung + Lernziel-Status je Team.</div>
+      <div class="card-title">Team-Einschätzungen &amp; Kausalketten</div>
+      <div class="card-sub">Regelbasierte Auswertung, Lernziel-Status und dominante Wirkungsmechanismen je Team.</div>
       <div id="feedback-grid" class="feedback-grid"></div>
     </div>
 
   </div>
 </main>
 
-<script type="module" src="js/debriefing.js"></script>
+<script type="module" src="js/debriefing.js?v=2"></script>
 </body>
 </html>

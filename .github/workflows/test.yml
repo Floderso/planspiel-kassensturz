@@ -1,0 +1,57 @@
+# Prueft bei jedem Push und jedem Pull Request, ob die Engine noch stimmt.
+# Ohne diesen Lauf gilt: Die Tests laufen nur, wenn jemand daran denkt.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  engine:
+    name: Engine und Regeln
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Kein npm ci — das Frontend hat bewusst keine Abhaengigkeiten (ADR 001).
+      - name: Tests
+        run: npm test
+
+  makro:
+    name: Teilprojekt makro-planspiel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Tests
+        run: npm test
+        working-directory: makro-planspiel
+
+  api:
+    name: API — Typen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Abhaengigkeiten
+        run: npm ci
+        working-directory: api
+
+      - name: Typpruefung
+        run: npx tsc --noEmit
+        working-directory: api

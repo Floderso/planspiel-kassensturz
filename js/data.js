@@ -33,14 +33,25 @@ const STAATSAUSGABEN = {
   verteidigung:   90,
   infrastruktur: 120,
   verwaltung:    140,
-  zinsen:         30,  // Bund 2025: 30,2 Mrd. € (Finanzplan des Bundes 2025–2029, Abbildung 4)
+  zinsen:         54,  // GESAMTSTAAT: Bund ~34 + Länder ~12 + Kommunen ~5 + SV.
+                       // Vorher standen hier 30 Mrd. = nur der Bund, obwohl das
+                       // Modell den Gesamtstaat abbildet (PRUEFUNG.md A4).
+                       // Entspricht ZINS_EFFEKTIV × Schuldenstand (2,0 % × 2.688).
   sonstiges:     140,
   // Gegenposten: staatliche Einnahmen, die das Modell nicht als Steuer/SV abbildet
   // (Gebühren, Verkäufe, Vermögenseinkommen, Bundesbankgewinn; Destatis VGR 2024:
   // ~290 Mrd. € sonstige Einnahmen, hier anteilig für den modellierten Sektor).
   // Kalibriert so, dass der Status-quo-Saldo dem VGR-Finanzierungssaldo entspricht
   // (Destatis 2024: −118,8 Mrd. € = −2,7 % BIP).
-  sonstige_einnahmen: -120
+  // Am 12.09.2026 von −120 auf −144 angepasst: Die Zinsausgaben wurden von der
+  // Bundes- (30) auf die Gesamtstaatsgröße (54) korrigiert, der Ausgleichsposten
+  // fängt die 24 Mrd. auf, damit der Status-quo-Saldo weiter den VGR-Wert trifft.
+  //
+  // OFFEN: Dieser Posten wächst damit auf 144 Mrd. und verdeckt in dieser Größe
+  // mögliche Strukturfehler auf der Ausgabenseite — etwa die Frage, ob die GKV
+  // sowohl in `sozial` als auch in `gesundheit` steckt. Siehe PRUEFUNG.md C3;
+  // das gehört bei der Ausgabenstruktur aufgelöst, nicht hier.
+  sonstige_einnahmen: -144
 };
 const AUSGABEN_TOTAL = Object.values(STAATSAUSGABEN).reduce((a,b)=>a+b,0);
 
@@ -104,6 +115,35 @@ const ADMIN_QUOTE = {
   sv: 0.015,
   transfer: 0.050
 };
+
+// ── ZINS UND WACHSTUM ────────────────────────────────────────────────────────
+// EINE Quelle für beide. Vorher standen hier zwei verschiedene Zinssätze:
+// berechne.js verbuchte 1,06 % als Haushaltsausgabe, transition.js zinste die
+// Schulden mit 2,50 % auf. Die Differenz — rund 41 Mrd. €/Jahr — erhöhte die
+// Schuldenquote, ohne je im Saldo aufzutauchen. Siehe entwurf/PRUEFUNG.md A4.
+
+/**
+ * Effektivzins auf den Schuldenbestand.
+ * Gesamtstaatliche Zinsausgaben 2024 ≈ 51 Mrd. € (Bund ~34, Länder ~12,
+ * Kommunen ~5) auf rund 2.690 Mrd. € Schulden → ~1,9 %. Aufgerundet auf 2,0 %,
+ * weil auslaufende Niedrigzinsanleihen zu höheren Sätzen ersetzt werden.
+ * Quelle: Destatis VGR 2024 · BMF Finanzplan 2025–2029 · Bundesbank.
+ */
+const ZINS_EFFEKTIV = 0.020;
+
+/**
+ * Nominales BIP-Wachstum je Jahr.
+ *
+ * Vorher 1,5 % — das ist eine Realwachstums-Größenordnung. Nominal gehört die
+ * Inflation dazu: EZB-Ziel 2,0 % plus 0,5–0,8 % reales Trendwachstum.
+ *
+ * Die Wahl entscheidet das Spiel mit: Bei r > g steigt die Schuldenquote auch
+ * ohne Zutun der Teams, und jede Partie endet bei „sparen ist alternativlos".
+ * Mit r = 2,0 % < g = 2,5 % ist der Ausgang wieder offen — das entspricht auch
+ * der Lage seit 2010 (Blanchard 2019, AEA Presidential Address).
+ * Quelle: Bundesbank Prognose · EZB-Inflationsziel · SVR Jahresgutachten.
+ */
+const BIP_WACHSTUM_NOMINAL_JAHR = 0.025;
 
 // Verhaltens-Elastizitäten (konservativ)
 const ELAST = {
@@ -826,5 +866,7 @@ const ZUKUNFTS_SZENARIEN = [
     perioden_params: [60, 60, 30, 0, 0].map(invest_impuls => ({ ...PRESETS.status_quo, invest_impuls })),
   },
 ];
+
+export { ZINS_EFFEKTIV, BIP_WACHSTUM_NOMINAL_JAHR };
 
 export { DEZILE, ELAST, ELAST_QUELLEN, BASIS_AUFKOMMEN, ADMIN_QUOTE, BASIS_MAKRO, STAATSAUSGABEN, PRESETS, MOD_DEFS, AUSGABEN_TOTAL, CHALLENGES, CHALLENGE_CTX, TOOLTIPS, REFORM_TOURS, KPI_BENCH, BGE_LABOR_EFF, DEMOGRAFIE_KURVE, PERIOD_STATE_0, ZUKUNFTS_SZENARIEN, KURS_KONFIG_DEFAULT, SCHOCK_BIBLIOTHEK };
