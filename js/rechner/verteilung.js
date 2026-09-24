@@ -101,7 +101,7 @@ function berechnePalma(werte) {
   return (bot_sum > 0 && top_n > 0) ? top_sum / bot_sum : 0;
 }
 
-function berechneDezilDelta(dezile, params, est_dez, klima, bg, kg) {
+function berechneDezilDelta(dezile, params, est_dez, klima, bg, kg, renten = null) {
   // Netto-Einkommen pro Dezil NEU
   const netto = [];
   const delta = [];
@@ -150,7 +150,10 @@ function berechneDezilDelta(dezile, params, est_dez, klima, bg, kg) {
     transfers += bge_p * 12 * ERWACHSENE_PRO_HH;
     if (params.neg_est && i < 3) transfers += 3000;
 
-    const netto_final = brutto - est - sv - mwst - co2_last + klimageld_per_hh + transfers;
+    // Rentenänderung aus dem Rentenniveau (berechne.js), brutto wie vom Staat gebucht
+    const rente = renten ? renten[i] : 0;
+
+    const netto_final = brutto - est - sv - mwst - co2_last + klimageld_per_hh + transfers + rente;
 
     // STATUS-QUO-Vergleich (hart codiert auf Basisparameter gerechnet)
     const netto_sq = berechneNettoSQ(d);

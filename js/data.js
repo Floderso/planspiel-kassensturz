@@ -8,22 +8,31 @@
 
 const DEZILE = [
   // D1–D9: je 4,1 Mio. Haushalte (SOEP v40, Destatis Mikrozensus 2024)
-  { d:1,  idx:0,  label:'D1',   brutto: 14000,  kapital: 0.01, konsum: 1.00, gewicht: 1.3, vermoegen: 1000,    anzahl: 4.1 },
-  { d:2,  idx:1,  label:'D2',   brutto: 21000,  kapital: 0.01, konsum: 0.99, gewicht: 1.4, vermoegen: 5000,    anzahl: 4.1 },
-  { d:3,  idx:2,  label:'D3',   brutto: 27000,  kapital: 0.02, konsum: 0.96, gewicht: 1.5, vermoegen: 15000,   anzahl: 4.1 },
-  { d:4,  idx:3,  label:'D4',   brutto: 33000,  kapital: 0.02, konsum: 0.92, gewicht: 1.6, vermoegen: 35000,   anzahl: 4.1 },
-  { d:5,  idx:4,  label:'D5',   brutto: 40000,  kapital: 0.03, konsum: 0.88, gewicht: 1.7, vermoegen: 70000,   anzahl: 4.1 },
-  { d:6,  idx:5,  label:'D6',   brutto: 48000,  kapital: 0.03, konsum: 0.85, gewicht: 1.8, vermoegen: 120000,  anzahl: 4.1 },
-  { d:7,  idx:6,  label:'D7',   brutto: 58000,  kapital: 0.04, konsum: 0.82, gewicht: 1.9, vermoegen: 200000,  anzahl: 4.1 },
-  { d:8,  idx:7,  label:'D8',   brutto: 72000,  kapital: 0.05, konsum: 0.78, gewicht: 2.0, vermoegen: 340000,  anzahl: 4.1 },
-  { d:9,  idx:8,  label:'D9',   brutto: 95000,  kapital: 0.07, konsum: 0.72, gewicht: 2.0, vermoegen: 620000,  anzahl: 4.1 },
+  { d:1,  idx:0,  label:'D1',   brutto: 14000,  kapital: 0.01, konsum: 1.00, gewicht: 1.3, vermoegen: 1000,    anzahl: 4.1, rente_anteil: 0.42 },
+  { d:2,  idx:1,  label:'D2',   brutto: 21000,  kapital: 0.01, konsum: 0.99, gewicht: 1.4, vermoegen: 5000,    anzahl: 4.1, rente_anteil: 0.462 },
+  { d:3,  idx:2,  label:'D3',   brutto: 27000,  kapital: 0.02, konsum: 0.96, gewicht: 1.5, vermoegen: 15000,   anzahl: 4.1, rente_anteil: 0.42 },
+  { d:4,  idx:3,  label:'D4',   brutto: 33000,  kapital: 0.02, konsum: 0.92, gewicht: 1.6, vermoegen: 35000,   anzahl: 4.1, rente_anteil: 0.353 },
+  { d:5,  idx:4,  label:'D5',   brutto: 40000,  kapital: 0.03, konsum: 0.88, gewicht: 1.7, vermoegen: 70000,   anzahl: 4.1, rente_anteil: 0.286 },
+  { d:6,  idx:5,  label:'D6',   brutto: 48000,  kapital: 0.03, konsum: 0.85, gewicht: 1.8, vermoegen: 120000,  anzahl: 4.1, rente_anteil: 0.218 },
+  { d:7,  idx:6,  label:'D7',   brutto: 58000,  kapital: 0.04, konsum: 0.82, gewicht: 1.9, vermoegen: 200000,  anzahl: 4.1, rente_anteil: 0.151 },
+  { d:8,  idx:7,  label:'D8',   brutto: 72000,  kapital: 0.05, konsum: 0.78, gewicht: 2.0, vermoegen: 340000,  anzahl: 4.1, rente_anteil: 0.101 },
+  { d:9,  idx:8,  label:'D9',   brutto: 95000,  kapital: 0.07, konsum: 0.72, gewicht: 2.0, vermoegen: 620000,  anzahl: 4.1, rente_anteil: 0.067 },
   // D10 aufgespalten in P90–95, P95–99, Top-1% (Basis: SOEP v40, DINA-DE, DIW Vermögensbericht 2024)
-  { d:10, idx:9,  label:'D10a', brutto: 125000, kapital: 0.08, konsum: 0.60, gewicht: 2.0, vermoegen: 450000,  anzahl: 2.05 },
-  { d:10, idx:10, label:'D10b', brutto: 220000, kapital: 0.18, konsum: 0.52, gewicht: 2.0, vermoegen: 1500000, anzahl: 1.64 },
-  { d:10, idx:11, label:'D10c', brutto: 700000, kapital: 0.45, konsum: 0.40, gewicht: 2.0, vermoegen: 7000000, anzahl: 0.41 },
+  { d:10, idx:9,  label:'D10a', brutto: 125000, kapital: 0.08, konsum: 0.60, gewicht: 2.0, vermoegen: 450000,  anzahl: 2.05, rente_anteil: 0.042 },
+  { d:10, idx:10, label:'D10b', brutto: 220000, kapital: 0.18, konsum: 0.52, gewicht: 2.0, vermoegen: 1500000, anzahl: 1.64, rente_anteil: 0.025 },
+  { d:10, idx:11, label:'D10c', brutto: 700000, kapital: 0.45, konsum: 0.40, gewicht: 2.0, vermoegen: 7000000, anzahl: 0.41, rente_anteil: 0.008 },
 ];
 // D10c = Top 1% (0,41 Mio. Haushalte). Brutto 700k ist Durchschnitt — echte Spitze deutlich höher.
 // Kapitalanteil D10c: ~45% des Einkommens aus Kapital (DINA-DE, Bach/Buggeln 2024).
+// rente_anteil: Anteil der gesetzlichen Rente am Bruttoeinkommen des Dezils. NÄHERUNG, keine
+// Tabellenwerte — Primärquellen (Destatis, DRV) waren beim Anlegen nicht erreichbar (24.09.2026).
+// Herleitung: Anteil Rentnerhaushalte je Dezil h = 0,50 · 0,55 · 0,50 · 0,42 · 0,34 · 0,26 · 0,18 ·
+// 0,12 · 0,08 · 0,05 · 0,03 · 0,01 (fallend, Schwerpunkt unten; SVR JG 2014/15 Kap. 9 auf SOEP-Basis:
+// GRV-Anteil sinkt über die Dezile), zusammen 12,3 Mio. Haushalte. Renten sind 92 % des Einkommens
+// reiner Rentnerhaushalte (Destatis, EU-SILC 2024). rente_anteil = 0,92 × h × 0,913; der Faktor
+// kalibriert die Summe über alle Haushalte auf die Rentenzahlungen der GRV: ~362 Mrd. € = 90 % von
+// 402,8 Mrd. € Gesamtausgaben (BMAS Rentenversicherungsbericht 2025). Durch eine Tabelle nach
+// Einkommensdezil (EVS/SOEP) ersetzen, sobald verfügbar (PRUEFUNG-2.md I.1, Stufe 2).
 
 // Staatsausgaben 2025 (Gesamtstaat, grob aggregiert)
 const STAATSAUSGABEN = {
@@ -186,7 +195,7 @@ const PRESETS = {
     mwst: 19, mwst_erm: 7,
     co2: 55, klimageld: true,
     erb: 20, betriebs: true, boden: 0.4, verm: 0, zucman: 0,
-    rv: 18.6, kv: 16.3, alpf: 6.2, buergerv: false, bbg: 90000,
+    rv: 18.6, kv: 16.3, alpf: 6.2, buergerv: false, bbg: 90000, rentenniveau: 48,
     bg: 563, kg: 259, neg_est: false, kleine_st: true,
     kapitalquote: 0, rendite_fonds: 7, startjahr: 2020,
     pkv_abschaffen: false, kv_kapital: false, kv_bbg_frei: false, anzahl_kv: 95, praevention: 0, bge: 0

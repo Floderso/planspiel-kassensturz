@@ -146,6 +146,7 @@ export const RESSORTS = [
   { id: 'soz', name: 'Arbeit und Soziales',        kurz: 'Soziales',  kennzahl: 'gini', stell: [
     { key: 'rv', bez: 'Rentenversicherung',  einheit: '%',       min: 10, max: 30,   nk: 1, quelle: 'sv_beitraege', modul: 'sv' },
     { key: 'kv', bez: 'Krankenversicherung', einheit: '%',       min: 10, max: 25,   nk: 1, quelle: 'sv_beitraege', modul: 'sv' },
+    { key: 'rentenniveau', bez: 'Rentenniveau', einheit: '%',   min: 40, max: 53,   nk: 1, quelle: 'rv_ausgaben',  modul: 'sv' },
     { key: 'bg', bez: 'Bürgergeld',          einheit: '€/Monat', min: 0,  max: 1500, nk: 0, quelle: 'armutsrisiko', modul: 'transfers' },
     { key: 'kg', bez: 'Kindergeld',          einheit: '€/Monat', min: 0,  max: 1000, nk: 0, quelle: 'armutsrisiko', modul: 'transfers' },
   ]},

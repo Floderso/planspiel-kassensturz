@@ -51,9 +51,9 @@ const FORMEL_QUELLEN_BERECHNE = {
     note:   'BBG-Lohnsummen-Faktor: +12 % je 90 k € BBG-Erhöhung (12 % der sozialversicherungspflichtigen Löhne). Der Satz wirkt nur auf die Einnahmen; die Ausgaben hängen am Leistungsniveau (rv_ausgaben)'
   },
   rv_ausgaben: {
-    formel: 'RV_Ausgaben = 390 × (Rentenniveau / 48 %) × renten_faktor(Jahr);  KV, AL, PV fest auf Status quo',
-    ref:    '§ 68 SGB VI (Rentenanpassung) · § 154 Abs. 3 SGB VI (Sicherungsniveau) · Rentenpaket 2025 (BMAS, Haltelinie 48 % bis 2031) · § 158 SGB VI',
-    note:   'Renten folgen dem aktuellen Rentenwert und damit dem Niveau, nicht dem Beitragssatz — in Wirklichkeit folgt der Satz den Ausgaben (§ 158). Ein Satz unter Bedarf erscheint als Lücke im Gesamtsaldo (wie der Bundeszuschuss), einer darüber als Überschuss. Nachhaltigkeitsfaktor nicht abgebildet'
+    formel: 'ΔRente_i = Brutto_i × rente_anteil_i × renten_faktor × (Rentenniveau/48 % − 1);  ΔRV-Ausgaben = Σ Haushalte ΔRente_i;  KV, AL, PV fest',
+    ref:    '§ 68 SGB VI (Rentenanpassung) · § 154 Abs. 3 SGB VI (Sicherungsniveau) · Rentenpaket 2025 (BMAS, Haltelinie 48 % bis 2031) · § 158 SGB VI · BMAS Rentenversicherungsbericht 2025',
+    note:   'Renten folgen dem Niveau, nicht dem Beitragssatz — in Wirklichkeit folgt der Satz den Ausgaben (§ 158). Ein Satz unter Bedarf erscheint als Lücke im Gesamtsaldo (wie der Bundeszuschuss). Eine Niveauänderung kommt brutto bei den Haushalten an, genau in der Höhe, die der Staat bucht (Rentenzahlungen ~362 Mrd. €); Steuer und KV-Beitrag auf die Änderung sind nicht abgebildet, ebenso der Nachhaltigkeitsfaktor. rente_anteil je Dezil ist eine Näherung (data.js)'
   },
   verwaltungskosten: {
     formel: 'Admin = ∑ Aufkommen_i × Quote_i  (ADMIN_QUOTE je Steuer)',
@@ -231,6 +231,9 @@ function berechne(params, zustand = null) {
   // Die Basis folgt dem Rentenniveau, nicht mehr dem Beitragssatz (PRUEFUNG-2.md I.1).
   const niveau_faktor = (params.rentenniveau ?? BASIS_MAKRO.rentenniveau_sq) / BASIS_MAKRO.rentenniveau_sq;
   const rv_ausgaben_basis = BASIS_MAKRO.rv_ausgaben_sq * niveau_faktor * renten_faktor;
+  // Rentenänderung je Haushalt (€/Jahr): der Rentenanteil des Dezils, mit dem Niveau
+  // skaliert. Mehr Rentner (renten_faktor) machen jede Niveauänderung teurer.
+  const renten_delta = dezile.map(d => d.brutto * d.rente_anteil * renten_faktor * (niveau_faktor - 1));
   let rv_einsparung = 0;
   if (bge > 0) {
     const rl = params.rente_grenze || 35000;              // €/Jahr Einkommensgrenze
@@ -301,10 +304,12 @@ function berechne(params, zustand = null) {
   // Saldo und alle Dezile gewannen — eine dominante Strategie (PRUEFUNG-2.md I.1).
   // KV, AL und PV bleiben auf Status quo; einen Leistungsregler gibt es erst, wenn
   // Leistungen bei Haushalten ankommen (Stufe 2).
+  // Eine Niveauänderung ändert die Rentenzahlungen — genau die Summe, die bei den
+  // Haushalten ankommt (renten_delta, Abschnitt 15). Staat und Haushalte buchen dasselbe.
   const SV_AUSG = { rv: 390, kv: 290, alpf: 90 };
-  const sv_ausgaben_delta = SV_AUSG.rv * (niveau_faktor - 1);
-  // Demografieaufschlag: steigende RV-Ausgaben durch Alterung, auf dem gewählten Niveau
-  const demografie_aufschlag = SV_AUSG.rv * niveau_faktor * (renten_faktor - 1.0);
+  const sv_ausgaben_delta = dezile.reduce((a, d, i) => a + d.anzahl * renten_delta[i], 0) / 1000;
+  // Demografieaufschlag: steigende RV-Ausgaben durch Alterung (RV-Anteil ~390 Mrd.)
+  const demografie_aufschlag = SV_AUSG.rv * (renten_faktor - 1.0);
   // invest_impuls: zusätzliche öffentliche Investitionen (Mrd./Jahr, reduziert Saldo)
   const invest_impuls = params.invest_impuls || 0;
   const ausgaben_total = AUSGABEN_TOTAL + bg_auszahlung + kg_auszahlung + neg_est_auszahlung + bge_brutto + admin_kosten - STAATSAUSGABEN.verwaltung - STAATSAUSGABEN.zinsen + zinsen_dyn - rv_einsparung + sv_ausgaben_delta + demografie_aufschlag + invest_impuls;
@@ -329,7 +334,7 @@ function berechne(params, zustand = null) {
   if (klein_auf > 0) nst += 7;
 
   // ---------- 15. HAUSHALTSBELASTUNG pro Dezil (vs. Status Quo) ----------
-  const hh_delta = berechneDezilDelta(dezile, params, est_pro_dezil, klimageld_auszahlung, bg_auszahlung, kg_auszahlung);
+  const hh_delta = berechneDezilDelta(dezile, params, est_pro_dezil, klimageld_auszahlung, bg_auszahlung, kg_auszahlung, renten_delta);
 
   // ---------- 16. GINI ----------
   // Beide Ungleichheitsmaße auf Äquivalenzeinkommen wie EU-SILC, damit sie mit

@@ -217,7 +217,7 @@ Verweis ist noch kein Beleg:
 
 | # | Was | Befunde | Status |
 |---|---|---|---|
-| 1 | **Sozialversicherung entkoppeln.** Ausgaben über das Leistungsniveau steuern, Renten als Haushaltseinkommen. Sonst bleibt die dominante Strategie bestehen | I.1 | **Stufe 1 erledigt** 24.09.: Ausgaben folgen dem Rentenniveau (`rentenniveau`, 48 %), KV/AL/PV fest; `tests/dominanz.test.js` grün. **Offen: Stufe 2**, Renten als Haushaltseinkommen, danach Rentenniveau-Regler am Tisch |
+| 1 | **Sozialversicherung entkoppeln.** Ausgaben über das Leistungsniveau steuern, Renten als Haushaltseinkommen. Sonst bleibt die dominante Strategie bestehen | I.1 | ✔ **erledigt** 24.09. Stufe 1: Ausgaben folgen dem Rentenniveau (48 %), KV/AL/PV fest, `tests/dominanz.test.js`. Stufe 2: Rentenanteil je Dezil, Niveauänderung kommt bei den Haushalten an (Σ Haushalte = Staatsbuchung, `tests/rentenniveau.test.js`), Regler am Tisch 40–53 %. **Offen:** Rentenanteile sind eine Näherung (Tabelle nach Einkommensdezil fehlt); Steuer/KV auf die Rentenänderung, Nachhaltigkeitsfaktor und die Beitragsbasis der Rentner (Renten tragen im Modell noch RV-/AL-Beiträge) nicht abgebildet |
 | 2 | **Nominale Fortschreibung.** Einnahmen und Ausgaben mit dem nominalen BIP, Aufkommenselastizität etwa 1 | I.2 | offen |
 | 3 | **Multiplikator symmetrisch und als Stromgröße.** Auch für Steuern und Transfers; Investitionen über einen öffentlichen Kapitalstock mit Abschreibung | I.3, C4 | offen |
 | 4 | **Haushalts- und Staatsseite abgleichen** (Kinder, CO₂-Last, Bürgergeld), mit Test „Σ Haushalte = Staatsbuchung" | I.4 | offen |
