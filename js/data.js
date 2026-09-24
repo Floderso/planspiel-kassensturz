@@ -757,6 +757,8 @@ const PERIOD_STATE_0 = {
   co2_kumulat:      0,      // Mio. t CO₂e kumuliert seit 2025
   lohnbasis_faktor: 1.0,    // Arbeitsmarkt-Zustandsindex (1,0 = Status quo 2025)
   renten_faktor:    1.0,    // wird per Periode aus DEMOGRAFIE_KURVE gesetzt
+  trend_faktor:     1.0,    // nominaler Trend seit 2025, (1 + BIP_WACHSTUM_NOMINAL_JAHR)^Jahre —
+                            // Preis- und Lohnniveau, an dem die Ausgaben wachsen (PRUEFUNG-2.md I.2)
 };
 
 // ── PLANSPIEL-KONFIGURATION ──

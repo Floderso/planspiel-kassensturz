@@ -22,6 +22,13 @@
 // Erneuert am 2026-09-24: Gini und Palma rechnen auf Äquivalenzeinkommen
 // (Netto / Bedarfsgewicht, wie EU-SILC). Gini 0,3766 → 0,3034, amtlich ~0,295
 // (PRUEFUNG.md B3). Alle übrigen Werte unverändert.
+//
+// Erneuert am 2026-09-24, nominale Fortschreibung (PRUEFUNG-2.md I.2):
+// Einnahmen wachsen mit dem BIP der Periode, Ausgaben mit dem nominalen Trend.
+// Vorher blieben ESt, MwSt, Beiträge und Ausgaben 20 Jahre auf dem Stand von
+// 2025. Schuldenquote 2041: 84,9 % → 98,5 %. Treiber: Demografie (+2,3 Pp.
+// Primärdefizit, bisher im schrumpfenden Nenner versteckt) und der Klimaschaden
+// (BIP 3,9 % unter Trend, Befund A2 — mit dessen Korrektur ändert sich das wieder).
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -30,10 +37,10 @@ import { PRESETS } from '../js/data.js';
 
 const REFERENZ = [
   { label: '2025–2028', saldo: -118.6396, schuldenquote: 63.5,    gini: 0.3034, emissionen: 327, bip: 4470 },
-  { label: '2029–2032', saldo: -140.1972, schuldenquote: 67.3979, gini: 0.3034, emissionen: 327, bip: 4937.004 },
-  { label: '2033–2036', saldo: -170.844,  schuldenquote: 72.0051, gini: 0.3034, emissionen: 327, bip: 5423.6073 },
-  { label: '2037–2040', saldo: -196.1634, schuldenquote: 77.9624, gini: 0.3034, emissionen: 327, bip: 5912.3686 },
-  { label: '2041–2044', saldo: -220.1891, schuldenquote: 84.917,  gini: 0.3034, emissionen: 327, bip: 6380.2732 },
+  { label: '2029–2032', saldo: -160.1891, schuldenquote: 67.3979, gini: 0.3034, emissionen: 327, bip: 4937.004 },
+  { label: '2033–2036', saldo: -231.3174, schuldenquote: 73.5244, gini: 0.3034, emissionen: 327, bip: 5423.6073 },
+  { label: '2037–2040', saldo: -325.5687, schuldenquote: 83.5718, gini: 0.3034, emissionen: 327, bip: 5912.3686 },
+  { label: '2041–2044', saldo: -459.1436, schuldenquote: 98.4744, gini: 0.3034, emissionen: 327, bip: 6380.2732 },
 ];
 
 test('Status-quo-Pfad (5 Perioden) reproduziert die Referenzwerte', () => {

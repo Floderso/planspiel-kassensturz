@@ -77,6 +77,7 @@ function berechne(params, zustand = null) {
   // Periodenübergreifender Zustand für Multi-Perioden-Simulation
   const bip_faktor       = zustand ? zustand.bip / BASIS_MAKRO.bip : 1.0;
   const renten_faktor    = zustand ? (zustand.renten_faktor    ?? 1.0) : 1.0;
+  const trend_faktor     = zustand ? (zustand.trend_faktor     ?? bip_faktor) : 1.0;
   const lohnbasis_faktor = zustand ? (zustand.lohnbasis_faktor ?? 1.0) : 1.0;
 
   // Dynamische Zinslast: im Multi-Perioden-Modus aus aktuellem Schuldenstand ableiten.
@@ -278,6 +279,17 @@ function berechne(params, zustand = null) {
     al: al_auf,
     klein: klein_auf
   };
+  // ---------- 10b. NOMINALE FORTSCHREIBUNG ----------
+  // Alles oben ist in Größen von 2025 gerechnet. Bis 24.09.2026 blieb es dabei:
+  // ESt, MwSt, Beiträge und Ausgaben standen 20 Jahre auf dem Stand von 2025,
+  // während das BIP von 4.470 auf 6.380 Mrd. wuchs — die Einnahmenquote schmolz
+  // von 37 auf 26 % (PRUEFUNG-2.md I.2). Jetzt: Aufkommenselastizität 1 zum
+  // tatsächlichen BIP der Periode (so wirken Rezessionen auch auf die Einnahmen),
+  // der Tarif gilt als indexiert (keine kalte Progression). KSt und GewSt tragen
+  // bip_faktor schon über den Gewinn; der CO₂-Preis ist ein Preis und folgt dem
+  // Preisniveau. Die Werte je Haushalt bleiben in Preisen von 2025.
+  const EINNAHMEN_FAKTOR = { kst: 1, gewst: 1, co2: trend_faktor };
+  for (const k of Object.keys(rev)) rev[k] *= EINNAHMEN_FAKTOR[k] ?? bip_faktor;
   const einnahmen_total = Object.values(rev).reduce((a,b)=>a+b,0);
 
   // ---------- 11. VERWALTUNGSKOSTEN ----------
@@ -312,7 +324,11 @@ function berechne(params, zustand = null) {
   const demografie_aufschlag = SV_AUSG.rv * (renten_faktor - 1.0);
   // invest_impuls: zusätzliche öffentliche Investitionen (Mrd./Jahr, reduziert Saldo)
   const invest_impuls = params.invest_impuls || 0;
-  const ausgaben_total = AUSGABEN_TOTAL + bg_auszahlung + kg_auszahlung + neg_est_auszahlung + bge_brutto + admin_kosten - STAATSAUSGABEN.verwaltung - STAATSAUSGABEN.zinsen + zinsen_dyn - rv_einsparung + sv_ausgaben_delta + demografie_aufschlag + invest_impuls;
+  // Alle Ausgaben außer den Zinsen wachsen mit dem nominalen Trend (Preise und
+  // Löhne), nicht mit dem BIP: eine Rezession senkt sie nicht. Die Zinsen sind
+  // schon nominal, sie kommen aus dem Schuldenstand (PRUEFUNG-2.md I.2).
+  const ausgaben_real = AUSGABEN_TOTAL + bg_auszahlung + kg_auszahlung + neg_est_auszahlung + bge_brutto + admin_kosten - STAATSAUSGABEN.verwaltung - STAATSAUSGABEN.zinsen - rv_einsparung + sv_ausgaben_delta + demografie_aufschlag + invest_impuls;
+  const ausgaben_total = ausgaben_real * trend_faktor + zinsen_dyn;
 
   // ---------- 13. SALDO ----------
   const saldo = einnahmen_total - ausgaben_total;

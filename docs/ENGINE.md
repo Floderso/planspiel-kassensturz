@@ -182,7 +182,13 @@ Iteriert alle Perioden der Simulation. Gibt ein Array zurück (ein Eintrag je Pe
 ```
 
 **Übergangsmechanismen zwischen Perioden:**
-- **BIP-Wachstum:** 1,5 % nominal p.a. (Bundesbank-Prognose), skaliert mit Klimaschaden
+- **BIP-Wachstum:** 2,5 % nominal p.a. (`BIP_WACHSTUM_NOMINAL_JAHR` in `data.js`), skaliert mit Klimaschaden
+- **Nominale Fortschreibung:** `berechne()` rechnet in Größen von 2025 und schreibt dann fort:
+  Einnahmen mit dem tatsächlichen BIP der Periode (Aufkommenselastizität 1, Tarif als indexiert
+  angenommen; eine Rezession senkt die Einnahmen), Ausgaben außer Zinsen mit dem nominalen
+  Trend `trend_faktor` (Preise und Löhne; eine Rezession senkt sie nicht). Werte je Haushalt
+  bleiben in Preisen von 2025. Bis 24.09.2026 blieben ESt, MwSt, Beiträge und Ausgaben 20 Jahre
+  nominal eingefroren (`entwurf/PRUEFUNG-2.md` I.2)
 - **Schuldenentwicklung:** `D_{t+1} = D_t − Saldo/BIP` (Domar-Mechanismus)
 - **Klimaschaden (DICE):** Temperaturanstieg → prozentualer BIP-Verlust (`d₂ = 0,00267`, Nordhaus 2023)
 - **HANK-Multiplikator:** Fiskalmultiplikator gewichtet nach dezil-spezifischen MPCs (Kaplan/Moll/Violante 2018)

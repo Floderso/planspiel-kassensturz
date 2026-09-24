@@ -15,7 +15,7 @@
 //   Backward-kompatibel: simulierePfad(perioden_params) funktioniert unverändert.
 //
 // Quellen:
-//   BIP-Wachstum:       Bundesbank Winterprognose 2024 (1,5 % nominal)
+//   BIP-Wachstum:       BIP_WACHSTUM_NOMINAL_JAHR in data.js (2,5 % nominal, PRUEFUNG.md F1)
 //   Fiskalmultiplikator: Gechert/Heimberger (2022) NIER · ECB WP 1267
 //   HANK-Multiplikator: Kaplan/Moll/Violante (2018) AER · McKay/Nakamura/Steinsson (2016)
 //   DICE-Klimaschaden:  Nordhaus (2023) PNAS · d₂ = 0,00267 (kalibriert IPCC AR6)
@@ -129,6 +129,9 @@ function berechneTransition(prevState, prevResult, nextStartJahr, n) {
     co2_kumulat:      co2_kumulat_next,
     lohnbasis_faktor: Math.max(0.70, Math.min(1.30, lohnbasis_next)),
     renten_faktor:    demo.renten_faktor,
+    // Trend ohne Politik- und Klimaeffekte: daran wachsen die Ausgaben. Die
+    // Einnahmen folgen dem tatsächlichen BIP (berechne.js, Abschnitt 10b).
+    trend_faktor:     (prevState.trend_faktor ?? 1) * wachstum_basis,
   };
 }
 
