@@ -26,10 +26,14 @@ export function generiereTeamFeedback(lastEntry) {
   else if (z.schuldenquote < 80)      parts.push('Schuldenquote erhöht');
   else                                 parts.push('kritische Schuldendynamik');
 
+  // Schwellen an Realwerten verankert (KPI_BENCH.gini: DE 0,295 · DK 0,281 ·
+  // SE 0,273). Die Texte beschreiben ein Niveau, keine Veränderung — der
+  // unveränderte Status quo (Modell 0,303) ist „etwa wie heute", nicht
+  // „steigende Ungleichheit" (PRUEFUNG.md B3).
   if (r.gini < 0.265)                 parts.push('sehr geringe Ungleichheit');
-  else if (r.gini < 0.285)            parts.push('sozial vertretbare Verteilung');
-  else if (r.gini < 0.31)             parts.push('steigende Ungleichheit');
-  else                                 parts.push('stark zunehmende Ungleichheit');
+  else if (r.gini < 0.285)            parts.push('weniger Ungleichheit als heute');
+  else if (r.gini < 0.31)             parts.push('Ungleichheit etwa wie heute');
+  else                                 parts.push('deutlich mehr Ungleichheit als heute');
 
   const restPct = (CO2_BUDGET_DE - z.co2_kumulat) / CO2_BUDGET_DE;
   if (restPct > 0.6)                  parts.push('Klimaziele eingehalten');

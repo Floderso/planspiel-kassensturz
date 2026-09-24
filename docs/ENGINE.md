@@ -92,8 +92,15 @@ Haushaltsfunktionen.
 
 | Funktion | Ausgabe | Formel |
 |----------|---------|--------|
+| `aequivalenzEinkommen(netto, dezile)` | Äquivalenzeinkommen je Dezil in € | Netto / Bedarfsgewicht (`DEZILE[i].gewicht`, neue OECD-Skala) |
 | `berechneGini(nettoDezile)` | Gini-Koeffizient [0, 1] | Trapezregel über Lorenz-Kurve, gewichtet nach Haushaltszahl |
-| `berechnePalma(nettoDezile)` | Palma-Ratio | Ø Top-10 % / Ø Bottom-40 % |
+| `berechnePalma(nettoDezile)` | Palma-Ratio | Einkommensanteil Top-10 % / Anteil Bottom-40 % |
+
+`berechne()` übergibt Gini und Palma das **Äquivalenzeinkommen**, nicht das
+Haushaltsnetto — wie EU-SILC. Ohne Bedarfsgewichtung stehen große Haushalte
+oben und kleine unten, und der Gini fiel mit 0,377 zu hoch aus. Mit ihr liegt
+der Status quo bei 0,303 (amtlich 0,295), der Palma bei 1,25 (Lehrbuchwert
+~1,2). Median und Armutsquote rechnen weiter auf dem Haushaltsnetto.
 | `berechneMedianGewichtet(nettoDezile)` | Medianeinkommen in € | Kumulierte Haushaltsgewichte bis 50 % |
 | `berechneDezilDelta(params, periodeZustand)` | `{delta[], netto[]}` | Δ je Dezil vs. Status quo |
 | `berechneNettoSQ(dezil)` | Nettoeinkommen SQ in € | Brutto − ESt(SQ) − SV(SQ) − MwSt(SQ) + Transfers(SQ) |

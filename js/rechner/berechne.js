@@ -2,15 +2,15 @@
 // Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
 import { DEZILE, ELAST, BASIS_MAKRO, STAATSAUSGABEN, PRESETS, BASIS_AUFKOMMEN, ADMIN_QUOTE, AUSGABEN_TOTAL, BGE_LABOR_EFF, PERIOD_STATE_0, ZINS_EFFEKTIV } from '../data.js';
 import { estHaushalt, grenzsteuersatzHaushalt } from './einkommensteuer.js';
-import { berechneGini, berechneMedianGewichtet, berechnePalma, berechneDezilDelta, berechneNettoSQ } from './verteilung.js';
+import { aequivalenzEinkommen, berechneGini, berechneMedianGewichtet, berechnePalma, berechneDezilDelta, berechneNettoSQ } from './verteilung.js';
 
 // ═══════════════════════════════════════════════════════
 // KASSENSTURZ · Hauptsimulation
 // Abhängigkeiten (Ladereihenfolge beachten):
 //   data.js               → DEZILE, BASIS_AUFKOMMEN, ADMIN_QUOTE, ELAST, STAATSAUSGABEN
 //   rechner/einkommensteuer.js → estTarif, grenzsteuersatz
-//   rechner/verteilung.js → berechneDezilDelta, berechneGini, berechnePalma,
-//                           berechneMedianGewichtet, berechneNettoSQ
+//   rechner/verteilung.js → berechneDezilDelta, aequivalenzEinkommen, berechneGini,
+//                           berechnePalma, berechneMedianGewichtet, berechneNettoSQ
 // ═══════════════════════════════════════════════════════
 
 // Quellenmetadaten — zentrale Berechnungsannahmen
@@ -326,8 +326,11 @@ function berechne(params, zustand = null) {
   const hh_delta = berechneDezilDelta(dezile, params, est_pro_dezil, klimageld_auszahlung, bg_auszahlung, kg_auszahlung);
 
   // ---------- 16. GINI ----------
-  const gini = berechneGini(hh_delta.netto, dezile);
-  const palma = berechnePalma(hh_delta.netto);
+  // Beide Ungleichheitsmaße auf Äquivalenzeinkommen wie EU-SILC, damit sie mit
+  // den amtlichen Werten vergleichbar sind (PRUEFUNG.md B3).
+  const netto_aeq = aequivalenzEinkommen(hh_delta.netto, dezile);
+  const gini = berechneGini(netto_aeq, dezile);
+  const palma = berechnePalma(netto_aeq);
 
   // ---------- 17. VERHALTENSINDIZES ----------
   const avg_labor = dezile.reduce((a,d) => a + d.labor_factor * d.anzahl, 0) / dezile.reduce((a,d) => a + d.anzahl, 0);

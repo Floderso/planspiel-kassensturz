@@ -18,6 +18,10 @@
 // Sichtbarste Folge: Die Schuldenquote steigt über fünf Perioden auf 84,9 %
 // statt auf 130,4 %. Vorher war r > g fest verdrahtet und jede Partie endete
 // in der Schuldenexplosion, unabhängig von den Entscheidungen der Teams.
+//
+// Erneuert am 2026-09-24: Gini und Palma rechnen auf Äquivalenzeinkommen
+// (Netto / Bedarfsgewicht, wie EU-SILC). Gini 0,3766 → 0,3034, amtlich ~0,295
+// (PRUEFUNG.md B3). Alle übrigen Werte unverändert.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -25,11 +29,11 @@ import { simulierePfad } from '../js/rechner/transition.js';
 import { PRESETS } from '../js/data.js';
 
 const REFERENZ = [
-  { label: '2025–2028', saldo: -118.6396, schuldenquote: 63.5,    gini: 0.3766, emissionen: 327, bip: 4470 },
-  { label: '2029–2032', saldo: -140.1972, schuldenquote: 67.3979, gini: 0.3766, emissionen: 327, bip: 4937.004 },
-  { label: '2033–2036', saldo: -170.844,  schuldenquote: 72.0051, gini: 0.3766, emissionen: 327, bip: 5423.6073 },
-  { label: '2037–2040', saldo: -196.1634, schuldenquote: 77.9624, gini: 0.3766, emissionen: 327, bip: 5912.3686 },
-  { label: '2041–2044', saldo: -220.1891, schuldenquote: 84.917,  gini: 0.3766, emissionen: 327, bip: 6380.2732 },
+  { label: '2025–2028', saldo: -118.6396, schuldenquote: 63.5,    gini: 0.3034, emissionen: 327, bip: 4470 },
+  { label: '2029–2032', saldo: -140.1972, schuldenquote: 67.3979, gini: 0.3034, emissionen: 327, bip: 4937.004 },
+  { label: '2033–2036', saldo: -170.844,  schuldenquote: 72.0051, gini: 0.3034, emissionen: 327, bip: 5423.6073 },
+  { label: '2037–2040', saldo: -196.1634, schuldenquote: 77.9624, gini: 0.3034, emissionen: 327, bip: 5912.3686 },
+  { label: '2041–2044', saldo: -220.1891, schuldenquote: 84.917,  gini: 0.3034, emissionen: 327, bip: 6380.2732 },
 ];
 
 test('Status-quo-Pfad (5 Perioden) reproduziert die Referenzwerte', () => {

@@ -15,8 +15,15 @@
 > (`tests/dimensionen.test.js`) sichern die Korrekturen ab.
 >
 > **Offen bleiben** die didaktisch wichtigen Punkte B1, B2 (Regler mit
-> falschem Etikett), B3 (Gini-Skala gegen Feedback-Schwellen), A2
-> (Klimasensitivität) sowie C1 bis C5.
+> falschem Etikett), A2 (Klimasensitivität) sowie C1 bis C5.
+>
+> **Nachtrag vom 24.09.2026: B3 ist repariert.** Gini und Palma rechnen auf
+> Äquivalenzeinkommen (Netto / Bedarfsgewicht, wie EU-SILC). Der Gini im
+> Status quo fällt von **0,377 auf 0,303** (amtlich 0,295), der Palma von
+> 1,72 auf **1,25** (Lehrbuchwert ~1,2). Die Feedback-Texte beschreiben jetzt
+> ein Niveau statt einer Veränderung; der unveränderte Status quo heißt
+> „Ungleichheit etwa wie heute". Tests gegen EU-SILC und gegen das Feedback
+> (`tests/kalibrierung.test.js`, `tests/feedback.test.js`) sichern das ab.
 
 ---
 
@@ -431,7 +438,7 @@ Steuerprogression lehren soll.
 |---|---|---|---|
 | 1 | **A1** Zinslast-Einheit in `abgeleitet.js` | eine Zeile | ✔ **erledigt** |
 | 2 | **A4** einen Zinssatz für beide Module | wenige Zeilen | ✔ **erledigt** |
-| 3 | **B3** Äquivalenzgewicht im Gini nutzen **oder** Feedback-Schwellen anpassen | überschaubar | offen — **wichtigster verbleibender Punkt** |
+| 3 | **B3** Äquivalenzgewicht im Gini nutzen **oder** Feedback-Schwellen anpassen | überschaubar | ✔ **erledigt** 24.09. (Äquivalenzgewicht, Gini 0,303) |
 | 4 | **A3** Palma auf die Anteilsdefinition umstellen (Test mit) | eine Zeile + Test | ✔ **erledigt** |
 | 5 | **F1** nominales Wachstum auf 2,5–3 % | eine Konstante | ✔ **erledigt** (2,5 %) |
 | 6 | **B1/B2** Tarifzonen entkoppeln | mittel | offen — echte Modellarbeit |
@@ -452,6 +459,8 @@ Steuerprogression lehren soll.
 | r − g | +1,00 % | **−0,50 %** | entspricht der Lage seit 2010 |
 | Schuldenquote nach 20 J. | 130,4 % | **84,9 %** | |
 | Palma | 6,87 | **1,72** | Lehrbuchwert DE ~1,2 |
+| Palma (24.09., Äquivalenzeinkommen) | 1,72 | **1,25** | Lehrbuchwert DE ~1,2 |
+| Gini (24.09., Äquivalenzeinkommen) | 0,377 | **0,303** | EU-SILC DE 0,295 |
 | Status-quo-Saldo | −115,9 | **−118,6** | Ziel −118,8 (näher als vorher) |
 | Spreizung der Politiken | ~0 | **35 Prozentpunkte** | Schuldenquote nach 20 Jahren |
 

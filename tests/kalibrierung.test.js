@@ -54,3 +54,18 @@ test('KSt + GewSt in amtlicher Größenordnung', () => {
 test('CO₂-Bepreisung brutto in amtlicher Größenordnung (~18 Mrd., BEHG+ETS)', () => {
   imBand(r.rev.co2 + r.klimageld_auszahlung, 18, 0.35, 'CO₂ brutto');
 });
+
+// Ungleichheit gegen EU-SILC. Die Fachprüfung (PRUEFUNG.md B3) fand 0,377, weil
+// der Gini auf Haushaltsnetto ohne Bedarfsgewichtung rechnete — höher als jede
+// Feedback-Schwelle, sodass jede Politik „stark zunehmende Ungleichheit" hieß.
+// Ein Test gegen die Wirklichkeit hätte das sofort gezeigt.
+
+test('Gini Status quo in der Größenordnung von EU-SILC (DE ~0,295)', () => {
+  assert.ok(r.gini > 0.27 && r.gini < 0.32,
+    `Gini ${r.gini.toFixed(3)} außerhalb 0,27–0,32 (EU-SILC DE: 0,295)`);
+});
+
+test('Palma Status quo in der Größenordnung des Lehrbuchwerts (DE ~1,2)', () => {
+  assert.ok(r.palma > 1.0 && r.palma < 1.5,
+    `Palma ${r.palma.toFixed(2)} außerhalb 1,0–1,5 (DE: ~1,2)`);
+});

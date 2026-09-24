@@ -10,15 +10,20 @@ import { estHaushalt } from './einkommensteuer.js';
 
 // Quellenmetadaten — parallel zu den Berechnungsfunktionen
 const FORMEL_QUELLEN_VERT = {
+  aequivalenzEinkommen: {
+    formel: 'y_äq,i = Netto_i / Bedarfsgewicht_i  (neue OECD-Skala: 1,0 erste Person · 0,5 weitere ab 14 J. · 0,3 Kinder unter 14 J.)',
+    ref:    'Eurostat EU-SILC Methodik (äquivalisiertes verfügbares Einkommen) · Destatis Glossar „Äquivalenzeinkommen" · OECD (2013) Framework for Statistics on the Distribution of Household Income',
+    note:   'Bedarfsgewicht = DEZILE[i].gewicht (1,3–2,0, Haushaltsdurchschnitt je Dezil). Gezählt wird über Haushalte, nicht Personen — Personenzahlen je Dezil fehlen im Datensatz. Status quo: Gini 0,303 gegen 0,295 amtlich (EU-SILC); ohne Bedarfsgewichtung 0,377'
+  },
   berechneGini: {
     formel: 'G = 1 − 2·∫Lorenz(x)dx  (Trapezregel, gewichtet nach Haushaltszahl)',
     ref:    'Sen (1973) On Economic Inequality · Cowell (2011) Measuring Inequality · Destatis Methodik Gini-Koeffizient',
-    note:   'Gewichtet nach DEZILE[i].anzahl; D10a/b/c (2,05 / 1,64 / 0,41 Mio. HH) werden korrekt gewichtet'
+    note:   'Gewichtet nach DEZILE[i].anzahl; D10a/b/c (2,05 / 1,64 / 0,41 Mio. HH) werden korrekt gewichtet. berechne() übergibt Äquivalenzeinkommen wie EU-SILC, nicht Haushaltsnetto'
   },
   berechnePalma: {
     formel: 'Palma = Einkommensanteil(Top 10%) / Einkommensanteil(Bottom 40%)',
     ref:    'Palma (2011) Homogeneous Middles vs. Heterogeneous Tails · UNDP HDR 2013',
-    note:   'Robuster gegenüber Mittelstand-Verzerrung als Gini; international gut vergleichbar'
+    note:   'Robuster gegenüber Mittelstand-Verzerrung als Gini; international gut vergleichbar. Auf Äquivalenzeinkommen wie der Gini: Status quo 1,25 (Lehrbuchwert DE ~1,2)'
   },
   berechneMedianGewichtet: {
     formel: 'Gewichteter Median: kumulierte Haushaltsanteile bis 50 %',
@@ -42,6 +47,14 @@ const FORMEL_QUELLEN_VERT = {
   }
 };
 
+
+// Ein Haushalt mit vier Personen braucht mehr als einer mit einer. Ohne diese
+// Bedarfsgewichtung stehen die großen Haushalte oben, die kleinen unten, und die
+// Ungleichheit fällt zu hoch aus: 0,377 statt ~0,29 — so hoch, dass jede Politik
+// im Spiel „stark zunehmende Ungleichheit" hieß (PRUEFUNG.md B3).
+function aequivalenzEinkommen(netto, dez) {
+  return netto.map((v, i) => v / dez[i].gewicht);
+}
 
 function berechneGini(werte, dez) {
   const pairs = werte.map((v, i) => ({ v, n: dez[i].anzahl })).sort((a, b) => a.v - b.v);
@@ -178,4 +191,4 @@ function berechneNettoSQ(d) {
   return brutto - est - sv - mwst - co2_last + klimageld_per_hh + transfers;
 }
 
-export { FORMEL_QUELLEN_VERT, berechneGini, berechneMedianGewichtet, berechnePalma, berechneDezilDelta, berechneNettoSQ };
+export { FORMEL_QUELLEN_VERT, aequivalenzEinkommen, berechneGini, berechneMedianGewichtet, berechnePalma, berechneDezilDelta, berechneNettoSQ };

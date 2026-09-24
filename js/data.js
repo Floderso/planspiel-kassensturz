@@ -308,9 +308,11 @@ const CHALLENGES = [
   { id:'invest_101', diff:'daily', title:'Standortpflege',
     desc:'Investitionsindex über 101',
     subs:[{ label:'Investition', check:r=>r.behavior.invest>101, cur:r=>r.behavior.invest, tgt:101, refFn:()=>100, dir:'up', fmt:v=>v.toFixed(1) }]},
-  { id:'palma_18', diff:'daily', title:'Einkommensschere',
-    desc:'Palma-Koeffizient unter 1,8 senken',
-    subs:[{ label:'Palma', check:r=>r.palma<1.8, cur:r=>r.palma, tgt:1.8, refFn:ref=>ref.palma, dir:'down', fmt:v=>v.toFixed(2).replace('.',',') }]},
+  // Palma auf Äquivalenzeinkommen: Status quo 1,25, DE amtlich ~1,2. Die
+  // frühere Grenze 1,8 war schon ohne jeden Spielzug erreicht (PRUEFUNG.md B3).
+  { id:'palma_12', diff:'daily', title:'Einkommensschere',
+    desc:'Palma-Koeffizient unter 1,2 senken',
+    subs:[{ label:'Palma', check:r=>r.palma<1.2, cur:r=>r.palma, tgt:1.2, refFn:ref=>ref.palma, dir:'down', fmt:v=>v.toFixed(2).replace('.',',') }]},
   { id:'dwl_50', diff:'daily', title:'Effizienzgewinn',
     desc:'Wohlfahrtsverlust des Steuersystems unter 50 Mrd. €',
     subs:[{ label:'Wohlfahrtsverlust', check:r=>r.dwl<50, cur:r=>r.dwl, tgt:50, refFn:ref=>ref.dwl, dir:'down', fmt:v=>v.toFixed(0)+' Mrd.' }]},
