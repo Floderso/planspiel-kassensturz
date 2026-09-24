@@ -217,7 +217,7 @@ Verweis ist noch kein Beleg:
 
 | # | Was | Befunde | Status |
 |---|---|---|---|
-| 1 | **Sozialversicherung entkoppeln.** Ausgaben über das Leistungsniveau steuern, Renten als Haushaltseinkommen. Sonst bleibt die dominante Strategie bestehen | I.1 | offen — **als Nächstes**, zweistufig |
+| 1 | **Sozialversicherung entkoppeln.** Ausgaben über das Leistungsniveau steuern, Renten als Haushaltseinkommen. Sonst bleibt die dominante Strategie bestehen | I.1 | **Stufe 1 erledigt** 24.09.: Ausgaben folgen dem Rentenniveau (`rentenniveau`, 48 %), KV/AL/PV fest; `tests/dominanz.test.js` grün. **Offen: Stufe 2**, Renten als Haushaltseinkommen, danach Rentenniveau-Regler am Tisch |
 | 2 | **Nominale Fortschreibung.** Einnahmen und Ausgaben mit dem nominalen BIP, Aufkommenselastizität etwa 1 | I.2 | offen |
 | 3 | **Multiplikator symmetrisch und als Stromgröße.** Auch für Steuern und Transfers; Investitionen über einen öffentlichen Kapitalstock mit Abschreibung | I.3, C4 | offen |
 | 4 | **Haushalts- und Staatsseite abgleichen** (Kinder, CO₂-Last, Bürgergeld), mit Test „Σ Haushalte = Staatsbuchung" | I.4 | offen |
@@ -229,6 +229,17 @@ Verweis ist noch kein Beleg:
 **Der dringendste fehlende Test:** „Keine Politik darf zugleich den Saldo, das
 Einkommen aller Dezile und den Gini verbessern." Heute schlägt er bei einer
 RV-Senkung sofort an.
+
+> **Umgesetzt 24.09.** als `tests/dominanz.test.js`, gerechnet über fünf
+> Perioden: Keine Stellgröße und kein Paar von Stellgrößen am Tisch darf den
+> Saldo und alle Dezile verbessern, ohne dass Gini, Emissionen oder BIP
+> schlechter werden. Vor der Entkopplung rot für RV und KV, danach grün.
+>
+> **Dabei gefunden (N1):** Körperschaft-, Gewerbe- und Erbschaftsteuer treffen
+> keinen Haushalt. KSt 40 % verbessert den Saldo um 76 Mrd., und in der
+> Periode verliert niemand etwas, auch das BIP nicht; die Kosten erscheinen
+> erst über den Pfad (Investitionen → BIP 2041: 6.154 statt 6.380 bei KSt
+> 30 %). Die Inzidenz dieser Steuern gehört zu Punkt 4.
 
 ---
 

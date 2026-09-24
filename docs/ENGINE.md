@@ -133,6 +133,7 @@ berechne(params, periodeZustand) → ErgebnisObjekt
 | `rv` | % | Rentenbeitragssatz (AN+AG gesamt) |
 | `kv` | % | GKV-Beitragssatz |
 | `bbg` | € | SV-Beitragsbemessungsgrenze |
+| `rentenniveau` | % | Sicherungsniveau vor Steuern, Standard 48 (Haltelinie Rentenpaket 2025). Nur Engine, noch kein Regler am Tisch |
 | `invest_impuls` | Mrd. €/a | Öffentlicher Investitionsimpuls |
 
 **`periodeZustand`** (Makro-Zustand — aus vorheriger Periode):
@@ -185,7 +186,12 @@ Iteriert alle Perioden der Simulation. Gibt ein Array zurück (ein Eintrag je Pe
 - **Schuldenentwicklung:** `D_{t+1} = D_t − Saldo/BIP` (Domar-Mechanismus)
 - **Klimaschaden (DICE):** Temperaturanstieg → prozentualer BIP-Verlust (`d₂ = 0,00267`, Nordhaus 2023)
 - **HANK-Multiplikator:** Fiskalmultiplikator gewichtet nach dezil-spezifischen MPCs (Kaplan/Moll/Violante 2018)
-- **Demografie:** Renten-Faktor aus `DEMOGRAFIE_KURVE` erhöht Sozialausgaben automatisch
+- **Demografie:** Renten-Faktor aus `DEMOGRAFIE_KURVE` erhöht die Rentenausgaben automatisch
+- **Sozialversicherung:** Beitragssätze wirken nur auf die Einnahmen. Die Rentenausgaben
+  folgen dem Rentenniveau (390 Mrd. × Niveau/48 % × Renten-Faktor), KV, AL und PV bleiben
+  auf Status quo. Ein Satz unter Bedarf wird zur Lücke im Gesamtsaldo. Bis 24.09.2026
+  skalierten die Ausgaben mit dem Beitragssatz — eine Beitragssenkung verbesserte
+  Saldo und alle Dezile zugleich (`entwurf/PRUEFUNG-2.md` I.1, `tests/dominanz.test.js`)
 
 ---
 

@@ -94,6 +94,9 @@ const BASIS_MAKRO = {
                             // 400–500 T€ je Kind/Ehegatte) steuerpflichtig bleibt. Kalibriert auf
                             // ErbSt-Ist ~12 Mrd. €/Jahr (BMF 2024; Destatis ErbSt-Statistik)
   rv_ausgaben_sq:     430,  // RV-Gesamtausgaben inkl. Bundeszuschuss (Status quo), Mrd. €
+  rentenniveau_sq:     48,  // Sicherungsniveau vor Steuern, % (§ 154 Abs. 3 SGB VI). Haltelinie 48 % bis
+                            // 2031 mit dem Rentenpaket 2025 (Bundestag 05.12.2025, BMAS). Die RV-Ausgaben
+                            // folgen diesem Niveau, nicht dem Beitragssatz (PRUEFUNG-2.md I.1)
   kv_bbg_kv_sq:     66150,  // Beitragsbemessungsgrenze KV/PV 2025, € p.a. (GKV-Beitragsbemessungsgrenze 2025)
   kv_bbg_frei_bonus:   18,  // Aufkommensgewinn kv_bbg_frei bei kv=16,3 %, Mrd. €
   kv_kapital_bonus:     8,  // Aufkommensgewinn kv_kapital bei kv=16,3 %, Mrd. €

@@ -104,6 +104,12 @@ Kommentare mitzuziehen.
   Kennzahlen endlich sein und in ihrem Definitionsbereich liegen
 - **Komparative Statik** — die Vorzeichen der Reaktionen müssen der
   ökonomischen Theorie entsprechen
+- **Keine dominante Strategie** (`dominanz.test.js`) — keine Stellgröße darf
+  Saldo und alle Dezile verbessern, ohne dass Gini, Emissionen oder BIP
+  schlechter werden. Entstanden nach der zweiten Fachprüfung
+  (`entwurf/PRUEFUNG-2.md` I.1): Eine Senkung der Rentenbeiträge sanierte den
+  Haushalt und machte alle reicher. Wer eine neue Stellgröße einführt, nimmt
+  sie dort mit auf
 
 Wer an der Engine rechnet, schreibt in dieser Form weiter. Ein Test, der nur
 den Ist-Zustand festschreibt, hilft hier nicht: Er merkt nicht, wenn das

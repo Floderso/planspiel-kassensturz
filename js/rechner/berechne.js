@@ -48,7 +48,12 @@ const FORMEL_QUELLEN_BERECHNE = {
   sv_beitraege: {
     formel: 'SV = Lohnsumme_sv × Satz%  (nur bis BBG)',
     ref:    '§ 158 SGB VI · § 241 SGB V · § 341 SGB III · § 55 SGB XI · DRV Beitragssätze 2025',
-    note:   'BBG-Lohnsummen-Faktor: +12 % je 90 k € BBG-Erhöhung (12 % der sozialversicherungspflichtigen Löhne)'
+    note:   'BBG-Lohnsummen-Faktor: +12 % je 90 k € BBG-Erhöhung (12 % der sozialversicherungspflichtigen Löhne). Der Satz wirkt nur auf die Einnahmen; die Ausgaben hängen am Leistungsniveau (rv_ausgaben)'
+  },
+  rv_ausgaben: {
+    formel: 'RV_Ausgaben = 390 × (Rentenniveau / 48 %) × renten_faktor(Jahr);  KV, AL, PV fest auf Status quo',
+    ref:    '§ 68 SGB VI (Rentenanpassung) · § 154 Abs. 3 SGB VI (Sicherungsniveau) · Rentenpaket 2025 (BMAS, Haltelinie 48 % bis 2031) · § 158 SGB VI',
+    note:   'Renten folgen dem aktuellen Rentenwert und damit dem Niveau, nicht dem Beitragssatz — in Wirklichkeit folgt der Satz den Ausgaben (§ 158). Ein Satz unter Bedarf erscheint als Lücke im Gesamtsaldo (wie der Bundeszuschuss), einer darüber als Überschuss. Nachhaltigkeitsfaktor nicht abgebildet'
   },
   verwaltungskosten: {
     formel: 'Admin = ∑ Aufkommen_i × Quote_i  (ADMIN_QUOTE je Steuer)',
@@ -220,11 +225,12 @@ function berechne(params, zustand = null) {
 
   // BGE + Rentenreform: Einsparung weil BGE als Sockel die Rentenzahlung reduziert
   // Quelle: Rentenbericht 2024 — RV-Gesamtausgaben inkl. Bundeszuschuss SQ ~430 Mrd. €/J.
-  // M3: Ausgabenbasis skaliert mit rv-Regler (Umlagesystem: niedrigere Beiträge = niedrigeres Leistungsniveau).
-  // Damit wird verhindert, dass rv_einsparung gegen eine feste Basis gerechnet wird, die der rv-Slider
-  // schon implizit abgesenkt hat (Doppelkorrektur-Vermeidung).
+  // Ausgabenbasis mit demselben Leistungsniveau wie Abschnitt 12, damit rv_einsparung
+  // gegen die tatsächlich gezahlten Renten gerechnet wird (keine Doppelkorrektur).
   // renten_faktor: demografisch bedingte Mehrkosten (Baby-Boomer-Rentenwelle, Destatis 2021)
-  const rv_ausgaben_basis = BASIS_MAKRO.rv_ausgaben_sq * (params.rv / 18.6) * renten_faktor;
+  // Die Basis folgt dem Rentenniveau, nicht mehr dem Beitragssatz (PRUEFUNG-2.md I.1).
+  const niveau_faktor = (params.rentenniveau ?? BASIS_MAKRO.rentenniveau_sq) / BASIS_MAKRO.rentenniveau_sq;
+  const rv_ausgaben_basis = BASIS_MAKRO.rv_ausgaben_sq * niveau_faktor * renten_faktor;
   let rv_einsparung = 0;
   if (bge > 0) {
     const rl = params.rente_grenze || 35000;              // €/Jahr Einkommensgrenze
@@ -289,16 +295,16 @@ function berechne(params, zustand = null) {
     bge_brutto * 0.008; // BGE: 0,8% Verwaltungskosten — kein Bedürftigkeitstest (RWI 2024)
 
   // ---------- 12. AUSGABEN inkl. Transfers ----------
-  // F1: SV-Ausgabenseite koppeln — Umlagesystem: Beitragssatz ↓ → Leistungen ↓ (§ 213 SGB VI).
   // Sozial=850 enthält grob: RV ~390, GKV ~290, AL+PV ~90, Bürgergeld etc. ~80 Mrd.
-  // Bürgergeld wird separat über bg_auszahlung geführt; die SV-Anteile skalieren mit den Reglern.
+  // Die Ausgaben folgen dem Leistungsniveau, nicht dem Beitragssatz. Vorher skalierten
+  // sie mit dem Satz: RV 10 % strich 180 Mrd. Renten, die bei keinem Haushalt fehlten,
+  // Saldo und alle Dezile gewannen — eine dominante Strategie (PRUEFUNG-2.md I.1).
+  // KV, AL und PV bleiben auf Status quo; einen Leistungsregler gibt es erst, wenn
+  // Leistungen bei Haushalten ankommen (Stufe 2).
   const SV_AUSG = { rv: 390, kv: 290, alpf: 90 };
-  const sv_ausgaben_delta =
-    SV_AUSG.rv   * (params.rv   / 18.6 - 1) +
-    SV_AUSG.kv   * (params.kv   / 16.3 - 1) +
-    SV_AUSG.alpf * (params.alpf /  6.2 - 1);
-  // Demografieaufschlag: steigende RV-Ausgaben durch Alterung (RV-Anteil ~390 Mrd.)
-  const demografie_aufschlag = 390 * (renten_faktor - 1.0);
+  const sv_ausgaben_delta = SV_AUSG.rv * (niveau_faktor - 1);
+  // Demografieaufschlag: steigende RV-Ausgaben durch Alterung, auf dem gewählten Niveau
+  const demografie_aufschlag = SV_AUSG.rv * niveau_faktor * (renten_faktor - 1.0);
   // invest_impuls: zusätzliche öffentliche Investitionen (Mrd./Jahr, reduziert Saldo)
   const invest_impuls = params.invest_impuls || 0;
   const ausgaben_total = AUSGABEN_TOTAL + bg_auszahlung + kg_auszahlung + neg_est_auszahlung + bge_brutto + admin_kosten - STAATSAUSGABEN.verwaltung - STAATSAUSGABEN.zinsen + zinsen_dyn - rv_einsparung + sv_ausgaben_delta + demografie_aufschlag + invest_impuls;
