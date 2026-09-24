@@ -19,6 +19,7 @@ oder rätst, sieh dort nach:
 | `docs/API.md` | Alle Endpunkte mit Beispielen |
 | `docs/DEPLOYMENT.md` | Frontend und Backend ausrollen |
 | `docs/adrs/001–004` | Warum Engine im Client, warum Hono/Cloudflare, warum KV, warum Polling |
+| `entwurf/PRUEFUNG.md` · `entwurf/GUTACHTEN-2026-09.md` | Fachprüfungen der Engine: bekannte Modellfehler, veralteter Rechtsstand, Reparaturreihenfolge — vor jeder Arbeit an `js/rechner/` lesen |
 
 Diese Datei wiederholt das nicht. Sie hält nur fest, was sonst nirgends steht.
 
