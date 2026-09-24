@@ -150,21 +150,33 @@ app.post('/api/sessions', async (c) => {
     ? (rawLaengen as number[]).map(n => Math.max(1, Math.min(20, Number(n) || 4)))
     : Math.max(1, Math.min(20, Number(rawLaengen) || 4));
 
+  // Grenzen wie in der Einrichtung (einrichtung.html). Wer die API direkt
+  // anspricht, soll keinen Kurs anlegen koennen, den keine Flaeche spielt.
+  const ganz = (v: unknown, von: number, bis: number, sonst: number) => {
+    const n = Math.round(Number(v));
+    return Number.isFinite(n) && n >= von && n <= bis ? n : sonst;
+  };
+  const QUOREN = ['einfach', 'absolut', 'einstimmig'] as const;
+  const ressorts = Array.isArray(body.ressorts)
+    ? [...new Set(body.ressorts.map(String))].slice(0, 12) : [];
+  if (Array.isArray(body.ressorts) && ressorts.length < 2) {
+    return c.json({ error: 'Ein Tisch braucht mindestens zwei Ressorts' }, 400);
+  }
+
   const session: SessionData = {
     id,
     admin_token,
-    name:                body.name               ?? 'Planspiel',
-    perioden_anzahl:     body.perioden_anzahl     ?? 5,
-    team_groesse:        body.team_groesse        ?? 4,
+    name:                String(body.name ?? 'Planspiel').slice(0, 120) || 'Planspiel',
+    perioden_anzahl:     ganz(body.perioden_anzahl, 1, 12, 5),
+    team_groesse:        ganz(body.team_groesse, 1, 12, 4),
     min_teilnahme_quote: body.min_teilnahme_quote ?? 0.5,
     sandbox:             body.sandbox             ?? false,
     perioden_laenge_jahre,
     team_names,
-    ressorts:            (Array.isArray(body.ressorts) && body.ressorts.length > 0)
-      ? body.ressorts.map(String).slice(0, 12)
-      : ['fin', 'wir', 'soz', 'umw'],
+    ressorts:            ressorts.length > 0 ? ressorts : ['fin', 'wir', 'soz', 'umw'],
     zuordnung_offen:     true,
-    quorum:              body.quorum ?? 'einfach',
+    quorum:              QUOREN.includes(body.quorum as typeof QUOREN[number])
+      ? body.quorum : 'einfach',
     matrikelnummern:     [],
     members:             [],
     schocks:             [],
@@ -1002,8 +1014,10 @@ app.get('/api/sessions/:id/teams/:team/vorlagen', async (c) => {
   const mitStand = Object.fromEntries(
     Object.entries(periode.vorlagen ?? {})
       .map(([r, v]) => [r, { ...v, auszaehlung: werteAus(session, v) }]));
+  // `locked` sagt den anderen Geraeten, dass ein Geraet die Runde geschlossen
+  // hat. Ohne das blieben sie in der alten Runde stehen, bis jemand neu laedt.
   return c.json({ vorlagen: mitStand, quorum: session.quorum ?? 'einfach',
-                  ressorts: session.ressorts });
+                  ressorts: session.ressorts, locked: periode.locked });
 });
 
 // ── Der Verhandlungstisch: namentliche Unterschriften ───────────────────────
@@ -1291,12 +1305,51 @@ app.put('/api/sessions/:id/schocks', async (c) => {
     return c.json({ error: 'schocks muss ein Array sein' }, 400);
   }
 
-  session.schocks = schocks.filter(s =>
-    typeof s.periode === 'number' && typeof s.id === 'string' && s.effekte
+  const neu = schocks.filter(s =>
+    typeof s.periode === 'number' && Number.isInteger(s.periode) && s.periode >= 0
+    && s.periode < session.perioden_anzahl && typeof s.id === 'string' && s.effekte
   );
+
+  // Die Vergangenheit bleibt, wie sie war. Ein Ereignis in einer Periode, die
+  // schon jemand gesehen hat, aendert rueckwirkend Zahlen, ueber die ein Team
+  // schon beraten und abgestimmt hat — und alle Perioden danach mit. Das
+  // verhindert der Server, nicht nur die Oberflaeche: eine zweite
+  // Leitungsseite oder ein Skript kaeme sonst daran vorbei.
+  const alt = session.schocks ?? [];
+  const idIn = (liste: SchockEvent[], p: number) => liste.find(s => s.periode === p)?.id ?? null;
+  for (let p = 0; p < session.perioden_anzahl; p++) {
+    if (idIn(alt, p) !== idIn(neu, p) && periodeGesehen(session, p)) {
+      return c.json({ error: `Periode ${p + 1} ist schon freigegeben oder wird schon gespielt. `
+        + 'Ein Ereignis dort würde Ergebnisse ändern, die Teams schon gesehen haben.' }, 409);
+    }
+  }
+
+  for (let p = 0; p < session.perioden_anzahl; p++) {
+    const vorher = alt.find(s => s.periode === p), nachher = neu.find(s => s.periode === p);
+    if (vorher?.id === nachher?.id) continue;
+    vermerke(session, nachher
+      ? `Periode ${p + 1}: Ereignis „${nachher.name}“ gesetzt`
+      : `Periode ${p + 1}: Ereignis „${vorher?.name}“ entfernt`);
+  }
+
+  session.schocks = neu;
   await putSession(c.env.SESSIONS, session);
   return c.json({ ok: true, count: session.schocks.length });
 });
+
+/**
+ * Hat schon jemand Periode `p` gesehen?
+ *
+ * Ja, wenn sie freigegeben ist — ODER wenn ein Team die Periode davor
+ * abgeschlossen hat. Das zweite ist noetig, weil der Tisch die Freigabe
+ * nicht erzwingt: ein Team, das vorauseilt, sitzt schon in Periode `p`,
+ * waehrend die Lehrperson noch plant.
+ */
+function periodeGesehen(session: SessionData, p: number): boolean {
+  if (p < (session.perioden_freigegeben ?? 1)) return true;
+  return Object.values(session.teams ?? {}).some(t =>
+    (t.perioden ?? []).some(x => x.idx >= p - 1 && x.locked));
+}
 
 /**
  * PUT /api/sessions/:id/lernziele?token=...

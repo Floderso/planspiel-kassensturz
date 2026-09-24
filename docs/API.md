@@ -61,11 +61,21 @@ Alle Felder optional — fehlende Felder erhalten Standardwerte.
 
 | Feld | Typ | Standard | Beschreibung |
 |------|-----|---------|---|
-| `name` | string | `"Planspiel"` | Anzeigename des Kurses |
-| `perioden_anzahl` | number | `5` | Anzahl Spielperioden (1–12) |
-| `team_groesse` | number | `4` | Spieler je Team |
+| `name` | string | `"Planspiel"` | Anzeigename des Kurses (höchstens 120 Zeichen) |
+| `perioden_anzahl` | number | `5` | Anzahl Spielperioden (1–12, sonst Standard) |
+| `perioden_laenge_jahre` | number \| number[] | `4` | Jahre je Periode (1–20), als Array je Periode |
+| `team_names` | string[] | `Team A–C` | Systemnamen der Teams |
+| `team_groesse` | number | `4` | Plätze je Team (1–12, sonst Standard) |
+| `ressorts` | string[] | alle vier | Ressorts am Tisch — mindestens zwei, sonst `400` |
+| `quorum` | string | `"einfach"` | `einfach` · `absolut` · `einstimmig`, Unbekanntes wird `einfach` |
+| `perioden_werkzeuge` | object | — | Offene Werkzeuge je Periode, siehe unten |
 | `min_teilnahme_quote` | number | `0.5` | Mindestanteil für Perioden-Lock (0–1) |
 | `sandbox` | boolean | `false` | Sandbox = kein Quorum nötig |
+
+**Für den Verhandlungstisch `min_teilnahme_quote: 0` setzen** (die Einrichtung
+tut das). Der Tisch meldet den Rundenschluss von EINEM Gerät, nachdem alle
+Vorlagen angenommen sind. Mit `0.5` und vier Mitgliedern verlangt der Server
+aber zwei Stimmen — die Periode würde nie gesperrt.
 
 **Response `201 Created`:**
 
@@ -273,6 +283,38 @@ wer zeichnet, nimmt seinen Einspruch zurück.
 ### `DELETE /api/sessions/:id/teams/:team/einspruch/:ressort`
 
 Einspruch zurücknehmen, Rumpf `{ "periode_idx": 0 }`.
+
+### `GET /api/sessions/:id/teams/:team/vorlagen?periode_idx=n`
+
+Vorlagen einer Periode mit Auszählung. Seit 24.09.2026 zusätzlich
+`locked`: ob die Periode schon geschlossen ist. Daran merken die anderen
+Geräte eines Teams, dass eines die Runde geschlossen hat.
+
+```json
+{ "vorlagen": { "fin": { "stand": "eingebracht", "…": "…" } },
+  "quorum": "einfach", "ressorts": ["fin", "wir", "soz", "umw"], "locked": false }
+```
+
+### `PUT /api/sessions/:id/schocks` *(Admin)*
+
+Ereignisse je Periode: `{ "schocks": [{ "id": "nachfrage_2", "periode": 2, … }] }`.
+Gerechnet wird mit dem Eintrag aus `SCHOCK_BIBLIOTHEK` (js/data.js) unter
+dieser `id`, nicht mit der mitgeschickten Kopie.
+
+**`409`**, wenn sich das Ereignis einer Periode ändern würde, die schon
+jemand gesehen hat: sie ist freigegeben (`periode < perioden_freigegeben`)
+oder ein Team hat die Periode davor abgeschlossen. Sonst änderten sich
+rückwirkend Ergebnisse, über die Teams schon abgestimmt haben. Jede Änderung
+wird in `eingriffe` vermerkt.
+
+### `PUT /api/sessions/:id/werkzeuge` *(Admin)*
+
+`{ "perioden_werkzeuge": { "0": ["est", "kst", "transfers", "co2"], "1": […] } }` —
+je Periodenindex die offenen Werkzeuge (Kennungen aus `MOD_DEFS`). Fehlt der
+Eintrag einer Periode, ist dort alles offen. Die klassische Fläche schreibt
+Ressortnamen (`"finanzen"`, `"klima"`); die versteht der Tisch weiterhin.
+Der Server prüft **nicht**, ob eine Vorlage nur offene Werkzeuge ändert —
+das erzwingt heute nur die Oberfläche.
 
 ### Was dabei zu beachten ist
 

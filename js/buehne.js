@@ -19,7 +19,7 @@
 import { hatBackend, holeSitzung, ServerFehler } from './dienste/server.js';
 import { hole, merke } from './dienste/speicher.js';
 import { zeichneSchaukasten } from './schaukasten.js';
-import { spieleNach, vorausschau, RESSORTS, KENNZAHLEN,
+import { spieleNach, vorausschau, kursAus, STANDARDKURS, RESSORTS, KENNZAHLEN,
          zahl, mitVz, rund, diffText } from './spielkern.js';
 
 const $ = s => document.querySelector(s);
@@ -28,6 +28,7 @@ const SITZUNG_ID = P.get('session');
 const TEAM_PARAM = P.get('team');
 
 let bahn = [], vorlagen = [], schaukaesten = {};
+let kurs = STANDARDKURS;  // Laengen und Ereignisse — am eigenen Geraet der Standardkurs
 let teamName = null, anzeigename = null;
 let bausteine = [];     // alles, was gezeigt werden kann
 let folge = [];         // die gewaehlte Reihenfolge, als Baustein-Kennungen
@@ -42,11 +43,12 @@ async function lade() {
   if (SITZUNG_ID && hatBackend() && teamName) {
     try {
       const stand = await holeSitzung(SITZUNG_ID, { zeitlimit: 8000 });
+      kurs = kursAus(stand);
       const t = stand?.teams?.[teamName];
       anzeigename = t?.anzeigename ?? null;
       schaukaesten = t?.schaukaesten ?? {};
       const perioden = (t?.perioden ?? []).filter(p => p.locked);
-      bahn = spieleNach(perioden);
+      bahn = spieleNach(perioden, kurs);
       vorlagen = perioden.map(p => p.vorlagen ?? {});
     } catch (f) {
       return scheitern(f instanceof ServerFehler
@@ -190,7 +192,7 @@ function zeichneSchritt() {
   } else if (b.id === 'aussage') {
     inhalt = `<p class="b-aussage">${aussage()}</p>`;
   } else if (b.id === 'nichtstun') {
-    const ohne = vorausschau({ ...bahn[0].zustand }, {}, 1).slice(0, bahn.length);
+    const ohne = vorausschau({ ...bahn[0].zustand }, {}, 1, kurs).slice(0, bahn.length);
     const d = rund(bahn.at(-1).ergebnis.saldo, 0) - rund(ohne.at(-1).ergebnis.saldo, 0);
     inhalt = `<p class="b-zahl">${mitVz(d)}<em> Mrd. €</em></p>
       <p class="b-satz">gegenüber dem Nichtstun</p>
@@ -210,7 +212,7 @@ function zeichneSchritt() {
     const r = RESSORTS.find(x => x.id === b.ressort);
     inhalt = `<p class="b-quelle">${r ? r.name : b.ressort}</p>
       <div class="b-stueck">${zeichneSchaukasten([st], bahn,
-        { ressort: b.ressort, vorlagen })}</div>`;
+        { ressort: b.ressort, vorlagen, kurs })}</div>`;
   }
 
   $('#buehne-inhalt').innerHTML = inhalt;

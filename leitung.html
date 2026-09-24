@@ -133,6 +133,22 @@ tr[data-zustand="gesperrt"] .marke{background:#EDE7D6;color:var(--grau)}
   color:var(--grau);display:block;font-weight:600}
 .lnav{margin-top:10px}
 .lnav a{font-size:12.5px;color:var(--fin);font-weight:600}
+
+/* Ereignisse und Werkzeuge */
+.raster{width:100%;border-collapse:collapse;font-size:13.5px;min-width:560px}
+.raster th{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--grau);
+  text-align:left;border-bottom:1px solid var(--tinte);padding:0 10px 5px 0}
+.raster td{padding:8px 10px 8px 0;border-bottom:1px dotted #D5CEBC;vertical-align:top}
+.raster .nr{font-family:'JetBrains Mono',monospace;font-weight:700;width:2.5em}
+.raster .j{font-family:'JetBrains Mono',monospace;color:var(--grau);white-space:nowrap}
+.raster select{min-width:0;width:100%;max-width:300px;padding:6px 8px;font-size:13px}
+.raster .fest{font-weight:600}
+.raster .fest small{display:block;font-weight:400;font-size:11.5px;color:var(--grau)}
+.wirkung{list-style:none;font-size:12.5px;line-height:1.5}
+.wirkung li[data-wirkt="false"]{color:var(--grau)}
+.wirkung li[data-wirkt="false"]::after{content:' — im Modell nicht gerechnet';font-style:italic}
+.wirkung .q{color:var(--grau);font-size:11.5px;margin-top:3px}
+.raster .stl{font-size:12.5px;color:var(--grau)}
 </style>
 </head>
 <body>
@@ -191,6 +207,30 @@ tr[data-zustand="gesperrt"] .marke{background:#EDE7D6;color:var(--grau)}
       <table id="perioden-tabelle">
         <thead><tr><th>Nr.</th><th>Zustand</th><th>Länge</th><th>Frist</th><th>fertig</th></tr></thead>
         <tbody id="perioden"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-erg">
+    <h2 id="h-erg">Ereignisse</h2>
+    <p class="bu">Ein Ereignis trifft alle Teams. Setzen lässt es sich nur, solange noch niemand
+       die Periode gesehen hat — danach steht es fest.</p>
+    <div class="tabellenraum">
+      <table id="ereignis-tabelle" class="raster">
+        <thead><tr><th>Nr.</th><th>Jahre</th><th>Ereignis</th><th>Wirkung im Modell</th></tr></thead>
+        <tbody id="ereignisse"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-wz">
+    <h2 id="h-wz">Werkzeuge</h2>
+    <p class="bu">Ab welcher Runde die Teams was einstellen dürfen. Gesperrtes sehen sie
+       zugeklappt. Was einmal offen war, bleibt offen.</p>
+    <div class="tabellenraum">
+      <table id="werkzeug-tabelle" class="raster">
+        <thead><tr><th>Werkzeug</th><th>Ressort</th><th>Stellgrößen</th><th>offen ab</th></tr></thead>
+        <tbody id="werkzeuge"></tbody>
       </table>
     </div>
   </section>

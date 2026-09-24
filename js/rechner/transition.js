@@ -68,7 +68,10 @@ function diceKlimaMalus(co2_kumulat) {
   return (1 - damage_now) / (1 - damage_base);
 }
 
-// Wendet einen Schock auf eine Kopie von zustand an (nicht-destruktiv)
+// Wendet einen Schock auf eine Kopie von zustand an (nicht-destruktiv).
+// Gerechnet werden bip_malus, schuld_bonus und zins_bonus. invest_malus und
+// co2_reduktion stehen in SCHOCK_BIBLIOTHEK, wirken hier aber NICHT — wer sie
+// anzeigt, muss das dazusagen (schockWirkung() in js/spielkern.js tut es).
 function applySchock(zustand, schock) {
   if (!schock) return zustand;
   const s = { ...zustand };
@@ -167,4 +170,4 @@ function simulierePfad(perioden_params, kursKonfig = KURS_KONFIG_DEFAULT) {
   return ergebnisse;
 }
 
-export { berechneTransition, simulierePfad, getDemoForYear, diceKlimaMalus, hankMultiplikator, ZINS_SCHULDEN, BIP_WACHSTUM_NOMINAL };
+export { berechneTransition, simulierePfad, applySchock, getDemoForYear, diceKlimaMalus, hankMultiplikator, ZINS_SCHULDEN, BIP_WACHSTUM_NOMINAL };

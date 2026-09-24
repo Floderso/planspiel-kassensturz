@@ -141,8 +141,8 @@ function zeichneBeschluesse(st, bahn, kontext) {
        In einer Volkswirtschaft wirkt nichts allein.</p>`;
 }
 
-function zeichneNichtstun(st, bahn) {
-  const ohne = vorausschau({ ...bahn[0].zustand }, {}, 1).slice(0, bahn.length);
+function zeichneNichtstun(st, bahn, kontext) {
+  const ohne = vorausschau({ ...bahn[0].zustand }, {}, 1, kontext.kurs).slice(0, bahn.length);
   const k = KENNZAHLEN[0];
   const d = rund(k.lies(bahn.at(-1).ergebnis), 0) - rund(k.lies(ohne.at(-1).ergebnis), 0);
   return `
@@ -178,8 +178,9 @@ const ZEICHNER = {
 /**
  * Einen ganzen Schaukasten zeichnen.
  *
- * `kontext` traegt, was ueber die Bahn hinaus gebraucht wird: das Ressort und
- * die Vorlagen je Periode.
+ * `kontext` traegt, was ueber die Bahn hinaus gebraucht wird: das Ressort,
+ * die Vorlagen je Periode und den Kurs (Laengen und Ereignisse, fuer die
+ * Vergleichsrechnung).
  */
 export function zeichneSchaukasten(stuecke, bahn, kontext = {}) {
   if (!stuecke?.length) return '';

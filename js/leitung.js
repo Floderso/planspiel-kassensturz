@@ -3,8 +3,9 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // DIE LEITUNG — Zulassung, Aufstellung, Notfallwerkzeuge
 //
-// Deckt E2, E2a, E3 und E3a aus entwurf/PLANUNG-AUSBAU.md ab. Perioden (E4)
-// und Leitstand (E6) folgen; bis dahin bleibt admin.html fuer alles Uebrige.
+// Deckt E2 bis E6 aus entwurf/PLANUNG-AUSBAU.md ab: Zulassung, Aufstellung,
+// Personenblatt, Perioden, Ereignisse, Werkzeuge und Leitstand. Lernziele und
+// der Upload der Teilnahmeliste liegen noch in admin.html.
 //
 // ── Der Token steht im Fragment, nie in der Abfrage ────────────────────────
 // `?token=` landet in Serverprotokollen, Verlaeufen und Lesezeichen, die
@@ -14,8 +15,10 @@
 
 import { hatBackend, holeAdminSicht, holeAufstellung, lasseZu, entfernePerson,
          setzePersonUm, gibRessortFrei, setzeAnzeigenamenZurueck, setzeZuordnung,
-         setzeFreigabe, setzePeriode, ServerFehler } from './dienste/server.js';
-import { spieleNach, KENNZAHLEN, zahl, diffText } from './spielkern.js';
+         setzeFreigabe, setzePeriode, setzeSchocks, setzeWerkzeuge,
+         ServerFehler } from './dienste/server.js';
+import { spieleNach, kursAus, KENNZAHLEN, zahl, diffText, jahreDerRunde, SCHOCKS,
+         schockWirkung, WERKZEUGE, RESSORTS, abRunde, werkzeugeAusAb } from './spielkern.js';
 
 const $ = s => document.querySelector(s);
 const P = new URLSearchParams(location.search);
@@ -324,6 +327,13 @@ async function periodeAendern(idx) {
 }
 
 async function weitereFreigeben() {
+  // Die Freigabe ist der Moment, in dem ein Ereignis unwiderruflich wird.
+  // Das soll niemandem nebenbei passieren.
+  const naechste = sicht.perioden_freigegeben ?? 1;
+  const ereignis = (sicht.schocks ?? []).find(s => s.periode === naechste);
+  if (ereignis && !confirm(`Periode ${naechste + 1} freischalten?\n\n`
+      + `Damit steht das Ereignis „${ereignis.name}“ fest. Es trifft alle Teams und lässt `
+      + 'sich danach nicht mehr ändern oder entfernen.')) return;
   try {
     await setzeFreigabe(SITZUNG_ID, (sicht.perioden_freigegeben ?? 1) + 1, TOKEN);
     await nachEingriff(`Periode ${(sicht.perioden_freigegeben ?? 1) + 1} ist freigeschaltet.`);
@@ -348,7 +358,7 @@ function zeichneLeitstand() {
 
   const jetzt = Date.now();
   const zeilen = eintraege.map(([name, t]) => {
-    const bahn = spieleNach(t.perioden ?? []);
+    const bahn = spieleNach(t.perioden ?? [], kursAus(sicht));
     const letzte = bahn.at(-1);
     const laufend = (t.perioden ?? []).find(p => !p.locked);
     const vorlagen = Object.values(laufend?.vorlagen ?? {});
@@ -382,6 +392,113 @@ function zeichneLeitstand() {
     </article>`).join('');
 }
 
+// ── E5 · Ereignisse ────────────────────────────────────────────────────────
+//
+// Dieselbe Regel wie auf dem Server (periodeGesehen in api/src/index.ts):
+// fest ist, was freigegeben ist ODER worin schon ein Team sitzt. Die
+// Oberflaeche zeigt es nur an — verhindern tut es der Server.
+
+function gesehen(idx) {
+  if (idx < (sicht.perioden_freigegeben ?? 1)) return true;
+  return Object.values(sicht.teams ?? {}).some(t =>
+    (t.perioden ?? []).some(p => p.idx >= idx - 1 && p.locked));
+}
+
+const TYP = { energie: 'Energie', nachfrage: 'Nachfrage', finanz: 'Finanzmarkt',
+              geopolitisch: 'Handel' };
+
+function wirkungsliste(schock) {
+  if (!schock) return '<span class="leer">ruhige Periode</span>';
+  return `<ul class="wirkung">${schockWirkung(schock).map(w =>
+    `<li data-wirkt="${w.wirkt}">${w.text}</li>`).join('')}
+    <li class="q">${schock.quelle}</li></ul>`;
+}
+
+function zeichneEreignisse() {
+  const kurs = kursAus(sicht);
+  const typen = [...new Set(SCHOCKS.map(s => s.typ))];
+  $('#ereignisse').innerHTML = Array.from({ length: kurs.runden }, (_, i) => {
+    const gesetzt = (sicht.schocks ?? []).find(s => s.periode === i);
+    const schock = gesetzt ? SCHOCKS.find(s => s.id === gesetzt.id) ?? null : null;
+    const auswahl = gesehen(i)
+      ? `<p class="fest">${schock ? schock.name : 'kein Ereignis'}
+           <small>steht fest — die Periode ist ${i < (sicht.perioden_freigegeben ?? 1)
+             ? 'freigegeben' : 'schon in Arbeit'}</small></p>`
+      : `<select class="ereignis-wahl" data-idx="${i}" aria-label="Ereignis in Periode ${i + 1}">
+          <option value="">kein Ereignis</option>
+          ${typen.map(t => `<optgroup label="${TYP[t] ?? t}">${SCHOCKS.filter(s => s.typ === t)
+            .map(s => `<option value="${s.id}"${s.id === schock?.id ? ' selected' : ''}>${
+              s.name} · Stärke ${s.staerke}</option>`).join('')}</optgroup>`).join('')}
+        </select>`;
+    return `<tr><td class="nr">${i + 1}</td><td class="j">${jahreDerRunde(i + 1, kurs).text}</td>
+      <td>${auswahl}</td><td>${wirkungsliste(schock)}</td></tr>`;
+  }).join('');
+
+  for (const feld of document.querySelectorAll('.ereignis-wahl')) {
+    feld.addEventListener('change', () => setzeEreignis(Number(feld.dataset.idx), feld.value));
+  }
+}
+
+async function setzeEreignis(idx, id) {
+  const liste = (sicht.schocks ?? []).filter(s => s.periode !== idx);
+  const eintrag = SCHOCKS.find(s => s.id === id);
+  if (eintrag) liste.push({ ...eintrag, periode: idx });
+  try {
+    await setzeSchocks(SITZUNG_ID, liste, TOKEN);
+    await nachEingriff(eintrag ? `Periode ${idx + 1}: „${eintrag.name}“ gesetzt.`
+                               : `Periode ${idx + 1}: kein Ereignis mehr.`);
+  } catch (f) {
+    melde(f instanceof ServerFehler ? f.message : 'Das hat nicht geklappt.', 'schlecht');
+    await lade();
+  }
+}
+
+// ── Werkzeuge: schrittweise Freischaltung ──────────────────────────────────
+
+/** Die erste Runde, die noch niemand gesehen hat — oder null. */
+function ersteFreieRunde(runden) {
+  for (let r = 1; r <= runden; r++) if (!gesehen(r - 1)) return r;
+  return null;
+}
+
+function zeichneWerkzeuge() {
+  const kurs = kursAus(sicht);
+  const frei = ersteFreieRunde(kurs.runden);
+  const drin = sicht.ressorts ?? RESSORTS.map(r => r.id);
+  $('#werkzeuge').innerHTML = WERKZEUGE.filter(w => drin.includes(w.ressort)).map(w => {
+    const ab = abRunde(w.id, kurs);
+    const fest = frei === null || (ab !== null && ab < frei);
+    const zelle = fest
+      ? `<p class="fest">${ab ? `Runde ${ab}` : 'nie'}<small>${ab ? 'schon offen' : 'Kurs zu weit'}</small></p>`
+      : `<select class="werkzeug-wahl" data-id="${w.id}" aria-label="${w.name} offen ab Runde">
+          ${Array.from({ length: kurs.runden - frei + 1 }, (_, i) => frei + i).map(r =>
+            `<option value="${r}"${r === ab ? ' selected' : ''}>Runde ${r}</option>`).join('')}
+          <option value=""${ab === null ? ' selected' : ''}>nie</option>
+        </select>`;
+    return `<tr><td><b>${w.name}</b></td>
+      <td>${RESSORTS.find(r => r.id === w.ressort)?.kurz ?? w.ressort}</td>
+      <td class="stl">${w.stell.map(s => s.bez).join(', ')}</td><td>${zelle}</td></tr>`;
+  }).join('');
+
+  for (const feld of document.querySelectorAll('.werkzeug-wahl')) {
+    feld.addEventListener('change', () => setzeWerkzeugAb(feld.dataset.id, feld.value));
+  }
+}
+
+async function setzeWerkzeugAb(id, wert) {
+  const kurs = kursAus(sicht);
+  const ab = Object.fromEntries(WERKZEUGE.map(w => [w.id, abRunde(w.id, kurs) ?? Infinity]));
+  ab[id] = wert === '' ? Infinity : Number(wert);
+  const name = WERKZEUGE.find(w => w.id === id)?.name ?? id;
+  try {
+    await setzeWerkzeuge(SITZUNG_ID, werkzeugeAusAb(ab, kurs.runden), TOKEN);
+    await nachEingriff(wert === '' ? `${name} bleibt in diesem Kurs zu.`
+                                   : `${name} ist ab Runde ${wert} offen.`);
+  } catch (f) {
+    melde(f instanceof ServerFehler ? f.message : 'Das hat nicht geklappt.', 'schlecht');
+  }
+}
+
 // ── Eingriffe nachlesen ────────────────────────────────────────────────────
 
 function zeichneEingriffe() {
@@ -394,13 +511,14 @@ function zeichneEingriffe() {
 
 function zeichne() {
   zeichneZulassung(); zeichneAufstellung(); zeichnePerioden();
-  zeichneLeitstand(); zeichneEingriffe();
+  zeichneEreignisse(); zeichneWerkzeuge(); zeichneLeitstand(); zeichneEingriffe();
 }
 
 // ── Start ──────────────────────────────────────────────────────────────────
 
 if (!SITZUNG_ID || !hatBackend()) {
-  $('#laedt').textContent = 'Für die Leitung braucht es einen Kurs-Code und eine erreichbare Sitzung.';
+  $('#laedt').innerHTML = 'Für die Leitung braucht es einen Kurs-Code und eine erreichbare Sitzung. '
+    + '<a href="einrichtung.html" style="color:var(--zettel)">Einen Kurs anlegen</a>';
 } else if (!TOKEN) {
   $('#laedt').innerHTML = 'Es fehlt der Zugangsschlüssel. Er steht im Link aus der '
     + 'Sitzungsanlage <b>hinter dem #</b> — kopier den Link vollständig.';

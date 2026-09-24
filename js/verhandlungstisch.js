@@ -36,10 +36,11 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import {
-  erzeugeSpiel, RESSORTS, ALLE, KENNZAHLEN, NEBENWERTE, RUNDEN,
+  erzeugeSpiel, RESSORTS as ALLE_RESSORTS, ALLE, KENNZAHLEN, NEBENWERTE,
   benutzteQuellen, QUELLEN, spieleNach, zahl, mitVz, rund, diffText, punkteText,
-  wertText,
+  wertText, kursAus, ressortsIm, schockWirkung, istOffen, abRunde, WERKZEUGE,
 } from './spielkern.js';
+import { verlaufskurve, wirkungsbalken, VERLAUF_LEGENDE } from './diagramme.js';
 import { bindeAlle, zieheKlappenNach } from './felder.js';
 import { merke, hole, merkeSitznamen, holeSitznamen } from './dienste/speicher.js';
 import { zeichneSchaukasten } from './schaukasten.js';
@@ -50,6 +51,14 @@ import { hatBackend, holeMitglieder, trittBei, holeSitzung,
          ServerFehler } from './dienste/server.js';
 
 const spiel   = erzeugeSpiel();
+
+/**
+ * Die Ressorts, die in DIESEM Kurs am Tisch sitzen. Bis die Sitzung
+ * geantwortet hat, alle vier; danach die, mit denen der Kurs angelegt wurde.
+ * Eine Variable und keine Konstante, weil die Sitzung erst nach dem Start
+ * antwortet — jede Funktion liest sie beim Aufruf, nicht beim Laden.
+ */
+let RESSORTS = ALLE_RESSORTS;
 const quellen = benutzteQuellen();
 const $  = s => document.querySelector(s);
 const FN = Object.fromEntries(quellen.map((q, i) => [q.id, i + 1]));
@@ -84,7 +93,7 @@ const gemerkteSitze = holeSitznamen(SITZUNG_ID) ?? {};
  * Online ist der Server massgeblich; die Auszaehlung hier ist nur die
  * Anzeige und fuer den Betrieb am eigenen Geraet, wo es keinen Server gibt.
  */
-const tisch = Object.fromEntries(RESSORTS.map(r => [r.id, {
+const tisch = Object.fromEntries(ALLE_RESSORTS.map(r => [r.id, {
   sitz: gemerkteSitze[r.id] ?? '', begruendung: '', vorlage: null,
 }]));
 
@@ -117,19 +126,88 @@ let schaukastenGeholt = false;
 async function uebernimmTeamstand() {
   try {
     const stand = await holeSitzung(SITZUNG_ID, { zeitlimit: 8000 });
+    // Erst der Kurs, dann das Nachspielen: die Runden werden mit den
+    // Laengen und Ereignissen DIESES Kurses nachgerechnet.
+    uebernimmKurs(stand);
     const t = stand?.teams?.[sitzung.team];
-    const laufend = (t?.perioden ?? []).find(p => !p.locked && p.idx === spiel.runde - 1);
-    if (laufend?.params) {
-      for (const st of ALLE) {
-        const wert = laufend.params[st.key];
-        if (wert !== undefined && wert !== spiel.params[st.key]) spiel.setze(st.key, wert);
-      }
+    const perioden = [...(t?.perioden ?? [])].sort((a, b) => a.idx - b.idx);
+
+    // Die ABGESCHLOSSENEN Runden nachspielen, bevor die laufende uebernommen
+    // wird. Ohne das landet jeder, der die Seite neu laedt oder spaeter
+    // dazukommt, wieder in Runde 1 — mitten im Kurs. Nachgespielt wird mit
+    // denselben Schritten wie am Tisch: Werte setzen, Runde schliessen.
+    for (const p of perioden.filter(x => x.locked)) {
+      if (p.idx !== spiel.runde - 1) continue;      // nur luekenlos vorwaerts
+      uebernimmParams(p.params);
+      protokoll.push({
+        runde: spiel.runde, jahre: spiel.jahre,
+        ergebnis: spiel.ergebnis, basis: spiel.basis,
+        vorlagen: p.vorlagen ?? {}, schock: spiel.schock,
+      });
+      spiel.schliesseRunde();
+      leereTisch();
     }
+
+    const laufend = perioden.find(p => !p.locked && p.idx === spiel.runde - 1);
+    if (laufend?.params) uebernimmParams(laufend.params);
+
     alles();
   } catch (_) {
     // Kein Stand erreichbar: dann eben mit dem eigenen weiterspielen. Gesendet
     // wird trotzdem nichts — sonst waere genau der Schaden da, den das hier
     // verhindern soll.
+  }
+}
+
+/**
+ * Den Kurs der Sitzung uebernehmen: Runden, Laengen, Ereignisse, Werkzeuge,
+ * Ressorts und Quorum. Die Lehrperson legt sie fest, nicht diese Flaeche.
+ */
+function uebernimmKurs(stand) {
+  if (!stand) return;
+  quorum = stand.quorum ?? quorum;
+  RESSORTS = ressortsIm(kursAus(stand));
+  spiel.setzeKurs(kursAus(stand));
+}
+
+/**
+ * Die Werte der ANDEREN Ressorts aus ihren Vorlagen uebernehmen.
+ *
+ * Online bearbeitet jedes Geraet nur sein eigenes Ressort. Bis 24.09.2026
+ * kannte es von den anderen nur die Vorlage, nicht deren Werte: jedes Geraet
+ * zeigte eine andere Lage, und wer die Runde schloss, meldete der Lehrperson
+ * nur die eigenen Beschluesse. Jetzt gilt am Tisch, was eingebracht oder
+ * angenommen ist; eine abgelehnte oder zurueckgezogene Vorlage faellt auf
+ * den Rundenstart zurueck.
+ */
+function uebernimmFremdeWerte() {
+  if (!sitzung.team || !meinRessort) return;
+  for (const r of RESSORTS) {
+    if (r.id === meinRessort) continue;
+    const v = tisch[r.id].vorlage;
+    const gilt = v && ['eingebracht', 'angenommen'].includes(v.stand);
+    for (const s of r.stell) {
+      const soll = gilt && v.aenderungen?.[s.key] !== undefined
+        ? v.aenderungen[s.key].nach : spiel.startwerte[s.key];
+      if (soll !== undefined && spiel.params[s.key] !== soll) spiel.setze(s.key, soll);
+    }
+  }
+}
+
+/** Nach einem Rundenschluss: der Tisch ist leer, die Plaetze bleiben besetzt. */
+function leereTisch() {
+  for (const r of ALLE_RESSORTS) {
+    tisch[r.id].vorlage = null;
+    tisch[r.id].begruendung = '';   // jede Runde will neu begruendet werden
+  }
+}
+
+/** Die Stellgroessen einer Periode uebernehmen, ohne die uebrigen anzufassen. */
+function uebernimmParams(params) {
+  if (!params) return;
+  for (const st of ALLE) {
+    const wert = params[st.key];
+    if (wert !== undefined && wert !== spiel.params[st.key]) spiel.setze(st.key, wert);
   }
 }
 
@@ -139,16 +217,40 @@ async function holeSchaukaesten({ erzwingen = false } = {}) {
   if (schaukastenGeholt && !erzwingen) return;
   try {
     const stand = await holeSitzung(SITZUNG_ID, { zeitlimit: 6000 });
+    // Nach einem Rundenschluss steht hier das Ereignis der NEUEN Runde. Es ist
+    // ab jetzt fest: der Server nimmt keine Aenderung mehr an, sobald ein
+    // Team die Periode davor abgeschlossen hat.
+    uebernimmKurs(stand);
     const t = stand?.teams?.[sitzung.team];
     Object.assign(schaukaesten, t?.schaukaesten ?? {});
     const perioden = (t?.perioden ?? []).filter(p => p.locked);
-    teamBahn = spieleNach(perioden);
+    teamBahn = spieleNach(perioden, spiel.kurs);
     teamVorlagen = perioden.map(p => p.vorlagen ?? {});
     schaukastenGeholt = true;
     if (ansicht.name === 'ressort') zeichneAnsicht();
   } catch (_) {
     // Der naechste Blick in ein Ressort versucht es wieder.
   }
+}
+
+/**
+ * Schreibvorgaenge DIESES Geraets laufen nacheinander, nie gleichzeitig.
+ *
+ * Der Server liest und schreibt bei jedem Aufruf die ganze Sitzung. Zwei
+ * gleichzeitige Aufrufe lesen denselben Stand, und der spaetere ueberschreibt
+ * den frueheren. Genau so ging am 24.09.2026 im Durchspielen eine Vorlage
+ * verloren: Begruendung tippen, direkt "Zur Abstimmung stellen" klicken — das
+ * Feld speicherte beim Verlassen die Begruendung, die Vorlage startete in
+ * derselben Millisekunde, und die Begruendung gewann.
+ *
+ * Zwischen verschiedenen Geraeten hilft das nicht; das ist die Grenze des
+ * KV-Speichers (ADR 006).
+ */
+let warteschlange = Promise.resolve();
+function nacheinander(auftrag) {
+  const lauf = warteschlange.then(auftrag, auftrag);
+  warteschlange = lauf.catch(() => {});
+  return lauf;
 }
 
 /** Was in abgeschlossenen Runden beschlossen wurde. Wächst, wird nie geleert. */
@@ -310,7 +412,7 @@ function starteTisch() {
     addEventListener('pagehide', () => clearInterval(sitzung.abfrage));
   }
   $('#kurslage').textContent = sitzung.team
-    ? `Kurs ${SITZUNG_ID} · Team ${sitzung.team}`
+    ? `Kurs ${SITZUNG_ID} · ${sitzung.team}`
     : 'Am eigenen Gerät — keine Meldung an die Lehrperson';
   $('#kurslage').dataset.online = String(Boolean(sitzung.team));
   alles();
@@ -386,7 +488,25 @@ function stand(r) {
                + (a.fehlen.length ? ` · fehlen ${a.fehlen.length}` : '') };
 }
 
+/** Das Ereignis der laufenden Runde — ein Zettel ueber den Mappen. */
+function zeichneEreignis() {
+  const s = spiel.schock, feld = $('#ereignis');
+  if (!s) { feld.hidden = true; return; }
+  const w = schockWirkung(s);
+  const nicht = w.filter(x => !x.wirkt);
+  feld.hidden = false;
+  feld.innerHTML = `
+    <p class="ek">Ereignis · Sitzung ${spiel.runde}</p>
+    <h2>${s.name}</h2>
+    <p class="eb">${s.beschreibung}</p>
+    <p class="ew">${w.filter(x => x.wirkt).map(x => x.text).join(' · ')}</p>
+    ${nicht.length ? `<p class="en">Im Modell nicht gerechnet: ${nicht.map(x => x.text).join(' · ')}</p>` : ''}
+    <p class="en">Steckt in allen Zahlen, auch in „ohne Beschluss“ — die Veränderungen
+       zeigen nur, was ihr beschließt. Quelle: ${s.quelle}</p>`;
+}
+
 function zeichneTisch() {
+  zeichneEreignis();
   $('#tisch').innerHTML = RESSORTS.map(r => {
     const k  = KENNZAHLEN.find(x => x.id === r.kennzahl);
     const t  = diffText(k, spiel.ergebnis, spiel.basis);
@@ -441,6 +561,7 @@ function zeichneProtokollansicht() {
     : protokoll.slice().reverse().map(p => `
       <article class="runde">
         <h3>Sitzung ${p.runde} <span class="jahre">${p.jahre.text}</span></h3>
+        ${p.schock ? `<p class="pe">Ereignis: ${p.schock.name}</p>` : ''}
         <div class="runde-lage">
           ${KENNZAHLEN.map(k => {
             const t = diffText(k, p.ergebnis, p.basis);
@@ -511,12 +632,11 @@ function zeichneRessortansicht(id) {
     return `<div class="kz" data-richtung="${d.richtung}">
       <p class="n">${kz.name}</p>
       <p class="v">${zahl(kz.lies(spiel.ergebnis), kz.n)}${kz.einheit ? `<em> ${kz.einheit}</em>` : ''}</p>
-      <p class="d">${d.text}</p></div>`;
+      <p class="d">${d.text}</p>${kurve(kz)}</div>`;
   }).join('');
-  $('#wirkung-hinweis').textContent =
-    'Das ist die Lage des ganzen Haushalts, nicht der Beitrag dieses Ressorts. '
-    + 'In einer Volkswirtschaft wirkt nichts allein — was hier steht, ist was nach '
-    + 'allen Beschlüssen dieser Runde gilt.';
+  // Die Ehrlichkeitsauskunft bleibt — nur kuerzer. Hier wird nicht zugerechnet.
+  $('#wirkung-hinweis').innerHTML = `${VERLAUF_LEGENDE}<br>Die Lage des ganzen Haushalts `
+    + 'nach allen Beschlüssen — nicht der Beitrag dieses Ressorts.';
 
   $('#zur-werkbank').hidden = !darfBearbeiten(r.id);
   $('#zur-werkbank').onclick = () => geheZu('werkbank', r.id);
@@ -528,17 +648,15 @@ function zeichneRessortansicht(id) {
   const bahn = teamBahn.length ? teamBahn : spieleNach(protokoll.map(x => ({
     idx: x.runde - 1,
     params: spiel.verlauf.find(v => v.runde === x.runde)?.params ?? {},
-  })));
+  })), spiel.kurs);
   $('#schaukasten').innerHTML = stuecke.length === 0
-    ? `<p class="leer">${meins
-        ? 'Du hast noch nichts zusammengestellt. In der Auswertung kannst du wählen, '
-          + 'womit du deine Politik erklären willst.'
+    ? `<p class="leer">${meins ? 'Noch nichts zusammengestellt.'
         : 'Dieses Ressort hat noch nichts zusammengestellt.'}</p>`
       + (meins ? `<p><a class="leiser-link" href="auswertung.html${
           SITZUNG_ID ? `?session=${encodeURIComponent(SITZUNG_ID)}` : ''
         }">Zum Diagrammbaukasten</a></p>` : '')
     : zeichneSchaukasten(stuecke, bahn, {
-        ressort: r.id,
+        ressort: r.id, kurs: spiel.kurs,
         vorlagen: teamVorlagen.length ? teamVorlagen : protokoll.map(x => x.vorlagen ?? {}),
       });
 }
@@ -554,9 +672,20 @@ function zeichneAbstimmung() {
   const offene = RESSORTS.filter(r => tisch[r.id].vorlage
     && ['eingebracht', 'angenommen', 'abgelehnt'].includes(tisch[r.id].vorlage.stand));
 
+  // Was jede Vorlage fuer sich bewirkte. Die Skala je Kennzahl ist ueber
+  // ALLE Vorlagen geteilt — nur so ist "diese bewegt den Saldo mehr als jene"
+  // am Bild ablesbar. Zwischen Kennzahlen gibt es keine gemeinsame Skala.
+  const allein = Object.fromEntries(offene.map(r => {
+    const e = spiel.probe(tisch[r.id].vorlage.aenderungen);
+    return [r.id, KENNZAHLEN.map(k => ({ k, ...diffText(k, e, spiel.basis) }))];
+  }));
+  const rand = Object.fromEntries(KENNZAHLEN.map((k, i) => [k.id,
+    Math.max(0, ...Object.values(allein).map(z => Math.abs(z[i].d)))]));
+  $('#allein-hinweis').hidden = !offene.some(r =>
+    Object.keys(tisch[r.id].vorlage.aenderungen ?? {}).length);
+
   $('#abstimmung-liste').innerHTML = offene.length === 0
-    ? '<p class="leer">Noch ist nichts eingebracht. Wer etwas ändern will, geht an die '
-      + 'Werkbank und stellt es zur Abstimmung.</p>'
+    ? '<p class="leer">Noch ist nichts eingebracht.</p>'
     : offene.map(r => {
         const v = tisch[r.id].vorlage, a = werteAus(v);
         const meine = meinRessort ? v.stimmen?.[meinRessort] : null;
@@ -573,7 +702,14 @@ function zeichneAbstimmung() {
             <h3>${r.name}<span class="fassung">Fassung ${v.fassung}</span></h3>
             <p class="von">eingebracht von ${v.eingebracht_von || r.kurz}</p>
           </header>
-          ${zeilen ? `<ul class="aenderungen">${zeilen}</ul>`
+          ${zeilen ? `<ul class="aenderungen">${zeilen}</ul>
+            <div class="allein" role="group" aria-label="Diese Vorlage für sich allein gerechnet">
+              <p class="ak">Für sich allein</p>
+              ${allein[r.id].map(z => `<p class="az" data-richtung="${z.richtung}">
+                <span class="n">${z.k.kurz}</span>
+                ${wirkungsbalken(z.d, rand[z.k.id], z.richtung)}
+                <span class="t">${z.text}</span></p>`).join('')}
+            </div>`
                    : '<p class="keine">Keine Änderung — dieses Ressort lässt alles, wie es ist.</p>'}
           <blockquote>${(v.begruendung || '').replace(/</g, '&lt;')}</blockquote>
           <div class="auszaehlung">
@@ -594,7 +730,7 @@ function zeichneAbstimmung() {
                    <button type="button" data-stimme="${w}"
                      aria-pressed="${meine?.stimme === w}">${STIMM_TEXT[w]}</button>`).join('')}
                </div>
-               ${meine ? `<p class="meine">Du hast ${STIMM_TEXT[meine.stimme].toLowerCase()} gewählt — änderbar, bis alle gestimmt haben.</p>` : ''}`
+               ${meine ? `<p class="meine">Du hast mit „${STIMM_TEXT[meine.stimme]}“ gestimmt — änderbar, bis alle gestimmt haben.</p>` : ''}`
             : ''}
           ${v.stand === 'eingebracht' && meinRessort === r.id
             ? `<p><button type="button" class="zurueckziehen" data-ressort="${r.id}">Vorlage zurückziehen</button></p>`
@@ -637,8 +773,9 @@ async function gibStimme(ressort, stimme) {
     return;
   }
   try {
-    const antwort = await stimmeUeberVorlage(SITZUNG_ID, sitzung.team, spiel.runde - 1, ressort,
-      { rolle, stimme, person: sitzung.person ?? tisch[rolle].sitz ?? rolle });
+    const antwort = await nacheinander(() => stimmeUeberVorlage(
+      SITZUNG_ID, sitzung.team, spiel.runde - 1, ressort,
+      { rolle, stimme, person: sitzung.person ?? tisch[rolle].sitz ?? rolle }));
     tisch[ressort].vorlage = antwort.vorlage;
     zeigeMeldung(null);
     zeichneAnsicht();
@@ -650,7 +787,7 @@ async function gibStimme(ressort, stimme) {
 async function ziehZurueck(ressort) {
   if (!sitzung.team) { tisch[ressort].vorlage = null; zeichneAnsicht(); return; }
   try {
-    await ziehVorlageZurueck(SITZUNG_ID, sitzung.team, spiel.runde - 1, ressort);
+    await nacheinander(() => ziehVorlageZurueck(SITZUNG_ID, sitzung.team, spiel.runde - 1, ressort));
     tisch[ressort].vorlage = null;
     zeichneAnsicht();
   } catch (f) {
@@ -690,8 +827,8 @@ async function bringEin(ressortId) {
     return;
   }
   try {
-    const antwort = await bringeVorlageEin(SITZUNG_ID, sitzung.team, spiel.runde - 1,
-      { ressort: r.id, aenderungen, begruendung: text, person });
+    const antwort = await nacheinander(() => bringeVorlageEin(SITZUNG_ID, sitzung.team,
+      spiel.runde - 1, { ressort: r.id, aenderungen, begruendung: text, person }));
     tisch[r.id].vorlage = antwort.vorlage;
     zeigeMeldung(null);
     geheZu('abstimmung');
@@ -714,6 +851,17 @@ async function holeTischstand() {
   try {
     const antwort = await holeVorlagen(SITZUNG_ID, sitzung.team, spiel.runde - 1);
     quorum = antwort.quorum ?? quorum;
+    if (antwort.locked) {
+      // Ein anderes Geraet hat die Runde geschlossen. Nachziehen — mit den
+      // Werten, die es gemeldet hat, nicht mit den eigenen.
+      const vorher = spiel.runde;
+      await uebernimmTeamstand();
+      if (spiel.runde > vorher) {
+        zeigeMeldung(`Sitzung ${vorher} ist geschlossen. Weiter geht es mit Sitzung ${spiel.runde}.`);
+        geheZu('tisch');
+      }
+      return;
+    }
     let geaendert = false;
     for (const r of RESSORTS) {
       const neu = antwort.vorlagen?.[r.id] ?? null;
@@ -722,6 +870,7 @@ async function holeTischstand() {
       tisch[r.id].vorlage = neu;
       if (neu?.begruendung) tisch[r.id].begruendung = neu.begruendung;
     }
+    uebernimmFremdeWerte();
     const tippt = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
     if (geaendert && !tippt) zeichneAnsicht();
   } catch (_) {
@@ -751,11 +900,17 @@ function zeichneWerkbank(id) {
   $('#werkbank-kopf').innerHTML = `
     <p class="reiter r-${r.id}">${r.kurz}</p>
     <h2 id="werkbank-titel" tabindex="-1">Werkbank — ${r.name}</h2>
-    <p class="unter">Ändere, was du für richtig hältst. Die Leiste unten zeigt sofort,
-       was es bewirkt. Verbindlich wird es erst, wenn du am Tisch zeichnest.</p>`;
+    <p class="unter">Verbindlich wird es erst, wenn die Vorlage angenommen ist.</p>`;
+
+  // Was die Lehrperson fuer diese Runde noch nicht freigegeben hat, bleibt
+  // SICHTBAR — zugeklappt, mit "ab Runde n". Wer es nicht saehe, wuesste
+  // nicht, dass es spaeter mehr gibt.
+  const offen    = r.stell.filter(s => istOffen(s, spiel.runde, spiel.kurs));
+  const gesperrt = WERKZEUGE.filter(w => w.ressort === r.id
+    && !istOffen(w.id, spiel.runde, spiel.kurs));
 
   const bewegte = r.stell.filter(s => spiel.bewegt(s.key));
-  $('#stellgroessen').innerHTML = r.stell.map(s => {
+  $('#stellgroessen').innerHTML = offen.map(s => {
     const offen = spiel.bewegt(s.key);
     const q = QUELLEN[s.quelle];
     return `
@@ -777,6 +932,16 @@ function zeichneWerkbank(id) {
           ${q.note ? `<p class="note">${q.note}</p>` : ''}</details>` : ''}
       </div>
     </details>`;
+  }).join('') + gesperrt.map(w => {
+    const ab = abRunde(w.id, spiel.kurs);
+    return `
+    <details class="stell gesperrt">
+      <summary><span class="n">${w.name}</span>
+        <span class="kurz">${ab ? `ab Runde ${ab}` : 'in diesem Kurs nicht frei'}</span></summary>
+      <div class="inhalt">${w.stell.map(s => `<p class="vorwert">${s.bez}:
+        <b>${wertText(s, spiel.params[s.key])} ${s.einheit}</b></p>`).join('')}
+        <p class="vorwert">Bleibt${ab ? ' bis dahin' : ''}, wie es ist.</p></div>
+    </details>`;
   }).join('');
 
   $('#werkbank-zahl').textContent = bewegte.length === 0
@@ -785,7 +950,7 @@ function zeichneWerkbank(id) {
   $('#begruendung').value = tisch[r.id].begruendung;
   $('#begruendung').dataset.ressort = r.id;
 
-  bindeAlle(spiel, r.stell, knoten);
+  bindeAlle(spiel, offen, knoten);
   zeichneWirkungsleiste();
   $('#zum-tisch').onclick = () => geheZu('tisch');
 
@@ -798,8 +963,7 @@ function zeichneWerkbank(id) {
     : 'Zur Abstimmung stellen';
   knopf.onclick = () => bringEin(r.id);
   $('#einbringen-hinweis').textContent = v?.stand === 'abgelehnt'
-    ? 'Die letzte Fassung wurde abgelehnt. Was änderst du?'
-    : 'Alle vier Ressorts stimmen darüber ab. Ohne Begründung geht es nicht.';
+    ? 'Die letzte Fassung wurde abgelehnt. Was änderst du?' : '';
 }
 
 /** Die schmale Leiste am Fuß der Werkbank — was sich gerade ändert. */
@@ -809,19 +973,30 @@ function zeichneWirkungsleiste() {
     return `<div class="wl" data-richtung="${t.richtung}">
       <span class="n">${k.kurz}</span>
       <span class="v">${zahl(k.lies(spiel.ergebnis), k.n)}</span>
-      <span class="d">${t.text}</span></div>`;
+      <span class="d">${t.text}</span>${kurve(k)}</div>`;
   }).join('');
 }
+
+/** Die Verlaufspunkte einer Kennzahl: gespielte Runden, dann die laufende. */
+function verlaufVon(k) {
+  return spiel.verlauf.map(v => ({ name: `Runde ${v.runde}`, wert: k.lies(v.ergebnis) }))
+    .concat({ name: `Runde ${spiel.runde}`, wert: k.lies(spiel.ergebnis) });
+}
+
+/** Verlauf samt Hantel "ohne Beschluss → jetzt" fuer die laufende Runde. */
+const kurve = (k) => verlaufskurve(k, verlaufVon(k), k.lies(spiel.basis));
 
 async function sichereBegruendung() {
   const feld = $('#begruendung');
   const id   = feld.dataset.ressort;
   if (!id) return;
-  tisch[id].begruendung = feld.value.trim();
+  const text = feld.value.trim();
+  if (text === tisch[id].begruendung) return;   // nichts Neues, nichts zu senden
+  tisch[id].begruendung = text;
   if (!sitzung.team) return;
   try {
-    await setzeBegruendung(SITZUNG_ID, sitzung.team, spiel.runde - 1,
-                           { ressort: id, text: tisch[id].begruendung });
+    await nacheinander(() => setzeBegruendung(SITZUNG_ID, sitzung.team, spiel.runde - 1,
+                                              { ressort: id, text }));
     zeigeMeldung(null);
   } catch (f) {
     zeigeMeldung(f instanceof ServerFehler
@@ -840,14 +1015,15 @@ function zeichneMitte() {
     return `<div class="kz" data-richtung="${t.richtung}">
       <p class="n">${k.name}</p>
       <p class="v">${zahl(k.lies(e), k.n)}${k.einheit ? `<em> ${k.einheit}</em>` : ''}</p>
-      <p class="d">${t.text}</p></div>`;
+      <p class="d">${t.text}</p>${KENNZAHLEN.includes(k) ? kurve(k) : ''}</div>`;
   }).join('');
+  $('#bilanz-legende').innerHTML = VERLAUF_LEGENDE;
 
   const fehlend = Math.max(0, Math.round(Math.abs(e.saldo) - Math.abs(e.bip_aktuell * 0.0035)));
   const o = offeneRessorts(), teile = [];
   const abgelehnt = o.filter(r => tisch[r.id].vorlage?.stand === 'abgelehnt');
   if (o.length === 0) {
-    teile.push('<b>Alle vier Vorlagen sind angenommen.</b> Die Sitzung kann geschlossen werden.');
+    teile.push(`<b>Alle ${RESSORTS.length} Vorlagen sind angenommen.</b> Die Sitzung kann geschlossen werden.`);
   } else if (abgelehnt.length) {
     teile.push(`<b>Abgelehnt: ${abgelehnt.map(r => r.kurz).join(', ')}.</b> Diese Ressorts
       überarbeiten und bringen neu ein.`);
@@ -886,7 +1062,7 @@ function zeichneMitte() {
       }).join('');
 
   $('#lage').textContent =
-    `Sitzung ${spiel.runde} von ${RUNDEN} · ${spiel.jahre.text} · `
+    `Sitzung ${spiel.runde} von ${spiel.runden} · ${spiel.jahre.text} · `
     + `${RESSORTS.length - offeneRessorts().length} von ${RESSORTS.length} Vorlagen angenommen`;
 
   const knopf = $('#abschluss');
@@ -927,8 +1103,8 @@ async function schliesseSitzung() {
   if (sitzung.team) {
     knopf.textContent = 'Wird gemeldet …';
     try {
-      await sendeTeamZustand(SITZUNG_ID, sitzung.team, periodenFuerServer());
-      const antwort = await stimmeAb(SITZUNG_ID, sitzung.team, spiel.runde - 1);
+      await nacheinander(() => sendeTeamZustand(SITZUNG_ID, sitzung.team, periodenFuerServer()));
+      const antwort = await nacheinander(() => stimmeAb(SITZUNG_ID, sitzung.team, spiel.runde - 1));
       zeigeMeldung(antwort.locked
         ? 'An die Lehrperson gemeldet — die Periode ist gesperrt.'
         : `An die Lehrperson gemeldet — ${antwort.votes} Stimme(n) für den Abschluss.`);
@@ -952,6 +1128,7 @@ async function schliesseSitzung() {
     ergebnis: spiel.ergebnis,
     basis: spiel.basis,
     vorlagen: Object.fromEntries(RESSORTS.map(r => [r.id, tisch[r.id].vorlage])),
+    schock: spiel.schock,
   });
 
   // Fuer die Auswertung ablegen. Am eigenen Geraet gibt es keinen Server, der
@@ -967,10 +1144,7 @@ async function schliesseSitzung() {
 
   // Neue Sitzung: der Tisch ist leer, die Plaetze bleiben besetzt.
   spiel.schliesseRunde();
-  for (const r of RESSORTS) {
-    tisch[r.id].vorlage = null;
-    tisch[r.id].begruendung = '';   // jede Runde will neu begruendet werden
-  }
+  leereTisch();
   holeSchaukaesten({ erzwingen: true });
   geheZu('tisch');
   zeichneAnsicht();
@@ -989,8 +1163,7 @@ function bieteWechselAn() {
   feld.hidden = false;
   const jetzt = RESSORTS.find(r => r.id === meinRessort);
   $('#wechsel-text').textContent =
-    `Du hattest ${jetzt.kurz}. Für Runde ${spiel.runde} könnt ihr tauschen — `
-    + 'dann sieht jede einmal jeden Bereich.';
+    `Du hattest ${jetzt.kurz}. Vor Runde ${spiel.runde} könnt ihr tauschen.`;
   $('#wechsel-liste').innerHTML = RESSORTS.map(r => `
     <button type="button" class="wechseln r-${r.id}" data-rolle="${r.id}"
       ${r.id === meinRessort ? 'disabled' : ''}>${r.kurz}</button>`).join('');
@@ -1045,6 +1218,7 @@ spiel.aufAenderung(({ art, key }) => {
   zeichneMitte();
 });
 
+$('#quellen-zahl').textContent = `${quellen.length} Fundstellen`;
 $('#quellen-liste').innerHTML = quellen.map(q => `
   <li id="q-${q.id}"><p class="nr">${FN[q.id]}</p>
     <div><p class="betrifft">${q.stell.join(' · ')}</p>
@@ -1052,8 +1226,10 @@ $('#quellen-liste').innerHTML = quellen.map(q => `
       ${q.note ? `<p class="note">${q.note}</p>` : ''}</div></li>`).join('');
 
 $('#abschluss').addEventListener('click', schliesseSitzung);
+// Nur `change`: es feuert beim Verlassen des Feldes, wenn sich etwas
+// geaendert hat. Ein zusaetzliches `blur` schickte dieselbe Begruendung ein
+// zweites Mal — mitten in das Einbringen hinein.
 $('#begruendung').addEventListener('change', sichereBegruendung);
-$('#begruendung').addEventListener('blur', sichereBegruendung);
 $('#beitritt-form').addEventListener('submit', beitreten);
 $('#allein-los').addEventListener('click', starteTisch);
 

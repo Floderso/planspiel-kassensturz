@@ -10,7 +10,7 @@
 <style>
 :root{
   --filz:#3C4D46; --filz-tief:#33423C; --papier:#FBF8F0; --karton:#DECFAC;
-  --tinte:#161A16; --grau:#585F54; --grau-mappe:#545A50; --zettel:#F3E483;
+  --tinte:#161A16; --grau:#585F54; --grau-mappe:#454B41; --zettel:#F3E483;
   --fin:#17406B; --soz:#7D1C4B; --umw:#155A41; --wir:#7A3E0C;
   --gut:#125C36; --schlecht:#8E2418;
 }
@@ -294,6 +294,8 @@ h3{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gr
 
 /* ── B2: die Abstimmung ────────────────────────────────────────────────── */
 .zur-abstimmung{max-width:1080px;margin:20px auto 0;padding:0 24px;text-align:right}
+/* Auf dem Filz: Hellgrau statt Dunkelblau — vorher 1,18:1, gemessen am 24.09.2026. */
+.zur-abstimmung .leiser{color:#C8D2CB;margin-right:14px}
 .einbringen-feld{margin-top:16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 #einbringen-hinweis{font-size:12.5px;color:var(--grau);max-width:46ch}
 #einbringen:disabled{background:#8C9785;cursor:not-allowed}
@@ -406,6 +408,70 @@ h3{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gr
 .sk-fuss{font-size:11.5px;color:var(--grau);margin-top:9px;line-height:1.45}
 .sk-leer{font-size:13px;color:var(--grau);font-style:italic}
 .fuss a{color:var(--zettel)}
+
+/* ── Das Ereignis: ein Zettel über den Mappen ──────────────────────────── */
+.ereignis{width:calc(100% - 48px);max-width:1080px;margin:20px auto 0;background:var(--zettel);
+  color:var(--tinte);padding:13px 18px 14px;box-shadow:4px 6px 16px rgba(0,0,0,.34);
+  transform:rotate(-.4deg);border-left:6px solid var(--schlecht)}
+@media(max-width:34rem){.ereignis{width:calc(100% - 32px);transform:none}}
+.ereignis .ek{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:#4A430F}
+.ereignis h2{font-family:Newsreader,serif;font-size:22px;font-weight:500;margin:1px 0 3px}
+.ereignis .eb{font-size:14px;line-height:1.45;max-width:78ch}
+.ereignis .ew{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;margin-top:6px}
+.ereignis .en{font-size:12.5px;color:#3D380C;margin-top:4px;max-width:84ch;line-height:1.45}
+.pe{font-size:12.5px;font-weight:600;color:var(--schlecht);margin:-4px 0 9px}
+
+/* ── Verlaufskurve und Wirkungsbalken (js/diagramme.js) ───────────────── */
+.verlauf{display:block;margin-top:6px;max-width:100%;height:auto;overflow:visible}
+.vb-linie{stroke:#8C9385;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.vb-alt{fill:#8C9385}
+.vb-steg{stroke:#8C9385;stroke-width:2}
+.vb-ohne{fill:var(--papier);stroke:var(--grau);stroke-width:2}
+.vb-jetzt{fill:var(--fin);stroke:var(--papier);stroke-width:2}
+.legende{font-size:12px;color:var(--grau);margin-top:8px}
+.vb-legende{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
+.vb-legende svg{vertical-align:middle;overflow:visible}
+.hinweis .vb-legende{margin-bottom:2px}
+.wl .verlauf{margin-top:3px}
+.wl .vb-linie,.wl .vb-steg{stroke:#8FA197}
+.wl .vb-alt{fill:#8FA197}
+.wl .vb-ohne{fill:var(--filz-tief);stroke:#C8D2CB}
+.wl .vb-jetzt{fill:var(--zettel);stroke:var(--filz-tief)}
+
+.allein{margin:4px 0 12px;padding:9px 11px;background:#F4F0E4;display:grid;gap:3px}
+.allein .ak{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--grau);
+  font-weight:600;margin-bottom:2px}
+.az{display:grid;grid-template-columns:4.2em 120px 1fr;gap:9px;align-items:center;font-size:12.5px}
+.az .n{font-weight:600}
+.az .t{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--grau);white-space:nowrap}
+.az[data-richtung="besser"] .t{color:var(--gut)}
+.az[data-richtung="schlechter"] .t{color:var(--schlecht)}
+.wb-mitte{stroke:var(--grau);stroke-width:1}
+.wb-balken{fill:#8C9385}
+.wb-balken[data-richtung="besser"]{fill:var(--gut)}
+.wb-balken[data-richtung="schlechter"]{fill:var(--schlecht)}
+@media(max-width:34rem){.az{grid-template-columns:4.2em 1fr;}.az svg{display:none}
+  /* Die Leiste klebt am unteren Rand. Mit Kurven naehme sie am Telefon ein
+     Viertel des Bildschirms — dort tragen die Zahlen die Aussage allein. */
+  .wl .verlauf{display:none}}
+
+/* ── Gesperrte Werkzeuge: sichtbar, aber zu ───────────────────────────── */
+.stell.gesperrt{background:repeating-linear-gradient(135deg,#F4F0E4 0 6px,#EEE8D8 6px 12px)}
+.stell.gesperrt .n{color:var(--grau)}
+.stell.gesperrt summary::before{content:'🔒';font-size:11px}
+.stell.gesperrt[open] summary::before{content:'🔒'}
+.stell.gesperrt .kurz{color:var(--tinte);font-weight:600}
+
+/* ── Quellen: zugeklappt ──────────────────────────────────────────────── */
+.unten{align-items:start}
+.quellen summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;
+  gap:12px;align-items:baseline}
+.quellen summary::-webkit-details-marker{display:none}
+.quellen summary h2{margin-bottom:0}
+.quellen summary h2::before{content:'▸ '}
+.quellen[open] summary h2::before{content:'▾ '}
+.quellen[open] summary{margin-bottom:12px}
+#quellen-zahl{font-size:12px;color:#C8D2CB}
 </style>
 </head>
 <body>
@@ -444,6 +510,7 @@ h3{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gr
 
 <!-- ── B0 · Der Tisch ───────────────────────────────────────────────── -->
 <div id="ansicht-tisch">
+  <aside id="ereignis" class="ereignis" aria-label="Ereignis dieser Sitzung" hidden></aside>
   <main id="tisch"></main>
   <p class="zur-abstimmung">
     <button type="button" class="leiser" onclick="location.hash='#protokoll'">Protokoll</button>
@@ -452,9 +519,9 @@ h3{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gr
 
   <section class="mitte" aria-labelledby="tisch-titel">
     <h2 id="tisch-titel" tabindex="-1">Gemeinsames Blatt — Stand der Verhandlung</h2>
-    <p class="bu">Was gälte, wenn jetzt geschlossen würde. Verbindlich wird es erst mit der
-       vierten Unterschrift.</p>
+    <p class="bu">Was gälte, wenn jetzt geschlossen würde.</p>
     <div id="bilanz"></div>
+    <p id="bilanz-legende" class="legende"></p>
     <p id="streit"></p>
 
     <h3>Was auf dem Tisch liegt</h3>
@@ -477,6 +544,8 @@ h3{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gr
     <p class="zurueck"><button type="button" class="leiser" onclick="location.hash='#tisch'">← Zum Tisch</button></p>
     <h2 id="abstimmung-titel" tabindex="-1">Die Abstimmung</h2>
     <p id="quorum-text" class="unter"></p>
+    <p id="allein-hinweis" class="hinweis" hidden>„Für sich allein“ rechnet jede Vorlage ohne
+       die anderen. Zusammen wirken sie anders als ihre Summe.</p>
     <div id="abstimmung-liste"></div>
   </div>
 </div>
@@ -486,8 +555,7 @@ h3{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gr
   <div class="blatt">
     <p class="zurueck"><button type="button" class="leiser" onclick="location.hash='#tisch'">← Zum Tisch</button></p>
     <h2 id="protokoll-titel" tabindex="-1">Das Rundenprotokoll</h2>
-    <p class="unter">Was beschlossen wurde, und wer wie gestimmt hat. Bleibt stehen —
-       auch wenn es später anders aussieht.</p>
+    <p class="unter">Bleibt stehen — auch wenn es später anders aussieht.</p>
     <div id="protokoll-liste"></div>
   </div>
 </div>
@@ -548,16 +616,15 @@ h3{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gr
     <p id="ende" hidden>Der Kurs ist durchgespielt.
       <a href="debriefing.html">Weiter zur Auswertung</a>.</p>
   </div>
-  <div class="kasten">
-    <h2 id="quellen">Woher die Zahlen kommen</h2>
+  <details class="kasten quellen">
+    <summary><h2 id="quellen">Woher die Zahlen kommen</h2>
+      <span id="quellen-zahl"></span></summary>
     <ol id="quellen-liste"></ol>
-  </div>
+  </details>
 </div>
 
 <footer class="fuss">
-  <p>Vier Ressorts, ein Tisch: jede Person am Gerät übernimmt eines und trägt ihren Namen ein.
-     Keine Zahl wird verbindlich, bevor alle vier gezeichnet haben — und wer nach der
-     Unterschrift nachbessert, muss neu zeichnen.
+  <p>Keine Zahl wird verbindlich, bevor jedes Ressort eine angenommene Vorlage hat.
      <a href="entwurf/ansaetze/index.html">Die anderen Entwürfe</a> ·
      <a href="index-klassisch.html">Bisherige Oberfläche</a></p>
 </footer>

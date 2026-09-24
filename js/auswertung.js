@@ -20,7 +20,7 @@
 import { hatBackend, holeSitzung, setzeSchaukasten, ServerFehler } from './dienste/server.js';
 import { ARTEN, zeichneSchaukasten } from './schaukasten.js';
 import { hole, merke } from './dienste/speicher.js';
-import { spieleNach, vorausschau, RESSORTS, ALLE, KENNZAHLEN, NEBENWERTE,
+import { spieleNach, vorausschau, kursAus, STANDARDKURS, RESSORTS, ALLE, KENNZAHLEN, NEBENWERTE,
          zahl, mitVz, rund, diffText, wertText } from './spielkern.js';
 
 const $ = s => document.querySelector(s);
@@ -29,6 +29,7 @@ const SITZUNG_ID = P.get('session');
 const TEAM_PARAM = P.get('team');
 
 let bahn = [];        // nachgespielte Perioden
+let kurs = STANDARDKURS;  // Laengen und Ereignisse — am eigenen Geraet der Standardkurs
 let vorlagen = [];    // je Periode die Vorlagen
 let teamName = null;
 let anzeigename = null;
@@ -46,10 +47,11 @@ async function lade() {
   if (SITZUNG_ID && hatBackend() && teamName) {
     try {
       const stand = await holeSitzung(SITZUNG_ID, { zeitlimit: 8000 });
+      kurs = kursAus(stand);
       const t = stand?.teams?.[teamName];
       anzeigename = t?.anzeigename ?? null;
       const perioden = (t?.perioden ?? []).filter(p => p.locked || p.idx === 0);
-      bahn = spieleNach(perioden);
+      bahn = spieleNach(perioden, kurs);
       vorlagen = perioden.map(p => p.vorlagen ?? {});
       if (meinRessort) stuecke = [...(t?.schaukaesten?.[meinRessort] ?? [])];
     } catch (f) {
@@ -207,7 +209,7 @@ function beschlusstabelle() {
 function gegenNichtstun() {
   const start = bahn[0];
   // Was herausgekommen waere, haette niemand je etwas beschlossen.
-  const ohne = vorausschau({ ...start.zustand }, {}, 1).slice(0, bahn.length);
+  const ohne = vorausschau({ ...start.zustand }, {}, 1, kurs).slice(0, bahn.length);
   const mitEnde = bahn.at(-1).ergebnis, ohneEnde = ohne.at(-1)?.ergebnis;
   if (!ohneEnde) { $('#nichtstun').innerHTML = ''; return; }
 
@@ -404,7 +406,7 @@ async function sichere() {
 function zeichneVorschau() {
   $('#vorschau').innerHTML = stuecke.length === 0
     ? '<p class="leer">Die Vorschau zeigt, was deine Mitspieler am Tisch sehen.</p>'
-    : zeichneSchaukasten(stuecke, bahn, { ressort: meinRessort, vorlagen });
+    : zeichneSchaukasten(stuecke, bahn, { ressort: meinRessort, vorlagen, kurs });
 }
 
 // ── Zeichnen ───────────────────────────────────────────────────────────────
