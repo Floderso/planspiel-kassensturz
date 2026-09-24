@@ -6,8 +6,8 @@
 //
 // berechneTransition(prevState, prevResult, nextStartJahr, n) → PeriodState
 //   Leitet den Anfangszustand der nächsten Periode (n Jahre) ab.
-//   Enthält DICE-Klimaschaden (Nordhaus 2023) und HANK-Multiplikator
-//   (Kaplan/Moll/Violante 2018).
+//   Enthält den HANK-Multiplikator (Kaplan/Moll/Violante 2018). Einen
+//   Klimaschaden aus deutschen Emissionen gibt es bewusst nicht mehr (s. u.).
 //
 // simulierePfad(perioden_params, kursKonfig?) → ErgebnisPfad[]
 //   Iteriert alle Perioden, gibt Zeitreihe zurück.
@@ -18,12 +18,12 @@
 //   BIP-Wachstum:       BIP_WACHSTUM_NOMINAL_JAHR in data.js (2,5 % nominal, PRUEFUNG.md F1)
 //   Fiskalmultiplikator: Gechert/Heimberger (2022) NIER · ECB WP 1267
 //   HANK-Multiplikator: Kaplan/Moll/Violante (2018) AER · McKay/Nakamura/Steinsson (2016)
-//   DICE-Klimaschaden:  Nordhaus (2023) PNAS · d₂ = 0,00267 (kalibriert IPCC AR6)
+//   Emissionspfad:      UBA Projektionsbericht 2025 · emissionsBasis() in data.js
 //   Zinssatz:           Bundesbank DP 28/2018 · BMF Finanzplan 2025–2029
 //   Demografie:         Destatis 14. Bev.-Vorausberechnung 2021 · DEMOGRAFIE_KURVE in data.js
 
 import { DEZILE, DEMOGRAFIE_KURVE, PERIOD_STATE_0, KURS_KONFIG_DEFAULT,
-         ZINS_EFFEKTIV, BIP_WACHSTUM_NOMINAL_JAHR } from '../data.js';
+         ZINS_EFFEKTIV, BIP_WACHSTUM_NOMINAL_JAHR, emissionsBasis } from '../data.js';
 import { berechne } from './berechne.js';
 
 // Zins und Wachstum kommen aus data.js — EINE Quelle für alle Module.
@@ -32,9 +32,6 @@ const BIP_WACHSTUM_NOMINAL = BIP_WACHSTUM_NOMINAL_JAHR;
 const ZINS_SCHULDEN        = ZINS_EFFEKTIV;
 const INVEST_MULTIPLIKATOR = 1.2;    // Fiskalmultiplikator öffentl. Investitionen (Gechert/Heimberger)
 const HANK_MPC_BENCHMARK   = 0.45;  // Rep.-Agent-Benchmark MPC (Kaplan/Moll/Violante 2018)
-const DICE_D2              = 0.00267; // DICE-Schadensparameter d₂ (Nordhaus 2023; kalibriert AR6)
-const T_BASELINE           = 1.2;   // Globale Erwärmung 2025 vs. vorindustriell (IPCC AR6 SPM)
-const KLIMA_SENS_PER_MT    = 5e-4;  // °C je Mt kumulierter CO₂-Zusatz-Emissionen (vereinfacht)
 
 // Lookup DEMOGRAFIE_KURVE nach Startjahr — clamped an Randbereichen
 function getDemoForYear(jahr) {
@@ -57,16 +54,12 @@ function hankMultiplikator(hh_delta) {
   return INVEST_MULTIPLIKATOR * (mpc_eff / HANK_MPC_BENCHMARK);
 }
 
-// DICE-Klimaschaden (Nordhaus 2023, d₂ = 0,00267)
-// Gibt den relativen BIP-Faktor zurück (<1 wenn Erwärmung über Baseline).
-// Ref: Nordhaus (2023) PNAS "An Optimal Transition Path" · IPCC AR6 WG3 Ch.3
-function diceKlimaMalus(co2_kumulat) {
-  const delta_T  = co2_kumulat * KLIMA_SENS_PER_MT;
-  const T_total  = T_BASELINE + delta_T;
-  const damage_now  = DICE_D2 * T_total ** 2;
-  const damage_base = DICE_D2 * T_BASELINE ** 2;
-  return (1 - damage_now) / (1 - damage_base);
-}
+// Kein Klimaschaden aus deutschen Emissionen. Bis 24.09.2026 erwärmten deutsche
+// Emissionen im Modell die Erde (Klimasensitivität 1.100-fach zu hoch, PRUEFUNG.md A2),
+// und Deutschland trug den Schaden allein: ein CO₂-Preis von 250 €/t brachte +2,9 % BIP.
+// Deutschland verursacht rund 1,5 % der Weltemissionen; der Rückkanal auf das eigene BIP
+// ist vernachlässigbar (PRUEFUNG-2.md I.5). Das Klimaziel steht über Emissionen und
+// CO₂-Budget im Spiel, nicht über das BIP.
 
 // Wendet einen Schock auf eine Kopie von zustand an (nicht-destruktiv).
 // Gerechnet werden bip_malus, schuld_bonus und zins_bonus. invest_malus und
@@ -88,9 +81,6 @@ function berechneTransition(prevState, prevResult, nextStartJahr, n) {
   // ── HANK-Multiplikator ────────────────────────────────────────────────
   const mu_g = hankMultiplikator(prevResult.hh_delta);
 
-  // ── DICE-Klimaschaden ─────────────────────────────────────────────────
-  const klima_malus = diceKlimaMalus(prevState.co2_kumulat);
-
   // ── BIP ──────────────────────────────────────────────────────────────
   const wachstum_basis      = Math.pow(1 + BIP_WACHSTUM_NOMINAL, n);
   const invest_privat_bonus = 1 + (prevResult.investment_factor - 1) * 0.15;
@@ -98,7 +88,7 @@ function berechneTransition(prevState, prevResult, nextStartJahr, n) {
   const invest_impuls       = prevResult.invest_impuls ?? 0;
   const invest_impuls_bonus = 1 + (invest_impuls * n * mu_g) / prevState.bip;
   const bip_next = prevState.bip * wachstum_basis * invest_privat_bonus
-                   * labor_bonus * invest_impuls_bonus * klima_malus;
+                   * labor_bonus * invest_impuls_bonus;
 
   // ── SCHULDENQUOTE ─────────────────────────────────────────────────────
   // Lehrbuchform der Schuldendynamik, jahresweise:
@@ -116,7 +106,11 @@ function berechneTransition(prevState, prevResult, nextStartJahr, n) {
   const schuldenquote_next = Math.max(0, schuld_next / bip_next * 100);
 
   // ── CO₂-KUMULAT ──────────────────────────────────────────────────────
-  const co2_kumulat_next = prevState.co2_kumulat + prevResult.emissionen * n;
+  // Jahr für Jahr entlang des Basispfads, mit dem Politikeffekt der Periode
+  const politik = prevResult.emissionen / prevResult.emissionen_basis;
+  let co2_periode = 0;
+  for (let j = 0; j < n; j++) co2_periode += emissionsBasis(nextStartJahr - n + j) * politik;
+  const co2_kumulat_next = prevState.co2_kumulat + co2_periode;
 
   // ── ARBEITSMARKT-ZUSTANDSINDEX ────────────────────────────────────────
   // Mean-Reversion-Speed α skaliert mit Periodenlänge: länger → stärker
@@ -129,6 +123,7 @@ function berechneTransition(prevState, prevResult, nextStartJahr, n) {
     co2_kumulat:      co2_kumulat_next,
     lohnbasis_faktor: Math.max(0.70, Math.min(1.30, lohnbasis_next)),
     renten_faktor:    demo.renten_faktor,
+    jahr:             nextStartJahr,
     // Trend ohne Politik- und Klimaeffekte: daran wachsen die Ausgaben. Die
     // Einnahmen folgen dem tatsächlichen BIP (berechne.js, Abschnitt 10b).
     trend_faktor:     (prevState.trend_faktor ?? 1) * wachstum_basis,
@@ -149,6 +144,7 @@ function simulierePfad(perioden_params, kursKonfig = KURS_KONFIG_DEFAULT) {
   for (let i = 0; i < perioden_params.length; i++) {
     const n = laengen[i] ?? 4;
     zustand.renten_faktor = getDemoForYear(startJahr).renten_faktor;
+    zustand.jahr = startJahr;
 
     // Schock für diese Periode anwenden (falls vorhanden)
     const schock_i    = schocks.find(s => s.periode === i) ?? null;
@@ -173,4 +169,4 @@ function simulierePfad(perioden_params, kursKonfig = KURS_KONFIG_DEFAULT) {
   return ergebnisse;
 }
 
-export { berechneTransition, simulierePfad, applySchock, getDemoForYear, diceKlimaMalus, hankMultiplikator, ZINS_SCHULDEN, BIP_WACHSTUM_NOMINAL };
+export { berechneTransition, simulierePfad, applySchock, getDemoForYear, hankMultiplikator, ZINS_SCHULDEN, BIP_WACHSTUM_NOMINAL };

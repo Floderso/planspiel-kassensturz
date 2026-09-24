@@ -1,32 +1,38 @@
 // SPDX-License-Identifier: CC-BY-4.0
-// Tests: Multi-Perioden-Übergänge, DICE-Klimaschaden, HANK-Multiplikator,
+// Tests: Multi-Perioden-Übergänge, Emissionspfad, HANK-Multiplikator,
 // abgeleitete Fiskalindikatoren (Domar, S2, GGI)
 //
-// Referenzen: Nordhaus (2023) PNAS, Kaplan/Moll/Violante (2018) AER,
+// Referenzen: UBA Projektionsbericht 2025, Kaplan/Moll/Violante (2018) AER,
 // Domar (1944), Blanchard (2019) AEA Presidential Address.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { simulierePfad, diceKlimaMalus, hankMultiplikator, berechneTransition, getDemoForYear } from '../js/rechner/transition.js';
+import { simulierePfad, hankMultiplikator, berechneTransition, getDemoForYear } from '../js/rechner/transition.js';
 import { berechneAbgeleitet, CO2_BUDGET_DE } from '../js/rechner/abgeleitet.js';
 import { berechne } from '../js/rechner/berechne.js';
-import { PRESETS, PERIOD_STATE_0, DEZILE } from '../js/data.js';
+import { PRESETS, PERIOD_STATE_0, DEZILE, emissionsBasis, EMISSIONEN_1990 } from '../js/data.js';
 
 const SQ = PRESETS.status_quo;
 const sqParams = (n = 5) => Array.from({ length: n }, () => ({ ...SQ }));
 
-test('DICE-Klimaschaden: 1 bei null Zusatzemissionen, monoton fallend, begrenzt', () => {
-  assert.ok(Math.abs(diceKlimaMalus(0) - 1) < 1e-12);
-  // Hinweis: KLIMA_SENS_PER_MT (5e-4 °C/Mt) ist eine pädagogische Skalierung —
-  // DE-Emissionen stehen stellvertretend für globales Handeln. Physikalisch
-  // (TCRE ~0,45 °C je 1.000 Gt CO₂) wäre der Wert ~3 Größenordnungen kleiner.
-  let prev = 1;
-  for (const kumulat of [1000, 3000, 6600, 12000]) {
-    const malus = diceKlimaMalus(kumulat);
-    assert.ok(malus < prev, `Malus muss mit Kumulat fallen (${kumulat})`);
-    assert.ok(malus > 0.75, `Malus ${malus} außerhalb des Spielbereichs`);
-    prev = malus;
-  }
+test('Emissionsbasispfad: 649 Mt 2025, −63 % 2030 und −80 % 2040 gegenüber 1990', () => {
+  assert.equal(emissionsBasis(2025), 649);
+  assert.ok(Math.abs(emissionsBasis(2030) / EMISSIONEN_1990 - 0.37) < 1e-9);
+  assert.ok(Math.abs(emissionsBasis(2040) / EMISSIONEN_1990 - 0.20) < 1e-9);
+  for (let j = 2025; j < 2045; j++) assert.ok(emissionsBasis(j + 1) < emissionsBasis(j), `Pfad fällt ${j}`);
+});
+
+test('Im Status quo folgen die Emissionen dem Pfad, ein höherer CO₂-Preis senkt sie darunter', () => {
+  const pfad = simulierePfad(sqParams(5));
+  pfad.forEach(e => assert.ok(Math.abs(e.result.emissionen - emissionsBasis(e.jahr)) < 1e-6, e.label));
+  const teuer = simulierePfad(Array.from({ length: 5 }, () => ({ ...SQ, co2: 150 })));
+  teuer.forEach((e, i) => assert.ok(e.result.emissionen < pfad[i].result.emissionen, e.label));
+});
+
+test('Das CO₂-Budget (1,7 °C) ist im Status quo in den 2030ern aufgebraucht', () => {
+  const pfad = simulierePfad(sqParams(5));
+  assert.ok(pfad[2].zustand.co2_kumulat < CO2_BUDGET_DE, 'bis 2033 noch Budget übrig');
+  assert.ok(pfad[4].zustand.co2_kumulat > CO2_BUDGET_DE, 'bis 2041 aufgebraucht');
 });
 
 test('HANK-Multiplikator: Transfers an untere Dezile multiplizieren stärker', () => {
@@ -40,11 +46,14 @@ test('HANK-Multiplikator: Transfers an untere Dezile multiplizieren stärker', (
     'MPC-Gewichtung: unteres Dezil (MPC~1) > oberstes (MPC~0,4)');
 });
 
-test('berechneTransition: höhere kumulierte Emissionen senken das Folge-BIP (DICE)', () => {
+test('berechneTransition: deutsche Emissionen verändern das deutsche BIP nicht', () => {
+  // Früher erwärmten deutsche Emissionen im Modell die Erde (Klimasensitivität
+  // 1.100-fach zu hoch), und ein CO₂-Preis von 250 €/t brachte +2,9 % BIP
+  // (PRUEFUNG.md A2, PRUEFUNG-2.md I.5).
   const r = berechne(SQ, PERIOD_STATE_0);
   const sauber = berechneTransition({ ...PERIOD_STATE_0, co2_kumulat: 0 }, r, 2029, 4);
   const belastet = berechneTransition({ ...PERIOD_STATE_0, co2_kumulat: 6000 }, r, 2029, 4);
-  assert.ok(belastet.bip < sauber.bip);
+  assert.equal(belastet.bip, sauber.bip);
 });
 
 test('berechneTransition: Defizit erhöht die Schuldenquote, Überschuss senkt sie', () => {

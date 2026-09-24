@@ -149,7 +149,7 @@ export function erzeugeKausalketten(params, result, zustand = null, refParams = 
   if (Math.abs(deltaCo2) >= 10 || klimageldStatus !== refKlimageld) {
     const klimageldAktiv = Boolean(klimageldStatus);
     const co2Preis = params.co2 ?? 55;
-    const emissionen = result?.emissionen ?? 327;
+    const emissionen = result?.emissionen ?? 649;
 
     cards.push({
       topic: 'klima',

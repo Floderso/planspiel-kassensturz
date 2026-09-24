@@ -157,6 +157,29 @@ const ZINS_EFFEKTIV = 0.020;
  */
 const BIP_WACHSTUM_NOMINAL_JAHR = 0.025;
 
+/**
+ * Emissionsbasispfad Deutschland ohne zusätzliche Politik (Mt CO₂e, alle Treibhausgase).
+ * Anker: 1990 rund 1.252 Mt, 2025 rund 649 Mt (UBA, Treibhausgas-Emissionen in
+ * Deutschland). 2030 −63 % und 2040 −80 % gegenüber 1990 nach dem Mit-Maßnahmen-Szenario
+ * des Projektionsberichts 2025 (UBA/Öko-Institut u. a.). 2045 mit −85 % fortgeschrieben —
+ * eigene Annahme; der Bericht sieht die Neutralität 2045 verfehlt. Das Klimaschutzgesetz
+ * verlangt −65 % / −88 % / Neutralität: die Lücke dazu ist Absicht, Teams können sie
+ * schließen. Zwischen den Ankern linear. Bis 24.09.2026 blieben die Emissionen im Status
+ * quo 20 Jahre konstant (PRUEFUNG-2.md I.5).
+ */
+const EMISSIONEN_1990 = 1252;
+const EMISSIONS_ANKER = [
+  [2025, 649], [2030, EMISSIONEN_1990 * 0.37], [2040, EMISSIONEN_1990 * 0.20], [2045, EMISSIONEN_1990 * 0.15],
+];
+function emissionsBasis(jahr) {
+  if (jahr <= EMISSIONS_ANKER[0][0]) return EMISSIONS_ANKER[0][1];
+  for (let i = 1; i < EMISSIONS_ANKER.length; i++) {
+    const [j0, e0] = EMISSIONS_ANKER[i - 1], [j1, e1] = EMISSIONS_ANKER[i];
+    if (jahr <= j1) return e0 + (e1 - e0) * (jahr - j0) / (j1 - j0);
+  }
+  return EMISSIONS_ANKER[EMISSIONS_ANKER.length - 1][1];
+}
+
 // Verhaltens-Elastizitäten (konservativ)
 const ELAST = {
   labor_supply: 0.20,      // Saez/Chetty konsens
@@ -757,6 +780,7 @@ const PERIOD_STATE_0 = {
   co2_kumulat:      0,      // Mio. t CO₂e kumuliert seit 2025
   lohnbasis_faktor: 1.0,    // Arbeitsmarkt-Zustandsindex (1,0 = Status quo 2025)
   renten_faktor:    1.0,    // wird per Periode aus DEMOGRAFIE_KURVE gesetzt
+  jahr:             2025,   // Startjahr der Periode — wird per Periode gesetzt (Emissionsbasispfad)
   trend_faktor:     1.0,    // nominaler Trend seit 2025, (1 + BIP_WACHSTUM_NOMINAL_JAHR)^Jahre —
                             // Preis- und Lohnniveau, an dem die Ausgaben wachsen (PRUEFUNG-2.md I.2)
 };
@@ -883,6 +907,6 @@ const ZUKUNFTS_SZENARIEN = [
   },
 ];
 
-export { ZINS_EFFEKTIV, BIP_WACHSTUM_NOMINAL_JAHR };
+export { ZINS_EFFEKTIV, BIP_WACHSTUM_NOMINAL_JAHR, EMISSIONEN_1990, EMISSIONS_ANKER, emissionsBasis };
 
 export { DEZILE, ELAST, ELAST_QUELLEN, BASIS_AUFKOMMEN, ADMIN_QUOTE, BASIS_MAKRO, STAATSAUSGABEN, PRESETS, MOD_DEFS, AUSGABEN_TOTAL, CHALLENGES, CHALLENGE_CTX, TOOLTIPS, REFORM_TOURS, KPI_BENCH, BGE_LABOR_EFF, DEMOGRAFIE_KURVE, PERIOD_STATE_0, ZUKUNFTS_SZENARIEN, KURS_KONFIG_DEFAULT, SCHOCK_BIBLIOTHEK };

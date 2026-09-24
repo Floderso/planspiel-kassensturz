@@ -442,7 +442,7 @@ Steuerprogression lehren soll.
 | 4 | **A3** Palma auf die Anteilsdefinition umstellen (Test mit) | eine Zeile + Test | ✔ **erledigt** |
 | 5 | **F1** nominales Wachstum auf 2,5–3 % | eine Konstante | ✔ **erledigt** (2,5 %) |
 | 6 | **B1/B2** Tarifzonen entkoppeln | mittel | offen — echte Modellarbeit |
-| 7 | **A2** Klimasensitivität korrigieren, Schadensfunktion neu justieren | mittel | offen — echte Modellarbeit |
+| 7 | **A2** Klimasensitivität korrigieren, Schadensfunktion neu justieren | mittel | ✔ **erledigt** 24.09.: nationaler Klimaschaden entfernt (PRUEFUNG-2.md I.5); C2 mit erledigt |
 | 8 | **A5** Zinsdoppelzählung | wenige Zeilen | ✔ **erledigt** |
 | 9 | **B4** GGI-Referenz auf den Spielbereich strecken | eine Zeile | ✔ **erledigt** (60–150 %) |
 | 10 | **B5/B6** Referenzjahr vereinheitlichen, Klimageld aus dem Status quo | Fleißarbeit | offen |

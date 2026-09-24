@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: CC-BY-4.0
 // Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
-import { DEZILE, ELAST, BASIS_MAKRO, STAATSAUSGABEN, PRESETS, BASIS_AUFKOMMEN, ADMIN_QUOTE, AUSGABEN_TOTAL, BGE_LABOR_EFF, PERIOD_STATE_0, ZINS_EFFEKTIV } from '../data.js';
+import { DEZILE, ELAST, BASIS_MAKRO, STAATSAUSGABEN, PRESETS, BASIS_AUFKOMMEN, ADMIN_QUOTE, AUSGABEN_TOTAL, BGE_LABOR_EFF, PERIOD_STATE_0, ZINS_EFFEKTIV, emissionsBasis } from '../data.js';
 import { estHaushalt, grenzsteuersatzHaushalt } from './einkommensteuer.js';
 import { aequivalenzEinkommen, berechneGini, berechneMedianGewichtet, berechnePalma, berechneDezilDelta, berechneNettoSQ } from './verteilung.js';
 
@@ -31,9 +31,9 @@ const FORMEL_QUELLEN_BERECHNE = {
     note:   '70/30-Split grob; feiner auflösbar mit EVS-Einzeldaten. VAT-Gap-Korrekturfaktor 0,963 (CASE 2024)'
   },
   co2_emissionen: {
-    formel: 'Emissionen = 500 × max(0,4; min(1,1; 1 + ε_CO₂ × (p − 55)/100))',
-    ref:    'BEHG § 10 · EWI/DIW BEHG-Evaluation 2023 · Edenhofer/PIK 2024',
-    note:   'Basis 500 Mio. t im Bepreisungsbereich; ε_CO₂ = −0,30 (kurzfristig konservativ)'
+    formel: 'Emissionen = Pfad(Jahr) × [(1 − s) + s × max(0,4; min(1,1; 1 + ε_CO₂ × (p − 55)/100))],  s = 327/649',
+    ref:    'BEHG § 10 · EWI/DIW BEHG-Evaluation 2023 · Edenhofer/PIK 2024 · UBA Projektionsbericht 2025 (Pfad) · UBA Treibhausgas-Emissionen 2025',
+    note:   'Pfad: alle Treibhausgase, 649 Mt 2025 → −63 % (2030) / −80 % (2040) ggü. 1990 ohne Zusatzpolitik. Der nationale Preis wirkt auf den bepreisten Anteil s (327 Mt 2025, kalibriert auf 18 Mrd. € Aufkommen bei 55 €/t); ε_CO₂ = −0,30 (kurzfristig konservativ)'
   },
   erbschaft: {
     formel: 'Erb_auf = Masse_top × Satz_eff + Masse_unten × min(Satz,15%)/2',
@@ -183,8 +183,15 @@ function berechne(params, zustand = null) {
 
   // ---------- 5. CO2 ----------
   const co2_factor = 1 + ELAST.co2 * ((params.co2 - 55) / 100);
-  const emissionen = BASIS_MAKRO.emissions * Math.max(0.4, Math.min(1.1, co2_factor));
-  const co2_auf = emissionen * params.co2 / 1000;
+  // Gesamtemissionen folgen dem Basispfad (data.js, Projektionsbericht 2025). Der nationale
+  // CO₂-Preis wirkt auf den bepreisten Teil (327 von 649 Mt im Jahr 2025), der Rest folgt dem
+  // Pfad. Vorher speiste dieselbe 327-Mt-Zahl Aufkommen UND Budget — das Budget wurde halb so
+  // schnell verbraucht wie in Wirklichkeit (PRUEFUNG.md C2).
+  const emissionen_basis = emissionsBasis(zustand?.jahr ?? 2025);
+  const anteil_bepreist  = BASIS_MAKRO.emissions / emissionsBasis(2025);
+  const bepreist   = emissionen_basis * anteil_bepreist * Math.max(0.4, Math.min(1.1, co2_factor));
+  const emissionen = emissionen_basis * (1 - anteil_bepreist) + bepreist;
+  const co2_auf = bepreist * params.co2 / 1000;
   const klimageld_auszahlung = params.klimageld ? co2_auf * 0.7 : 0; // 70% zurück als Klimageld
 
   // ---------- 6. VERMÖGEN / ERBSCHAFT / BODEN ----------
@@ -451,7 +458,7 @@ function berechne(params, zustand = null) {
     // GKV-Reform-Boni (für GKV-Panel-Darstellung)
     kv_bbg_frei_bonus, kv_kapital_bonus,
     // Multi-Perioden-Felder
-    emissionen, bip_aktuell, invest_impuls, demografie_aufschlag, sv_ausgaben_delta, zinsen_dyn,
+    emissionen, emissionen_basis, bip_aktuell, invest_impuls, demografie_aufschlag, sv_ausgaben_delta, zinsen_dyn,
   };
 }
 

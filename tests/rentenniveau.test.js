@@ -35,10 +35,15 @@ test('Eine Niveauänderung kommt bei den Haushalten in der Höhe an, die der Sta
 });
 
 test('Auch in späteren Perioden (mehr Rentner) bleiben beide Seiten gleich', () => {
+  // Gegen den Status-quo-Pfad derselben Periode: dort weichen die Haushalte schon
+  // ohne Rentenänderung von 2025 ab (das Klimageld sinkt mit dem Emissionspfad).
   const pfad = simulierePfad(Array.from({ length: 5 }, () => ({ ...SQ, rentenniveau: 44 })));
-  for (const e of pfad) {
-    assert.ok(Math.abs(summeHaushalte(e.result) - e.result.sv_ausgaben_delta) < 1e-6, e.label);
-  }
+  const basis = simulierePfad(Array.from({ length: 5 }, () => ({ ...SQ })));
+  pfad.forEach((e, p) => {
+    const haushalte = DEZILE.reduce((a, d, i) =>
+      a + d.anzahl * (e.result.hh_delta.delta[i] - basis[p].result.hh_delta.delta[i]), 0) / 1000;
+    assert.ok(Math.abs(haushalte - e.result.sv_ausgaben_delta) < 1e-6, e.label);
+  });
   assert.ok(pfad[4].result.sv_ausgaben_delta < pfad[0].result.sv_ausgaben_delta,
     'mit steigendem Rentnerbestand spart dieselbe Kürzung mehr');
 });

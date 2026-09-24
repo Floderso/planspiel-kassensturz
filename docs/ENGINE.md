@@ -182,7 +182,7 @@ Iteriert alle Perioden der Simulation. Gibt ein Array zurück (ein Eintrag je Pe
 ```
 
 **Übergangsmechanismen zwischen Perioden:**
-- **BIP-Wachstum:** 2,5 % nominal p.a. (`BIP_WACHSTUM_NOMINAL_JAHR` in `data.js`), skaliert mit Klimaschaden
+- **BIP-Wachstum:** 2,5 % nominal p.a. (`BIP_WACHSTUM_NOMINAL_JAHR` in `data.js`)
 - **Nominale Fortschreibung:** `berechne()` rechnet in Größen von 2025 und schreibt dann fort:
   Einnahmen mit dem tatsächlichen BIP der Periode (Aufkommenselastizität 1, Tarif als indexiert
   angenommen; eine Rezession senkt die Einnahmen), Ausgaben außer Zinsen mit dem nominalen
@@ -190,7 +190,13 @@ Iteriert alle Perioden der Simulation. Gibt ein Array zurück (ein Eintrag je Pe
   bleiben in Preisen von 2025. Bis 24.09.2026 blieben ESt, MwSt, Beiträge und Ausgaben 20 Jahre
   nominal eingefroren (`entwurf/PRUEFUNG-2.md` I.2)
 - **Schuldenentwicklung:** `D_{t+1} = D_t − Saldo/BIP` (Domar-Mechanismus)
-- **Klimaschaden (DICE):** Temperaturanstieg → prozentualer BIP-Verlust (`d₂ = 0,00267`, Nordhaus 2023)
+- **Emissionen:** Basispfad `emissionsBasis(jahr)` in `data.js` (alle Treibhausgase, 649 Mt 2025,
+  −63 % 2030 / −80 % 2040 ggü. 1990 nach UBA-Projektionsbericht 2025). Der nationale CO₂-Preis wirkt
+  auf den bepreisten Anteil (327 von 649 Mt). `co2_kumulat` summiert Jahr für Jahr entlang des Pfads;
+  Budget `CO2_BUDGET_DE` = 5.380 Mt (deutscher Bevölkerungsanteil am 1,7-°C-Budget, IGCC 2025)
+- **Kein Klimaschaden aus deutschen Emissionen:** Bis 24.09.2026 senkte ein DICE-Term das BIP mit einer
+  1.100-fach zu hohen Klimasensitivität; ein hoher CO₂-Preis erzeugte so einen nationalen
+  Wachstumsgewinn (`entwurf/PRUEFUNG-2.md` I.5)
 - **HANK-Multiplikator:** Fiskalmultiplikator gewichtet nach dezil-spezifischen MPCs (Kaplan/Moll/Violante 2018)
 - **Demografie:** Renten-Faktor aus `DEMOGRAFIE_KURVE` erhöht die Rentenausgaben automatisch
 - **Sozialversicherung:** Beitragssätze wirken nur auf die Einnahmen. Die Rentenzahlungen
@@ -242,7 +248,7 @@ Rentenreform-Steuerung vorgesehen.
 | HANK-Multiplikator | Kaplan/Moll/Violante (2018) AER |
 | Fiskalmultiplikator Investitionen | Gechert/Heimberger (2022) NIER |
 | Domar-Schuldbedingung | Domar (1944) · Blanchard (2019) AEA Presidential Address |
-| DICE-Klimaschaden | Nordhaus (2023) PNAS; kalibriert mit IPCC AR6 |
+| Emissionspfad, CO₂-Budget | UBA Projektionsbericht 2025 · Forster et al. (2026) IGCC 2025, ESSD |
 | Dezil-Datenbasis | SOEP v40 · DINA-DE · DIW Vermögensbericht 2024 |
 | CO₂-Emissionsreaktion | EWI/DIW BEHG-Evaluation 2023 · Edenhofer/PIK 2024 |
 | Demografie | Destatis 14. Bev.-Vorausberechnung 2021 · DRV Rentenbericht 2024 |

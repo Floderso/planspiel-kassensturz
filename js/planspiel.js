@@ -672,7 +672,7 @@ const WATCHLIST_CATALOG = {
     label: 'Restliches CO₂-Budget',
     sub: 'Pariser 1,5°C-Pfad bis 2050',
     calc: (r, z, p, prevR, prevZ) => {
-      const rest = Math.max(0, Math.round(6600 - z.co2_kumulat));
+      const rest = Math.max(0, Math.round(CO2_BUDGET_DE - z.co2_kumulat));
       const val = `${rest.toLocaleString('de-DE')} Mt`;
       const d = prevZ ? z.co2_kumulat - prevZ.co2_kumulat : null;
       const deltaStr = d !== null ? `-${Math.round(d)} Mt` : '—';

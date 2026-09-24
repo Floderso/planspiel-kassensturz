@@ -24,10 +24,14 @@
 
 import { ZINS_SCHULDEN, BIP_WACHSTUM_NOMINAL, hankMultiplikator } from './transition.js';
 
-// Verbleibendes deutsches CO₂-Budget für 1,5°C-Pfad ab 2025 (Mt CO₂e)
-// Basis: IPCC AR6 globales Budget 400 Gt CO₂ · DE-Anteil ~1,65 % (Bevölkerungsgewicht)
-// Quelle: SRU (2022) Wege zur Treibhausgasneutralität · IPCC AR6 SPM C.1.2
-const CO2_BUDGET_DE = 6600; // Mt CO₂e
+// Verbleibendes deutsches CO₂-Budget für 1,7 °C ab Anfang 2025 (Mt)
+// Globales Restbudget 525 Gt CO₂ für 1,7 °C (50 %), Forster et al. (2026) Indicators of
+// Global Climate Change 2025, ESSD 18, 3889 · deutscher Bevölkerungsanteil 1,025 %
+// (83,6 Mio. von 8,16 Mrd., UN WPP 2024) → 5.380 Mt. Für 1,5 °C blieben nur 130 Gt
+// (DE ~1,3 Gt, in rund zwei Jahren verbraucht, in jeder Politik — unterscheidet nicht).
+// Vereinfachung: Budget in CO₂, verbraucht wird mit allen Treibhausgasen (CO₂e).
+// Vorher 6.600 Mt für 1,5 °C nach IPCC AR6 — überholt (PRUEFUNG-2.md I.5).
+const CO2_BUDGET_DE = 5380; // Mt
 
 // GGI-Schuldenkomponente: Skala von der Maastricht-Grenze bis zum kritischen Bereich.
 // Vorher war die Referenz allein 60 % — weil die Quote schon bei 63,5 % startet,

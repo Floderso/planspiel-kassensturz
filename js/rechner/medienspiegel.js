@@ -69,8 +69,11 @@ export function berechneWaehlerstimmung(params, result, zustand = null, refParam
   if (params.klimageld) kl += 4.0;
   else if (co2 > 80) kl -= 6.0; // Hoher CO2-Preis ohne Ausgleich erzeugt Unmut
 
-  if (result?.emissionen && result.emissionen < 300) {
-    kl += (300 - result.emissionen) * 0.2;
+  // Gemessen am Basispfad, nicht an einer festen Zahl: der Pfad sinkt ohnehin, und
+  // früher lagen 300 Mt auf der alten 327-Mt-Skala (8,3 % darunter).
+  const unter_pfad = result?.emissionen_basis ? 1 - result.emissionen / result.emissionen_basis : 0;
+  if (unter_pfad > 0.083) {
+    kl += (unter_pfad - 0.083) * 65.4;
   }
 
   // Begrenzungen der Sub-Indizes auf [10, 90]
@@ -156,7 +159,7 @@ export function ermittleEreignisse(params, result, zustand = null, refParams = n
   const co2 = params.co2 ?? 55;
   if (co2 >= 80 && params.klimageld) push('klima', 'klimageld', 42);
   else if (co2 >= 80 && !params.klimageld) push('klima', 'co2_high_noklima', 46);
-  else if (result?.emissionen && result.emissionen < 290) push('klima', 'ziel_gut', 34);
+  else if (result?.emissionen_basis && result.emissionen < result.emissionen_basis * 0.887) push('klima', 'ziel_gut', 34);
 
   // 7. Soziales
   if (params.bge > 0) push('soziales', 'bge', 48);
