@@ -51,7 +51,7 @@ const FORMEL_QUELLEN_BERECHNE = {
   sv_beitraege: {
     formel: 'SV = Lohnsumme_sv × Satz%  (nur bis BBG)',
     ref:    '§ 158 SGB VI · § 241 SGB V · § 341 SGB III · § 55 SGB XI · DRV Beitragssätze 2025',
-    note:   'BBG-Lohnsummen-Faktor: +12 % je 90 k € BBG-Erhöhung (12 % der sozialversicherungspflichtigen Löhne). Der Satz wirkt nur auf die Einnahmen; die Ausgaben hängen am Leistungsniveau (rv_ausgaben)'
+    note:   'BBG-Lohnsummen-Faktor: +12 % je 90 k € BBG-Erhöhung (12 % der sozialversicherungspflichtigen Löhne). Der Satz wirkt nur auf die Einnahmen; die Ausgaben hängen am Leistungsniveau (rv_ausgaben). Der RV-Regler zeigt den Satz 2026; nach § 158 SGB VI steigt er zusätzlich mit den Ausgaben — 20,1 % (2030), 21,15 % (2039), BMAS Rentenversicherungsbericht 2025'
   },
   rv_ausgaben: {
     formel: 'ΔRente_i = Brutto_i × rente_anteil_i × renten_faktor × (Rentenniveau/48 % − 1);  ΔRV-Ausgaben = Σ Haushalte ΔRente_i;  KV, AL, PV fest',
@@ -71,7 +71,7 @@ const FORMEL_QUELLEN_BERECHNE = {
   dynamisches_scoring: {
     formel: 'Δ_dyn = Δ_KSt × (investment_factor − 1) + Δ_ESt × (avg_labor − 1)',
     ref:    'CBO Dynamic Scoring Guidelines · ifo Schnelldienst 01/2025 · Saez/Chetty Konsens',
-    note:   'Verhaltensbedingte Aufkommensabweichung gegenüber mechanischer (statischer) Wirkung'
+    note:   'Verhaltensbedingte Aufkommensabweichung gegenüber mechanischer (statischer) Wirkung. Der KSt-Regler zeigt den Satz 2026; die beschlossene Senkung um 1 Pp. pro Jahr ab 2028 bis 10 % (2032) wirkt zusätzlich (§ 23 Abs. 1 KStG). KSt und GewSt je hälftig auf Arbeits- und Kapitaleinkommen (Inzidenz, siehe inzidenz)'
   },
   inzidenz: {
     formel: 'Last_i = ΔKSt+ΔGewSt × (½ Anteil Arbeitseinkommen_i + ½ Anteil Kapitaleinkommen_i) + ΔErbSt+ΔVermSt+ΔBodenSt × Anteil Vermögen_i + ΔZucman × D10c',
