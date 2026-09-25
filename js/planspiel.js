@@ -622,12 +622,12 @@ const WATCHLIST_CATALOG = {
   saldo: {
     id: 'saldo',
     label: 'Haushaltssaldo',
-    sub: 'Art. 109 GG (Bremse: -0,35 %)',
+    sub: 'Schuldenbremse 2025 (strukturell −0,70 %)',
     calc: (r, z, p, prevR) => {
       const val = `${r.saldo >= 0 ? '+' : ''}${r.saldo.toFixed(0)} Mrd. €`;
       const d = prevR ? r.saldo - prevR.saldo : null;
       const deltaStr = d !== null ? `${d >= 0 ? '+' : ''}${d.toFixed(0)} Mrd.` : '—';
-      const isOk = r.saldo_bip_pct >= -0.35;
+      const isOk = r.schuldenbremse_ok;
       return { val, delta: deltaStr, status: isOk ? 'Konform' : 'Defizit', statusCls: isOk ? 'good' : 'bad' };
     }
   },
@@ -670,7 +670,7 @@ const WATCHLIST_CATALOG = {
   co2_budget: {
     id: 'co2_budget',
     label: 'Restliches CO₂-Budget',
-    sub: 'Pariser 1,5°C-Pfad bis 2050',
+    sub: 'DE-Anteil am 1,7-°C-Budget (IGCC 2025)',
     calc: (r, z, p, prevR, prevZ) => {
       const rest = Math.max(0, Math.round(CO2_BUDGET_DE - z.co2_kumulat));
       const val = `${rest.toLocaleString('de-DE')} Mt`;
@@ -950,7 +950,7 @@ function ermittleHeroStory(state, entry) {
       ctaText: 'Krisen-Dossier öffnen & Hebel anpassen →',
       hint: 'Dringender Handlungsbedarf durch aktiven Schock'
     };
-  } else if (r.saldo_bip_pct < -0.35) {
+  } else if (!r.schuldenbremse_ok) {
     candidate = {
       badge: `Verfassungsstreit · Periode ${state.current_periode + 1}`,
       headline: `Haushaltsloch reißt Schuldenbremse um ${Math.abs(Math.round(r.saldo))} Mrd. Euro`,
@@ -1234,7 +1234,7 @@ function updateDossierImpactStrip() {
 
   if (saldoEl) {
     saldoEl.textContent = `${r.saldo >= 0 ? '+' : ''}${r.saldo.toFixed(0)} Mrd. € (${r.saldo_bip_pct.toFixed(2)} %)`;
-    saldoEl.style.color = r.saldo_bip_pct >= -0.35 ? 'var(--good)' : 'var(--bad)';
+    saldoEl.style.color = r.schuldenbremse_ok ? 'var(--good)' : 'var(--bad)';
   }
   if (waehlerEl) {
     waehlerEl.textContent = `${Math.round(stimmung?.gesamt ?? 48)} %`;
@@ -1647,8 +1647,8 @@ function renderFiskalPanel(r, z, abl) {
       formula: 'PS_t = S_t + i × D_t   (Prozentpunkte BIP)', ref: 'Blanchard (2019) AEA' },
     { label: 'Zinsaufwand',             val: fmt.mrdAbs(r.zinsen_dyn || 0),    cls: 'neutral',
       formula: 'Z_t = i × D_t × BIP_t', ref: 'Bundesbank Effektivzins' },
-    { label: 'Gesamtsaldo S_t',         val: fmt.pct2(r.saldo_bip_pct), cls: r.saldo_bip_pct >= -0.35 ? 'good' : 'bad',
-      formula: 'S_t = Einnahmen − Ausgaben', ref: 'Art. 109 GG (−0,35 % Grenze)' },
+    { label: 'Gesamtsaldo S_t',         val: fmt.pct2(r.saldo_bip_pct), cls: r.schuldenbremse_ok ? 'good' : 'bad',
+      formula: 'S_t = Einnahmen − Ausgaben', ref: 'Schuldenbremse 2025: strukturell −0,70 % (Verteidigung > 1 % und Sondervermögen ausgenommen)' },
     { label: 'r − g',                   val: fmt.pct2(abl.r_minus_g * 100), cls: abl.r_minus_g < 0 ? 'good' : 'warn',
       formula: 'r − g = Zins − BIP-Wachstum', ref: 'Domar (1944) · Blanchard (2019)' },
     { label: 'PS-Ziel PS* (Domar)',     val: fmt.pct2(abl.ps_star), cls: 'neutral',

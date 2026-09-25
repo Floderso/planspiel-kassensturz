@@ -163,7 +163,7 @@ function berechneDezilDelta(dezile, params, est_dez, klima, bg, kg, zusatz = {})
     transfers += bg_effektiv_hh * 12 * BUERGERGELD_QUOTE[i];
     transfers += params.kg * 12 * KINDER_JE_HH[i];
     // Unterkunft und Mehrbedarfe entfallen mit dem Bürgergeld, wenn ein BGE es ersetzt
-    transfers += bg_effektiv_hh > 0 ? GRUNDSICHERUNG_FIX_HH[i] : 0;
+    transfers += (bge_p > 0 && bge_p >= params.bg) ? 0 : GRUNDSICHERUNG_FIX_HH[i];
     const ERWACHSENE_PRO_HH = 1.71; // Destatis Mikrozensus 2024: 70 Mio. Erwachsene / 41 Mio. Haushalte
     transfers += bge_p * 12 * ERWACHSENE_PRO_HH;
     if (params.neg_est && i < 3) transfers += 3000;

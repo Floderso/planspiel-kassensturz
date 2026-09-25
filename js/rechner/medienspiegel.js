@@ -85,9 +85,11 @@ export function berechneWaehlerstimmung(params, result, zustand = null, refParam
   let gesamt = an * 0.40 + wi * 0.25 + kl * 0.15 + 48.0 * 0.20;
 
   // Abzug bei Verletzung der Schuldenbremse
+  // Schuldenbremse 2025: struktureller Saldo gegen −0,70 % BIP (berechne.js)
   const saldoPct = result?.saldo_bip_pct ?? ((result?.saldo ?? -118.8) / 4470 * 100);
-  if (saldoPct < -0.35) {
-    const malus = Math.min(12, Math.abs(saldoPct - (-0.35)) * 3.5);
+  const struktPct = result?.struktureller_saldo_pct ?? saldoPct;
+  if (struktPct < -0.70) {
+    const malus = Math.min(12, Math.abs(struktPct - (-0.70)) * 3.5);
     gesamt -= malus;
   } else if (saldoPct >= 0) {
     gesamt += 3.5; // Überschuss-Bonus
@@ -129,8 +131,8 @@ export function ermittleEreignisse(params, result, zustand = null, refParams = n
 
   // 2. Haushaltslage (Schuldenbremse)
   const saldoPct = result?.saldo_bip_pct ?? ((result?.saldo ?? 0) / 4470 * 100);
-  if (saldoPct < -0.35) {
-    push('fiskus', 'bad', 50 + Math.min(30, Math.abs(saldoPct) * 10));
+  if (result ? result.schuldenbremse_ok === false : saldoPct < -0.70) {
+    push('fiskus', 'bad', 50 + Math.min(30, Math.abs(result?.struktureller_saldo_pct ?? saldoPct) * 10));
   } else if (saldoPct >= 0) {
     push('fiskus', 'good', 40 + (result?.saldo ?? 0));
   }

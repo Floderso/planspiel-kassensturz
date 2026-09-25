@@ -74,3 +74,14 @@ for (const [name, p, k] of [['MwSt', { mwst: 22 }, 'mwst'], ['RV', { rv: 20 }, '
     assert.ok(Math.abs(hh / st - 1) < 0.15, `Staat ${st.toFixed(1)}, Haushalte ${hh.toFixed(1)} Mrd. €`);
   });
 }
+
+test('Bürgergeld 0 € streicht den Regelsatz, nicht Unterkunft und Mehrbedarfe', () => {
+  // Fand die Code-Prüfung vom 25.09.: 1 € → 0 € sparte 7,6 Mrd. und kostete D1 rund 1.670 €,
+  // weil „BGE ≥ Bürgergeld" auch bei 0 ≥ 0 galt.
+  const eins = berechne({ ...SQ, bg: 1 }), null_ = berechne({ ...SQ, bg: 0 });
+  assert.ok(Math.abs(null_.saldo - eins.saldo) < 0.1, `Saldo springt um ${(null_.saldo - eins.saldo).toFixed(1)} Mrd.`);
+  assert.ok(Math.abs(null_.hh_delta.delta[0] - eins.hh_delta.delta[0]) < 20);
+  // mit einem BGE, das das Bürgergeld ersetzt, entfallen sie
+  const bge = berechne({ ...SQ, bge: 1200 });
+  assert.ok(bge.ausgaben_total > 0);
+});

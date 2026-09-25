@@ -433,7 +433,8 @@ function berechne(params, zustand = null, optionen = {}) {
   // schon nominal, sie kommen aus dem Schuldenstand (PRUEFUNG-2.md I.2).
   // Ersetzt ein BGE das Bürgergeld, entfallen auch Unterkunft und Mehrbedarfe (bei den
   // Haushalten ebenso, verteilung.js)
-  const grundsicherung_entfaellt = bg_effektiv > 0 ? 0 : STAATSAUSGABEN.grundsicherung_fix;
+  // Nur ein BGE ersetzt die Grundsicherung; ein Regelsatz von 0 € streicht nicht die Unterkunft
+  const grundsicherung_entfaellt = (bge > 0 && bge >= params.bg) ? STAATSAUSGABEN.grundsicherung_fix : 0;
   // Der Klimafonds gibt aus, was der CO₂-Preis des Status quo auf dem Emissionspfad einbringt —
   // er schrumpft mit den Emissionen. Mehraufkommen aus einem höheren Preis bleibt im Saldo.
   const klimafonds_weniger = STAATSAUSGABEN.klimafonds * (1 - emissionen_basis / emissionsBasis(2025));

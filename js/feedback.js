@@ -22,7 +22,7 @@ export function generiereTeamFeedback(lastEntry) {
   const parts = [];
 
   if (r.saldo_bip_pct >= 0)           parts.push('ausgeglichener Haushalt');
-  else if (r.saldo_bip_pct >= -0.35)  parts.push('Haushalt knapp im Rahmen');
+  else if (r.schuldenbremse_ok)        parts.push('Schuldenbremse eingehalten');
   else if (r.saldo_bip_pct >= -2)     parts.push('strukturelles Defizit');
   else                                 parts.push('kritisches Haushaltsdefizit');
 
@@ -58,6 +58,7 @@ export function bewerteLernziele(result, zustand, lernziele = []) {
   if (!lernziele?.length) return { erreicht: 0, total: 0, details: [] };
   const kpiMap = {
     saldo_bip_pct: result?.saldo_bip_pct,
+    struktureller_saldo_pct: result?.struktureller_saldo_pct,
     schuldenquote: zustand?.schuldenquote,
     gini:          result?.gini,
     co2_kumulat:   zustand?.co2_kumulat,

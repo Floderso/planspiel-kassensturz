@@ -16,7 +16,7 @@
 //   ggi           Generationengerechtigkeit-Index [0,1]: 0 = optimal
 //   ggi_schuld    GGI-Schulden-Teilindex
 //   ggi_co2       GGI-Klima-Teilindex
-//   co2_budget_rest  Verbleibendes DE 1,5°C-Budget (Mt CO₂e)
+//   co2_budget_rest  Verbleibendes DE-Budget für 1,7 °C (Mt)
 //   mu_hank       Konsummultiplikator der letzten Periode (MPC-gewichtet, transition.js)
 //
 // Quellen:
