@@ -39,8 +39,8 @@ const FORMEL_QUELLEN_VERT = {
   },
   armutsrisiko: {
     formel: 'pov_i = pov_sq_i × (y_i/y_sq_i ÷ PL/PL_sq)^(−1,5)',
-    ref:    'Bourguignon (2003) JPubEc · EU-SILC DE 2023 (14,8 % Kalibrierung) · SOEP v40 · IAB Kurzbericht 2024',
-    note:   'Elastizität −1,5: +1 % Einkommen → −1,5 % Armutsanteil. Intra-Dezil: D1 90 %, D2 62 %, D3 5 % (SOEP)'
+    ref:    'Bourguignon (2003) · EU-SILC DE 2023 (14,8 % Kalibrierung) · SOEP v40 · IAB Kurzbericht 2024',
+    note:   'Elastizität −1,5: +1 % Einkommen → −1,5 % Armutsanteil. Intra-Dezil: D1 90 %, D2 62 %, D3 5 % (SOEP). Übertragene Elastizität: Bourguignon schätzt sie für absolute Armut in Entwicklungsländern; für eine relative Armutsquote ist sie eine Näherung (PRUEFUNG-2.md IV)'
   },
   berechneNettoSQ: {
     formel: 'Netto_SQ = Brutto − ESt(SQ) − SV(SQ) − MwSt(SQ) − CO₂(SQ) + Klimageld(SQ) + Transfers(SQ)',

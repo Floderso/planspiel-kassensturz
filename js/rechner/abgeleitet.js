@@ -10,7 +10,9 @@
 //   ps_t          Primärsaldo (% BIP) = Saldo + Zinslast
 //   ps_star       Primärsaldo-Ziel für Schuldenstabilisierung (Domar-Bedingung)
 //   r_minus_g     r − g (Zinssatz minus BIP-Wachstum)
-//   s2            Blanchard S2-Lücke (ps_t − ps_star); negativ = nicht tragfähig
+//   s2            Primärsaldo-Lücke (ps_t − ps_star); negativ = nicht tragfähig. KEIN S2 der
+//                 EU-Kommission: das schließt die Alterungskosten über einen unendlichen
+//                 Horizont ein, dies hier nicht (PRUEFUNG-2.md IV). Feldname historisch.
 //   ggi           Generationengerechtigkeit-Index [0,1]: 0 = optimal
 //   ggi_schuld    GGI-Schulden-Teilindex
 //   ggi_co2       GGI-Klima-Teilindex
@@ -61,7 +63,7 @@ function berechneAbgeleitet(result, zustand) {
   // ps* = (r − g) × D_t      — D_t steht schon in Prozent
   const ps_star = r_minus_g * D_t;
 
-  // ── S2-Tragfähigkeitslücke (Blanchard-Lücke) ─────────────────────────
+  // ── Primärsaldo-Lücke (Domar; nicht das S2 der EU-Kommission) ─────────
   // S2 > 0: tragfähig; S2 < 0: fiskalische Anpassung erforderlich
   const s2 = ps_t - ps_star;
 

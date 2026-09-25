@@ -92,3 +92,25 @@ test('Spitzensatz 45 → 55 % bringt einstellige Milliarden, nicht 37 Mrd. (PRUE
   const mehr = berechne({ ...PRESETS.status_quo, spitze: 55 }).rev.est - r.rev.est;
   assert.ok(mehr > 2 && mehr < 8, `Mehraufkommen ${mehr.toFixed(1)} Mrd. €`);
 });
+
+// ── Quellenarbeit (PRUEFUNG-2.md IV) ────────────────────────────────────────
+
+test('Zucman: Mindeststeuer auf Milliardäre mit Anrechnung, nicht Pauschalsteuer auf das oberste Prozent', () => {
+  const z = berechne({ ...PRESETS.status_quo, zucman: 2 });
+  assert.ok(z.rev.zucman > 3 && z.rev.zucman < 20, `Zucman 2 %: ${z.rev.zucman.toFixed(1)} Mrd. € (vorher 48,8)`);
+  const mitVerm = berechne({ ...PRESETS.status_quo, zucman: 2, verm: 1 });
+  assert.ok(mitVerm.rev.zucman < z.rev.zucman, 'eine Vermögensteuer wird angerechnet');
+});
+
+test('Vermögensteuer: Ausweichreaktion — doppelter Satz bringt weniger als doppeltes Aufkommen', () => {
+  const eins = berechne({ ...PRESETS.status_quo, verm: 1 }).rev.vermoegen;
+  const zwei = berechne({ ...PRESETS.status_quo, verm: 2 }).rev.vermoegen;
+  assert.ok(zwei > eins && zwei < 2 * eins * 0.9, `1 %: ${eins.toFixed(1)}, 2 %: ${zwei.toFixed(1)} Mrd. €`);
+});
+
+test('Armutsziele liegen in einer Größenordnung, die reale Länder erreichen (≥ 10 %)', async () => {
+  const { CHALLENGES } = await import('../js/data.js');
+  for (const c of CHALLENGES) for (const s of c.subs) {
+    if (/Armut/.test(s.label)) assert.ok(s.tgt >= 10, `${c.id}: Ziel ${s.tgt} %`);
+  }
+});

@@ -147,6 +147,8 @@ const BASIS_MAKRO = {
   erb_masse:          400,  // Erbschaftsmasse pro Jahr, Mrd. €
   boden_wert:        5000,  // Bodenwert Deutschland gesamt, Mrd. €
   verm_basis:        3500,  // Steuerpflichtiges Vermögen > 2 Mio €, Mrd. €
+  milliardaersvermoegen: 600,   // Vermögen der Milliardäre in DE, Mrd. € — Näherung (Reichenlisten, EU Tax Observatory)
+  milliardaere_est_quote: 0.3,  // gezahlte Einkommensteuer in % ihres Vermögens (Zucman 2024, G20-Bericht)
   lohnsumme_sv:      1750,  // Sozialversicherungspflichtige Lohnsumme, Mrd. €
   mwst_basis_faktor: 1.68,  // MwSt-Basis-Korrektur: Dezil-Konsumbasis (~1,37 Bio. €) erfasst nur ~60 % der
                             // tatsächlichen MwSt-Basis — privater Konsum lt. VGR 2,14 Bio. € plus nicht-
@@ -276,9 +278,13 @@ const ELAST = {
   evasion: 0.25,           // Schneider — IM MODELL NICHT VERWENDET (PRUEFUNG.md C5)
   investment: -0.40,       // Unternehmenssteuer
   // D10c (Top 1%): höhere Elastizitäten wegen Steuervermeidung, Einkommensverschiebung, Wegzug
-  d10c_labor: 0.40,        // Piketty/Saez/Stantcheva (2014): extensive margin höher
+  d10c_labor: 0.40,        // Elastizität des zu versteuernden Einkommens im obersten Prozent (inkl. Verlagerung)
   d10c_avoidance: 0.50,    // Einkommensverschiebung/Avoidance ab GS > 45% (Kleven/Schultz DK)
-  d10c_wegzug: 0.10        // Steuerbedingte Emigration bei GS > 60% (Brülhart et al. 2019)
+  d10c_wegzug: 0.10,       // Steuerbedingte Emigration bei GS > 60 % — Beleg ausstehend (PRUEFUNG-2.md IV)
+  // Ausweichreaktion der Vermögensteuer: Semi-Elastizität des deklarierten Vermögens je
+  // Prozentpunkt Steuersatz. Brülhart et al. (2022) finden für die Schweiz 43 % je Pp.,
+  // darunter Umzüge zwischen Kantonen, die es national nicht gibt — hier die Hälfte.
+  verm_ausweichen: 0.215
 };
 
 // Strukturierte Quellenmetadaten zu ELAST — Werte bleiben oben kompatibel
@@ -289,9 +295,10 @@ const ELAST_QUELLEN = {
   co2:            { ref: 'EWI/DIW BEHG-Evaluation 2023 · Edenhofer/PIK 2024',               range: '−0,2 bis −0,4', note: 'kurzfristig konservativ; langfristig höher durch Infrastruktur-/Verhaltensanpassung' },
   evasion:        { ref: 'Schneider (2023) Shadow Economy DE · IfW Kiel 2024',              range: '0,1–0,3', note: 'Im Modell nicht verwendet. Schwarzarbeit/Schattenwirtschaft-Reaktion auf Gesamtsteuerlast' },
   investment:     { ref: 'Gechert/Heimberger (2022) NIER · Neumeier SVR Arbeitspapier 03/2025', range: '−0,3 bis −0,5', note: 'KSt-Investitionselastizität; Effekte kleiner als oft behauptet (Meta-Analyse)' },
-  d10c_labor:     { ref: 'Piketty/Saez/Stantcheva (2014) AER',                              range: '0,3–0,5', note: 'extensive margin Top 1%: Stunden, Ruhestandsentscheidung, Einkommensverschiebung' },
+  d10c_labor:     { ref: 'Saez/Slemrod/Giertz (2012) JEL 50(1) · Piketty/Saez/Stantcheva (2014) AEJ: Economic Policy 6(1)', range: '0,25–0,5', note: 'Elastizität des zu versteuernden Einkommens der Spitzenverdiener — überwiegend Verlagerung und Verhandlung, nicht reales Arbeitsangebot: PSS finden nur eine kleine reale Angebotsreaktion (PRUEFUNG-2.md IV)' },
   d10c_avoidance: { ref: 'Kleven/Schultz (2014) JPubEc · Chetty/Friedman/Saez (2013)',      range: '0,3–0,7', note: 'Einkommensverschiebung/Avoidance ab Grenzsteuersatz > 45 %' },
-  d10c_wegzug:    { ref: 'Brülhart/Gruber/Krapf/Schmidheiny (2019) JPubEc',                 range: '0,05–0,15', note: 'steuerbedingte Emigration ab Grenzsteuersatz > 60 %; DE-Effekt kleiner als CH-Schätzung' }
+  d10c_wegzug:    { ref: 'Beleg ausstehend',                                                range: '0,05–0,15', note: 'steuerbedingte Emigration ab Grenzsteuersatz > 60 %. Bisher Brülhart et al. zitiert — die Studie behandelt aber die Schweizer Vermögensteuer (PRUEFUNG-2.md IV)' },
+  verm_ausweichen:{ ref: 'Brülhart/Gruber/Krapf/Schmidheiny (2022) AEJ: Economic Policy 14(4), Behavioral Responses to Wealth Taxes', range: '0,1–0,43 je Pp.', note: 'Schweiz: −1 Pp. Vermögensteuer → +43 % deklariertes Vermögen, teils durch Kantonswechsel; hier halbiert. Deklariertes Vermögen = Basis × exp(−0,215 × Satz in Pp.)' }
 };
 
 
@@ -419,8 +426,8 @@ const CHALLENGES = [
     desc:'Arbeitsangebot-Index über 101',
     subs:[{ label:'Arbeit-Index', check:r=>r.behavior.labor>101, cur:r=>r.behavior.labor, tgt:101, refFn:()=>100, dir:'up', fmt:v=>v.toFixed(1) }]},
   { id:'armut_16', diff:'daily', title:'Armutsreduktion',
-    desc:'Armutsrisikoquote unter 8 %',
-    subs:[{ label:'Armutsrisiko', check:r=>r.armutsrisiko<8, cur:r=>r.armutsrisiko, tgt:8, refFn:ref=>ref.armutsrisiko, dir:'down', fmt:v=>v.toFixed(1)+' %' }]},
+    desc:'Armutsrisikoquote unter 13 %',
+    subs:[{ label:'Armutsrisiko', check:r=>r.armutsrisiko<13, cur:r=>r.armutsrisiko, tgt:13, refFn:ref=>ref.armutsrisiko, dir:'down', fmt:v=>v.toFixed(1)+' %' }]},
   { id:'co2_85', diff:'daily', title:'Klimakurs',
     desc:'CO₂-Emissionen auf Index unter 85',
     subs:[{ label:'CO₂-Index', check:r=>r.behavior.co2<85, cur:r=>r.behavior.co2, tgt:85, refFn:()=>100, dir:'down', fmt:v=>v.toFixed(1) }]},
@@ -465,8 +472,8 @@ const CHALLENGES = [
     desc:'Investitionsindex über 104',
     subs:[{ label:'Investition', check:r=>r.behavior.invest>104, cur:r=>r.behavior.invest, tgt:104, refFn:()=>100, dir:'up', fmt:v=>v.toFixed(1) }]},
   { id:'armut_14', diff:'weekly', title:'Soziale Gerechtigkeit',
-    desc:'Armutsrisikoquote unter 5 %',
-    subs:[{ label:'Armutsrisiko', check:r=>r.armutsrisiko<5, cur:r=>r.armutsrisiko, tgt:5, refFn:ref=>ref.armutsrisiko, dir:'down', fmt:v=>v.toFixed(1)+' %' }]},
+    desc:'Armutsrisikoquote unter 11 %',
+    subs:[{ label:'Armutsrisiko', check:r=>r.armutsrisiko<11, cur:r=>r.armutsrisiko, tgt:11, refFn:ref=>ref.armutsrisiko, dir:'down', fmt:v=>v.toFixed(1)+' %' }]},
   { id:'schuld_neg', diff:'weekly', title:'Schuldenabbau',
     desc:'Schuldenquote jährlich sinkend (Δ < 0)',
     subs:[{ label:'Schulden-Δ', check:r=>r.schuldenquote_delta<0, cur:r=>r.schuldenquote_delta, tgt:0, refFn:ref=>ref.schuldenquote_delta, dir:'down', fmt:v=>v.toFixed(2)+' %' }]},
@@ -510,9 +517,9 @@ const CHALLENGES = [
       { label:'CO₂ < 80',       check:r=>r.behavior.co2<80,    cur:r=>r.behavior.co2,  tgt:80,    refFn:()=>100,       dir:'down', fmt:v=>v.toFixed(1) }
     ]},
   { id:'sozmark', diff:'monthly', title:'Soziale Marktwirtschaft',
-    desc:'Armut < 6 %, Investitionen > 101, Saldo > −40 Mrd.',
+    desc:'Armut < 12 %, Investitionen > 101, Saldo > −40 Mrd.',
     subs:[
-      { label:'Armut < 6 %',    check:r=>r.armutsrisiko<6,      cur:r=>r.armutsrisiko,   tgt:6,   refFn:ref=>ref.armutsrisiko, dir:'down', fmt:v=>v.toFixed(1)+' %' },
+      { label:'Armut < 12 %',   check:r=>r.armutsrisiko<12,     cur:r=>r.armutsrisiko,   tgt:12,   refFn:ref=>ref.armutsrisiko, dir:'down', fmt:v=>v.toFixed(1)+' %' },
       { label:'Invest. > 101',  check:r=>r.behavior.invest>101, cur:r=>r.behavior.invest, tgt:101, refFn:()=>100,              dir:'up',   fmt:v=>v.toFixed(1) },
       { label:'Saldo > −40',    check:r=>r.saldo>-40,           cur:r=>r.saldo,           tgt:-40, refFn:ref=>ref.saldo,        dir:'up',   fmt:v=>v.toFixed(0)+' Mrd.' }
     ]},
@@ -565,8 +572,8 @@ const TOOLTIPS = {
   },
   synthetisch: {
     title: "Synthetisch vs. Dual",
-    text: "Synthetisch: Kapital- und Arbeitseinkommen zusammen progressiv besteuert (DE bis 2008). Dual (aktuell): Kapitalerträge pauschal mit Abgeltungsteuer. DIW (Bach/Sinclair 2026): synthetisch gerechter, mehr Aufkommen aus D10b/c. ifo: dual vermeidet Kapitalflucht (Elastizität 0,5).",
-    quelle: "§§ 32d, 43 EStG · Bach/Sinclair DIW Wochenbericht 4/2026 · Kleven/Schultz (2014)"
+    text: "Synthetisch: Kapital- und Arbeitseinkommen zusammen progressiv besteuert (DE bis 2008). Dual (aktuell): Kapitalerträge pauschal mit Abgeltungsteuer. Synthetisch: progressiver, mehr Aufkommen aus D10b/c. ifo: dual vermeidet Kapitalflucht (Elastizität 0,5).",
+    quelle: "§§ 32d, 43 EStG · Kleven/Schultz (2014) · Beleg für die DIW-Aussage ausstehend (der bisher zitierte Wochenbericht 4/2026 behandelt die Erbschaftsteuer)"
   },
   abgeltung: {
     title: "Abgeltungsteuer",
@@ -710,13 +717,13 @@ const TOOLTIPS = {
   },
   kv_kapital: {
     title: "Kapitalerträge KV-pflichtig",
-    text: "GKV-Mitglieder zahlen Beitrag auch auf Kapitalerträge (Dividenden, Zinsen, Mieteinnahmen). Derzeit: nur auf Arbeitseinkommen bis BBG (66.150 €). Reform würde Beitragsbasis strukturell verbreitern. ifo Forschungsbericht 159/2025: Mehreinnahmen ~8 Mrd. € / Jahr bei 16,3% Satz. Erfasst ca. 90% der unteren Dezile, nur ~8% im Spitzendezil (PKV-Quote).",
-    quelle: "§ 226 SGB V · ifo Forschungsbericht 159/2025 · GKV-SV Jahresbericht 2025 · DIW Wochenbericht 4/2026"
+    text: "GKV-Mitglieder zahlen Beitrag auch auf Kapitalerträge (Dividenden, Zinsen, Mieteinnahmen). Derzeit: nur auf Arbeitseinkommen bis BBG (69.750 € 2026). Reform würde Beitragsbasis strukturell verbreitern. ifo Forschungsbericht 159/2025: Mehreinnahmen ~8 Mrd. € / Jahr bei 16,3% Satz. Erfasst ca. 90% der unteren Dezile, nur ~8% im Spitzendezil (PKV-Quote).",
+    quelle: "§ 226 SGB V · ifo Forschungsbericht 159/2025 · GKV-SV Jahresbericht 2025"
   },
   kv_bbg_frei: {
     title: "KV-Beitragsbemessungsgrenze abschaffen",
-    text: "Aktuell: KV-Beiträge nur bis 66.150 € (2025). Darüber: kein weiterer Beitrag — wirkt stark regressiv. Abschaffung: alle Arbeitseinkommen KV-pflichtig ohne Deckel. DIW (2025): Mehreinnahmen ~18 Mrd. € / Jahr bei 16,3% Satz. Entlastet mittlere Einkommen nicht direkt, stärkt aber GKV-Finanzierungsbasis dauerhaft.",
-    quelle: "§ 6 Abs. 7 SGB V · KV-BBG 2025: 66.150 € · DIW Wochenbericht 4/2026 · GKV-SV Jahresbericht 2025"
+    text: "Aktuell: KV-Beiträge nur bis 69.750 € (2026). Darüber: kein weiterer Beitrag — wirkt stark regressiv. Abschaffung: alle Arbeitseinkommen KV-pflichtig ohne Deckel. Mehreinnahmen im Modell ~18 Mrd. € / Jahr (Beleg ausstehend). Entlastet mittlere Einkommen nicht direkt, stärkt aber GKV-Finanzierungsbasis dauerhaft.",
+    quelle: "§ 6 Abs. 7 SGB V · KV-BBG 2026: 69.750 € · GKV-SV Jahresbericht 2025"
   }
 };
 

@@ -43,9 +43,9 @@ const FORMEL_QUELLEN_BERECHNE = {
     note:   'Erbschaftsmasse ~400 Mrd./Jahr; Top 60 % erben ~60 %. Betriebsvermögen-Ausnahme: eff. Satz × 0,3'
   },
   zucman: {
-    formel: 'Zucman_auf = 2.870 × Satz% × (1 − 0,15 × min(1; Satz/2))',
-    ref:    'Zucman G20 Report 2024 · EU Tax Observatory 2024 · Jakobsen/Kleven/Kolsrud NBER 2024',
-    note:   'Basis D10c: 0,41 Mio. HH × 7 Mio. € Median-Vermögen = ~2.870 Mrd. €; Avoidance 15 % bei 2 %'
+    formel: 'Zucman_auf = Milliardärsvermögen × max(0; Satz − 0,3 % ESt − VermSt-Satz) × (1 − 0,15 × min(1; Satz/2))',
+    ref:    'Zucman (2024) A blueprint for a coordinated minimum effective taxation standard for ultra-high-net-worth individuals, G20-Bericht · EU Tax Observatory 2024 · Jakobsen/Kleven/Kolsrud NBER 2024',
+    note:   'Mindeststeuer auf Milliardäre mit Anrechnung: gezahlte Einkommensteuer (~0,3 % des Vermögens) und eine gleichzeitige Vermögensteuer werden angerechnet. Basis ~600 Mrd. € (Näherung, Reichenlisten). Avoidance 15 % bei 2 %'
   },
   sv_beitraege: {
     formel: 'SV = Lohnsumme_sv × Satz%  (nur bis BBG)',
@@ -93,13 +93,18 @@ function kapitalUndVermoegensteuern(params) {
   const erb = (BASIS_MAKRO.erb_masse * 0.6 * erb_satz_eff
              + BASIS_MAKRO.erb_masse * 0.4 * Math.min(params.erb, 15) / 100 * 0.5)
              * BASIS_MAKRO.erb_stpfl_quote;
-  const verm = BASIS_MAKRO.verm_basis * params.verm / 100;
-  // 2%-Mindeststeuer auf Nettovermögen ultra-Reicher (Zucman G20 2024)
-  // Basis D10c: 0,41 Mio. HH × 7 Mio. € Median-Vermögen = ~2.870 Mrd. €
-  // Avoidance: ~15% bei 2% Satz (Jakobsen/Kleven/Kolsrud 2024)
-  const zucman_basis = 2870;
-  const zucman_avoidance = 1 - 0.15 * Math.min(1, (params.zucman ?? 0) / 2);
-  const zucman = zucman_basis * (params.zucman ?? 0) / 100 * zucman_avoidance;
+  // Vermögensteuer mit Ausweichreaktion: deklariertes Vermögen sinkt mit dem Satz
+  // (Brülhart et al. 2022, halbiert — ELAST_QUELLEN.verm_ausweichen). Vorher linear.
+  const verm = BASIS_MAKRO.verm_basis * Math.exp(-ELAST.verm_ausweichen * params.verm) * params.verm / 100;
+  // Zucman-Mindeststeuer wie vorgeschlagen: nur Milliardärsvermögen, mit Anrechnung der
+  // Einkommensteuer (~0,3 % des Vermögens) und einer gleichzeitigen Vermögensteuer.
+  // Vorher: Pauschalsteuer auf das gesamte Vermögen des obersten Prozents (2.870 Mrd.),
+  // ohne Anrechnung und zusätzlich zur Vermögensteuer (PRUEFUNG-2.md IV).
+  // Avoidance: ~15 % bei 2 % (Jakobsen/Kleven/Kolsrud 2024)
+  const zucman_satz = params.zucman ?? 0;
+  const zucman_avoidance = 1 - 0.15 * Math.min(1, zucman_satz / 2);
+  const zucman = BASIS_MAKRO.milliardaersvermoegen * zucman_avoidance
+               * Math.max(0, zucman_satz - BASIS_MAKRO.milliardaere_est_quote - params.verm) / 100;
   return { investment_factor, kst, gewst, erb, verm, zucman };
 }
 

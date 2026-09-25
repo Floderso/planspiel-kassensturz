@@ -1653,8 +1653,8 @@ function renderFiskalPanel(r, z, abl) {
       formula: 'r − g = Zins − BIP-Wachstum', ref: 'Domar (1944) · Blanchard (2019)' },
     { label: 'PS-Ziel PS* (Domar)',     val: fmt.pct2(abl.ps_star), cls: 'neutral',
       formula: 'PS* = (r − g) × D_t', ref: 'Domar-Bedingung' },
-    { label: 'S2-Tragfähigkeitslücke',  val: fmt.pct2(abl.s2), cls: abl.s2 >= 0 ? 'good' : 'bad',
-      formula: 'S2 = PS_t − PS*  (>0 tragfähig)', ref: 'IMF Fiscal Monitor 2024' },
+    { label: 'Primärsaldo-Lücke',  val: fmt.pct2(abl.s2), cls: abl.s2 >= 0 ? 'good' : 'bad',
+      formula: 'PS_t − PS*  (>0 tragfähig; ohne Alterungskosten, kein S2)', ref: 'Domar (1944) · Blanchard (2019)' },
   ];
   el.innerHTML = rows.map(row => `
     <div class="fiskal-row">
