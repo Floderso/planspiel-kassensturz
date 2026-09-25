@@ -16,7 +16,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { berechne } from '../js/rechner/berechne.js';
-import { PRESETS } from '../js/data.js';
+import { PRESETS, DEZILE } from '../js/data.js';
 
 const r = berechne(PRESETS.status_quo);
 
@@ -47,8 +47,24 @@ test('Sozialversicherung: RV-/KV-Beiträge in amtlicher Größenordnung', () => 
   imBand(r.rev.kv, 270, 0.35, 'GKV-Beiträge (BAS 2024)');
 });
 
-test('KSt + GewSt in amtlicher Größenordnung', () => {
-  imBand(r.rev.kst + r.rev.gewst, 120, 0.35, 'KSt+GewSt (BMF 2024: ~44+75 Mrd.)');
+test('KSt und GewSt jeweils für sich in amtlicher Größenordnung', () => {
+  // Früher nur als Summe geprüft (±35 %): KSt +34 % und GewSt −25 % hoben sich auf
+  // (PRUEFUNG.md C1, D). Jetzt getrennte Bemessungsgrundlagen.
+  imBand(r.rev.kst,   45, 0.10, 'KSt (BMF 2024)');
+  imBand(r.rev.gewst, 75, 0.10, 'GewSt (Destatis 2024)');
+});
+
+test('Die Abschaffung kleiner Verbrauchsteuern spart kaum Erhebungskosten', () => {
+  // Vorher 20 % Erhebungskosten: 22 Mrd. Ersparnis, ein Geschenk an den Kirchhof-Pfad (PRUEFUNG-2.md II)
+  const ohne = berechne({ ...PRESETS.status_quo, kleine_st: false });
+  const ersparnis = r.admin_kosten - ohne.admin_kosten;
+  assert.ok(ersparnis > 0 && ersparnis < 5, `Ersparnis ${ersparnis.toFixed(1)} Mrd. €`);
+});
+
+test('Das Vermögen steigt über die Einkommensdezile', () => {
+  for (let i = 1; i < DEZILE.length; i++) {
+    assert.ok(DEZILE[i].vermoegen > DEZILE[i - 1].vermoegen, `${DEZILE[i].label} unter ${DEZILE[i - 1].label}`);
+  }
 });
 
 test('CO₂-Bepreisung brutto in amtlicher Größenordnung (~18 Mrd., BEHG+ETS)', () => {

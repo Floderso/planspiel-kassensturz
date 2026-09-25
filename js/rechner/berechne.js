@@ -85,9 +85,9 @@ const FORMEL_QUELLEN_BERECHNE = {
  */
 function kapitalUndVermoegensteuern(params) {
   const investment_factor = 1 + ELAST.investment * ((params.kst + (params.gewst_aus ? 0 : params.gewst))/100 - 0.30);
-  const gewinn = BASIS_MAKRO.gewinn * Math.max(0.7, Math.min(1.2, investment_factor));
-  const kst   = gewinn * params.kst / 100;
-  const gewst = params.gewst_aus ? 0 : gewinn * params.gewst / 100;
+  const gewinn_faktor = Math.max(0.7, Math.min(1.2, investment_factor));
+  const kst   = BASIS_MAKRO.gewinn_kst * gewinn_faktor * params.kst / 100;
+  const gewst = params.gewst_aus ? 0 : BASIS_MAKRO.gewinn_gewst * gewinn_faktor * params.gewst / 100;
   const erb_satz_eff = params.erb * (params.betriebs ? 0.3 : 0.9) / 100;
   // erb_stpfl_quote: persönliche Freibeträge (§ 16 ErbStG) stellen den Großteil der Erbmasse steuerfrei
   const erb = (BASIS_MAKRO.erb_masse * 0.6 * erb_satz_eff
@@ -100,7 +100,7 @@ function kapitalUndVermoegensteuern(params) {
   const zucman_basis = 2870;
   const zucman_avoidance = 1 - 0.15 * Math.min(1, (params.zucman ?? 0) / 2);
   const zucman = zucman_basis * (params.zucman ?? 0) / 100 * zucman_avoidance;
-  return { investment_factor, gewinn, kst, gewst, erb, verm, zucman };
+  return { investment_factor, kst, gewst, erb, verm, zucman };
 }
 
 // Verteilungsschlüssel je Haushalt (Σ anzahl × Anteil = 1) für die Inzidenz
@@ -112,6 +112,15 @@ const ANTEIL_ARBEIT   = anteilAn(d => d.brutto * (1 - d.kapital));
 const ANTEIL_KAPITAL  = anteilAn(d => d.brutto * d.kapital);
 const ANTEIL_VERMOEGEN = anteilAn(d => d.vermoegen);
 const ANTEIL_ZUCMAN   = anteilAn(d => (d.label === 'D10c' ? 1 : 0));
+
+// Erhebungskosten des Status quo (Größen von 2025), einmal gerechnet und gemerkt
+let _erhebungskostenSQ = null;
+function erhebungskostenStatusQuo() {
+  if (_erhebungskostenSQ === null) {
+    _erhebungskostenSQ = berechne(PRESETS.status_quo, null, { ohneNachfrage: true, adminReferenz: true }).admin_kosten;
+  }
+  return _erhebungskostenSQ;
+}
 
 // Beitragsbemessungsgrenze RV des Status quo — Bezug aller BBG-Rechnungen
 const BBG_SQ = PRESETS.status_quo.bbg;
@@ -377,8 +386,8 @@ function berechne(params, zustand = null, optionen = {}) {
     est_aufkommen * ADMIN_QUOTE.est +
     (est_aufkommen * (params.synthetisch ? 0.3 : 0.2)) * (ADMIN_QUOTE.kapital - ADMIN_QUOTE.est) +
     mwst_auf * ADMIN_QUOTE.mwst +
-    kst_auf * ADMIN_QUOTE.kst +
-    gewst_auf * ADMIN_QUOTE.gewst +
+    kvs.kst * ADMIN_QUOTE.kst +      // in Größen von 2025 wie die übrigen Posten
+    kvs.gewst * ADMIN_QUOTE.gewst +
     co2_auf * ADMIN_QUOTE.co2 +
     erb_auf * ADMIN_QUOTE.erbschaft +
     boden_auf * ADMIN_QUOTE.grundst +
@@ -412,7 +421,11 @@ function berechne(params, zustand = null, optionen = {}) {
   // Der Klimafonds gibt aus, was der CO₂-Preis des Status quo auf dem Emissionspfad einbringt —
   // er schrumpft mit den Emissionen. Mehraufkommen aus einem höheren Preis bleibt im Saldo.
   const klimafonds_weniger = STAATSAUSGABEN.klimafonds * (1 - emissionen_basis / emissionsBasis(2025));
-  const ausgaben_real = AUSGABEN_TOTAL - grundsicherung_entfaellt - klimafonds_weniger + bg_auszahlung + kg_auszahlung + neg_est_auszahlung + bge_brutto + admin_kosten - STAATSAUSGABEN.verwaltung - STAATSAUSGABEN.zinsen - rv_einsparung + sv_ausgaben_delta + demografie_aufschlag + invest_impuls;
+  // Die allgemeine Verwaltung (140 Mrd.) bleibt; in den Saldo geht nur die ÄNDERUNG der
+  // Erhebungskosten gegenüber dem Status quo. Vorher ersetzten die errechneten
+  // Erhebungskosten (59 Mrd.) die gesamte Verwaltung (PRUEFUNG-2.md II, C3).
+  const admin_referenz = optionen.adminReferenz ? admin_kosten : erhebungskostenStatusQuo();
+  const ausgaben_real = AUSGABEN_TOTAL - grundsicherung_entfaellt - klimafonds_weniger + bg_auszahlung + kg_auszahlung + neg_est_auszahlung + bge_brutto + (admin_kosten - admin_referenz) - STAATSAUSGABEN.zinsen - rv_einsparung + sv_ausgaben_delta + demografie_aufschlag + invest_impuls;
   const ausgaben_total = ausgaben_real * trend_faktor + zinsen_dyn;
 
   // ---------- 13. SALDO ----------
@@ -517,7 +530,7 @@ function berechne(params, zustand = null, optionen = {}) {
   // ---------- 19c. DYNAMISCHES SCORING ----------
   // Verhaltensbedingte Aufkommensänderung gegenüber mechanischer (statischer) Wirkung
   // KSt: investment_factor-Abweichung von 1 = Investitionsreaktion auf KSt-Änderung
-  const dynamisch_kst = BASIS_MAKRO.gewinn * bip_faktor * params.kst / 100 * (investment_factor - 1);
+  const dynamisch_kst = BASIS_MAKRO.gewinn_kst * bip_faktor * params.kst / 100 * (investment_factor - 1);
   // ESt: labor_factor-Abweichung → Arbeitsangebotsreaktion (Saez/Chetty-Konsens ε = 0,20)
   const dynamisch_est = est_aufkommen * (avg_labor - 1);
   const dynamisch_delta = dynamisch_kst + dynamisch_est;

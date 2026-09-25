@@ -52,6 +52,12 @@
 // wirken nur auf die oberste Zone; D10c mit Pareto-Rand (α = 1,5), sodass die
 // Reichensteuer überhaupt jemanden trifft (+1,2 Mrd. ESt im Status quo). Saldo 2025
 // −122,4 → −121,2.
+//
+// Erneuert am 2026-09-25, Struktur (PRUEFUNG.md C1/C3, PRUEFUNG-2.md II/IV): allgemeine
+// Verwaltung bleibt, nur Änderungen der Erhebungskosten zählen; Verbrauchsteuern 2 % statt
+// 20 % Erhebungskosten; KSt/GewSt mit getrennten Basen; Ausgleichsposten −144 → −221,4
+// (hält den Status-quo-Saldo). Spätere Perioden verschieben sich leicht (Erhebungskosten
+// jetzt in Größen von 2025).
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -59,11 +65,11 @@ import { simulierePfad } from '../js/rechner/transition.js';
 import { PRESETS } from '../js/data.js';
 
 const REFERENZ = [
-  { label: '2025–2028', saldo: -121.2134, schuldenquote: 63.5,    gini: 0.3115, emissionen: 649,     bip: 4470 },
-  { label: '2029–2032', saldo: -164.5004, schuldenquote: 67.6128, gini: 0.3112, emissionen: 500.392, bip: 4937.004 },
-  { label: '2033–2036', saldo: -226.6972, schuldenquote: 73.6512, gini: 0.311,  emissionen: 399.388, bip: 5452.7984 },
-  { label: '2037–2040', saldo: -292.4942, schuldenquote: 82.1988, gini: 0.3108, emissionen: 314.252, bip: 6022.4805 },
-  { label: '2041–2044', saldo: -366.1309, schuldenquote: 92.5474, gini: 0.3107, emissionen: 237.88,  bip: 6651.6802 },
+  { label: '2025–2028', saldo: -121.232,  schuldenquote: 63.5,    gini: 0.3115, emissionen: 649,     bip: 4470 },
+  { label: '2029–2032', saldo: -163.9176, schuldenquote: 67.6143, gini: 0.3112, emissionen: 500.392, bip: 4937.004 },
+  { label: '2033–2036', saldo: -225.2687, schuldenquote: 73.6085, gini: 0.311,  emissionen: 399.388, bip: 5452.7984 },
+  { label: '2037–2040', saldo: -289.9065, schuldenquote: 82.0624, gini: 0.3108, emissionen: 314.252, bip: 6022.4805 },
+  { label: '2041–2044', saldo: -361.9836, schuldenquote: 92.2635, gini: 0.3107, emissionen: 237.88,  bip: 6651.6802 },
 ];
 
 test('Status-quo-Pfad (5 Perioden) reproduziert die Referenzwerte', () => {

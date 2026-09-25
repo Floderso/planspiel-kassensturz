@@ -135,7 +135,7 @@ Dazu kommen veraltete oder falsch zugeordnete Klimaparameter:
   benutzt.~~ **Erledigt 24.09.** (siehe oben).
 - **B5, Klimageld:** Das Klimageld steckt weiterhin im Status quo, obwohl es
   nie eingeführt wurde.
-- **C3, Ausgleichsposten:** Der Posten beträgt nun −144 Mrd. Auch
+- **C3, Ausgleichsposten** (Verwaltung und Verbrauchsteuer-Erhebungskosten ✔ erledigt 25.09.; D9/D10a-Vermögen, Abgeltung/Soli und `capital_supply`/`evasion` aus IV ebenso)**:** Der Posten beträgt nun −144 Mrd. Auch
   `berechne.js:304` ersetzt die gesamten Verwaltungsausgaben (140 Mrd.) durch
   errechnete Erhebungskosten von 59 Mrd. Davon entfallen 22 Mrd. auf „kleine
   Verbrauchsteuern", weil für sie eine Erhebungskostenquote von 20 % angesetzt

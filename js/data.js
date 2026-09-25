@@ -18,12 +18,14 @@ const DEZILE = [
   { d:8,  idx:7,  label:'D8',   brutto: 72000,  kapital: 0.05, konsum: 0.78, gewicht: 2.0, vermoegen: 340000,  anzahl: 4.1, rente_anteil: 0.101 },
   { d:9,  idx:8,  label:'D9',   brutto: 95000,  kapital: 0.07, konsum: 0.72, gewicht: 2.0, vermoegen: 620000,  anzahl: 4.1, rente_anteil: 0.067 },
   // D10 aufgespalten in P90–95, P95–99, Top-1% (Basis: SOEP v40, DINA-DE, DIW Vermögensbericht 2024)
-  { d:10, idx:9,  label:'D10a', brutto: 125000, kapital: 0.08, konsum: 0.60, gewicht: 2.0, vermoegen: 450000,  anzahl: 2.05, rente_anteil: 0.042 },
+  { d:10, idx:9,  label:'D10a', brutto: 125000, kapital: 0.08, konsum: 0.60, gewicht: 2.0, vermoegen: 850000,  anzahl: 2.05, rente_anteil: 0.042 },
   { d:10, idx:10, label:'D10b', brutto: 220000, kapital: 0.18, konsum: 0.52, gewicht: 2.0, vermoegen: 1500000, anzahl: 1.64, rente_anteil: 0.025 },
   { d:10, idx:11, label:'D10c', brutto: 700000, kapital: 0.45, konsum: 0.40, gewicht: 2.0, vermoegen: 7000000, anzahl: 0.41, rente_anteil: 0.008, pareto_alpha: 1.5 },
 ];
 // D10c = Top 1% (0,41 Mio. Haushalte). Brutto 700k ist Durchschnitt — echte Spitze deutlich höher.
 // Kapitalanteil D10c: ~45% des Einkommens aus Kapital (DINA-DE, Bach/Buggeln 2024).
+// vermoegen D10a: 850.000 € (vorher 450.000 € und damit unter D9 mit 620.000 € — PRUEFUNG-2.md IV);
+// zwischen D9 und D10b gesetzt, Näherung. Wirkt auf die Inzidenz der Vermögensteuern.
 // pareto_alpha D10c: Einkommen im obersten Prozent Pareto-verteilt (FORMEL_QUELLEN_EST.spitzenzone).
 
 // ── HAUSHALTSPROFILE — eine Quelle für Haushalte UND Staat (PRUEFUNG-2.md I.4) ──
@@ -66,7 +68,8 @@ const CO2_GEWICHT = (() => {
 
 // Staatsausgaben 2025 (Gesamtstaat, grob aggregiert)
 const STAATSAUSGABEN = {
-  sozial:        850,  // inkl. Rente/GKV/Pflege/Bürgergeld (SV + Bund)
+  sozial:        850,  // soziale Sicherung: Rente, Pflege, Arbeitslosigkeit u. a. (die GKV-
+                       // Sachleistungen stehen unter gesundheit; siehe sonstige_einnahmen)
   gesundheit:    341,  // 320 + 21: der durchschnittliche Zusatzbeitrag stieg 2026 auf 2,9 % (KV 17,5 %),
                        // weil die GKV-Ausgaben stiegen — 1,2 Pp. × 1.750 Mrd. Lohnsumme (Referenzjahr 2026)
   bildung:       180,
@@ -97,11 +100,13 @@ const STAATSAUSGABEN = {
   // Bundes- (30) auf die Gesamtstaatsgröße (54) korrigiert, der Ausgleichsposten
   // fängt die 24 Mrd. auf, damit der Status-quo-Saldo weiter den VGR-Wert trifft.
   //
-  // OFFEN: Dieser Posten wächst damit auf 144 Mrd. und verdeckt in dieser Größe
-  // mögliche Strukturfehler auf der Ausgabenseite — etwa die Frage, ob die GKV
-  // sowohl in `sozial` als auch in `gesundheit` steckt. Siehe PRUEFUNG.md C3;
-  // das gehört bei der Ausgabenstruktur aufgelöst, nicht hier.
-  sonstige_einnahmen: -144
+  // Am 25.09.2026 von −144 auf −221,4: Die allgemeine Verwaltung (140) zählt wieder voll,
+  // statt von den errechneten Erhebungskosten ersetzt zu werden (PRUEFUNG-2.md II). Damit
+  // nähert sich der Posten seiner Bedeutung — rund 290 Mrd. € sonstige Einnahmen in der
+  // VGR — statt ihr fernzubleiben. Das spricht gegen die in PRUEFUNG.md C3 vermutete
+  // Doppelzählung der GKV: Müsste sie heraus, wäre der Posten über 500 Mrd. groß.
+  // OFFEN: ein Abgleich Posten für Posten mit der VGR (Primärdaten waren nicht erreichbar).
+  sonstige_einnahmen: -221.4
 };
 const AUSGABEN_TOTAL = Object.values(STAATSAUSGABEN).reduce((a,b)=>a+b,0);
 
@@ -113,12 +118,13 @@ const BASIS_AUFKOMMEN = {
   mwst:           303,
   kst:             45,
   gewst:           75,
-  solz_abgelt:     12,   // Abgeltung+Soli
+  solz_abgelt:     12,   // nur Solidaritätszuschlag (~12–13 Mrd.). Die Abgeltungsteuer rechnet die
+                         // ESt über die Kapitalanteile; vorher stand sie hier ein zweites Mal (PRUEFUNG-2.md IV)
   energie:         37,
   co2:             18,   // BEHG + EU-ETS (nationaler Anteil)
   tabak:           15,
   grundst:         16,
-  erbschaft:        8,
+  erbschaft:       12,   // BMF-Ist 2024 (vorher 8 — veraltet, PRUEFUNG.md C1)
   kfz:             10,
   sonstige:        35,   // Versicherung, Stromsteuer, Luftverkehr, etc.
   rv_beitrag:     310,
@@ -130,7 +136,13 @@ const BASIS_AUFKOMMEN = {
 // Quellen: Destatis VGR, BMF Finanzplan 2025, Deutsche Rentenversicherung Rentenbericht 2024
 const BASIS_MAKRO = {
   bip:               4470,  // BIP Deutschland 2025, Mrd. € (nominal; abgeleitet: Schuldenstand 2.838 Mrd. ÷ 63,5 % · Bundesbank/Destatis Feb 2026)
-  gewinn:             400,  // Unternehmensgewinne vor Steuern, Mrd. €
+  // Getrennte Bemessungsgrundlagen für KSt und GewSt, kalibriert auf BASIS_AUFKOMMEN
+  // (KSt 45 Mrd. bei 15 %, GewSt 75 Mrd. bei 14 % effektiv). Vorher eine gemeinsame Größe
+  // (400 Mrd.): KSt +34 %, GewSt −25 % daneben, die Fehler hoben sich nur in der Summe auf
+  // (PRUEFUNG.md C1). Die GewSt-Basis ist breiter: Personengesellschaften zahlen GewSt,
+  // aber keine KSt.
+  gewinn_kst:        300,  // Mrd. € — 45 / 0,15
+  gewinn_gewst:      536,  // Mrd. € — 75 / 0,14
   emissions:          327,  // CO₂-bepreiste Emissionen (aufkommensrelevanter Scope: BEHG + DE-ETS-Anteil); kalibriert auf BASIS_AUFKOMMEN.co2=18 Mrd. bei 55 €/t (327×55/1000≈18)
   erb_masse:          400,  // Erbschaftsmasse pro Jahr, Mrd. €
   boden_wert:        5000,  // Bodenwert Deutschland gesamt, Mrd. €
@@ -164,7 +176,9 @@ const ADMIN_QUOTE = {
   erbschaft: 0.080,
   grundst: 0.020,
   verm: 0.050,
-  klein: 0.200,      // Kleinverbrauchsteuern sehr teuer
+  klein: 0.020,      // Verbrauchsteuern über den Zoll: wenige große Steuerpflichtige (Raffinerien,
+                     // Tabakhersteller). Vorher 20 % — zehnfach zu hoch, die Abschaffung sparte 22 Mrd.
+                     // Erhebungskosten und begünstigte den Kirchhof-Pfad (PRUEFUNG-2.md II). Näherung
   sv: 0.015,
   transfer: 0.050
 };
@@ -256,10 +270,10 @@ function emissionsBasis(jahr) {
 // Verhaltens-Elastizitäten (konservativ)
 const ELAST = {
   labor_supply: 0.20,      // Saez/Chetty konsens
-  capital_supply: 0.50,    // Kleven/Schultz
+  capital_supply: 0.50,    // Kleven/Schultz — IM MODELL NICHT VERWENDET (PRUEFUNG.md C5)
   consumption: -0.35,      // MwSt-Pass-Through
   co2: -0.30,              // BEHG Evaluation
-  evasion: 0.25,           // Schneider
+  evasion: 0.25,           // Schneider — IM MODELL NICHT VERWENDET (PRUEFUNG.md C5)
   investment: -0.40,       // Unternehmenssteuer
   // D10c (Top 1%): höhere Elastizitäten wegen Steuervermeidung, Einkommensverschiebung, Wegzug
   d10c_labor: 0.40,        // Piketty/Saez/Stantcheva (2014): extensive margin höher
@@ -270,10 +284,10 @@ const ELAST = {
 // Strukturierte Quellenmetadaten zu ELAST — Werte bleiben oben kompatibel
 const ELAST_QUELLEN = {
   labor_supply:   { ref: 'Saez/Chetty/Gruber Konsens · ifo Schnelldienst 01/2025',         range: '0,1–0,3', note: 'intensive margin, konservativ; extensive margin untere Dezile 0,2–0,5 (Meghir/Phillips)' },
-  capital_supply: { ref: 'Kleven/Schultz (2014) JPubEc',                                    range: '0,4–0,8', note: 'dänische Daten, auf DE übertragbar; hohe Elastizität wegen Ausweichoptionen' },
+  capital_supply: { ref: 'Kleven/Schultz (2014) JPubEc',                                    range: '0,4–0,8', note: 'Im Modell nicht verwendet — die Vermögensteuer rechnet ohne Ausweichreaktion (PRUEFUNG-2.md IV: Brülhart et al. 2022 finden starke Reaktionen). Dänische Daten.' },
   consumption:    { ref: 'Lewbel/Pendakur (2009) JPubEc · Metaanalyse Havranek et al. 2018',range: '−0,2 bis −0,5', note: 'MwSt-Pass-Through auf Konsum; getrennt für Regel- und Ermäßigungssatz' },
   co2:            { ref: 'EWI/DIW BEHG-Evaluation 2023 · Edenhofer/PIK 2024',               range: '−0,2 bis −0,4', note: 'kurzfristig konservativ; langfristig höher durch Infrastruktur-/Verhaltensanpassung' },
-  evasion:        { ref: 'Schneider (2023) Shadow Economy DE · IfW Kiel 2024',              range: '0,1–0,3', note: 'Schwarzarbeit/Schattenwirtschaft-Reaktion auf Gesamtsteuerlast' },
+  evasion:        { ref: 'Schneider (2023) Shadow Economy DE · IfW Kiel 2024',              range: '0,1–0,3', note: 'Im Modell nicht verwendet. Schwarzarbeit/Schattenwirtschaft-Reaktion auf Gesamtsteuerlast' },
   investment:     { ref: 'Gechert/Heimberger (2022) NIER · Neumeier SVR Arbeitspapier 03/2025', range: '−0,3 bis −0,5', note: 'KSt-Investitionselastizität; Effekte kleiner als oft behauptet (Meta-Analyse)' },
   d10c_labor:     { ref: 'Piketty/Saez/Stantcheva (2014) AER',                              range: '0,3–0,5', note: 'extensive margin Top 1%: Stunden, Ruhestandsentscheidung, Einkommensverschiebung' },
   d10c_avoidance: { ref: 'Kleven/Schultz (2014) JPubEc · Chetty/Friedman/Saez (2013)',      range: '0,3–0,7', note: 'Einkommensverschiebung/Avoidance ab Grenzsteuersatz > 45 %' },

@@ -448,7 +448,7 @@ Steuerprogression lehren soll.
 | 8 | **A5** Zinsdoppelzählung | wenige Zeilen | ✔ **erledigt** |
 | 9 | **B4** GGI-Referenz auf den Spielbereich strecken | eine Zeile | ✔ **erledigt** (60–150 %) |
 | 10 | **B5/B6** Referenzjahr vereinheitlichen, Klimageld aus dem Status quo | Fleißarbeit | ✔ **erledigt** 25.09.: Referenzjahr 2026, `docs/RECHTSSTAND.md` |
-| 11 | **C3** Ausgabenstruktur entzerren, Ausgleichsposten abschaffen | mittel | offen — **hat sich verschärft**, siehe unten |
+| 11 | **C3** Ausgabenstruktur entzerren, Ausgleichsposten abschaffen | mittel | **teilweise** 25.09.: Verwaltung zählt wieder voll, Posten jetzt −221,4 Mrd. — nahe seiner Bedeutung (~290 Mrd. sonstige Einnahmen VGR); gegen die GKV-Doppelzählung spricht, dass er sonst über 500 Mrd. läge. Offen: Abgleich Posten für Posten mit der VGR (Primärdaten gesperrt). C1 erledigt (getrennte KSt-/GewSt-Basen, ErbSt-Ist 12), C5 als „nicht verwendet" markiert |
 | 12 | **D** Dimensionstests ergänzen | klein | ✔ **erledigt** (8 Tests) |
 
 ### Was die Reparatur bewirkt hat
