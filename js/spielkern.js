@@ -141,7 +141,7 @@ export const RESSORTS = [
   ]},
   { id: 'wir', name: 'Wirtschaft und Unternehmen', kurz: 'Wirtschaft', kennzahl: 'bip', stell: [
     { key: 'kst',   bez: 'Körperschaftsteuer',     einheit: '%', min: 0, max: 40, nk: 1, quelle: 'dynamisches_scoring', modul: 'kst' },
-    { key: 'gewst', bez: 'Gewerbesteuer-Messzahl', einheit: '%', min: 0, max: 30, nk: 1, quelle: 'dynamisches_scoring', modul: 'kst' },
+    { key: 'gewst', bez: 'Gewerbesteuer, effektiv', einheit: '%', min: 0, max: 30, nk: 1, quelle: 'dynamisches_scoring', modul: 'kst' },
   ]},
   { id: 'soz', name: 'Arbeit und Soziales',        kurz: 'Soziales',  kennzahl: 'gini', stell: [
     { key: 'rv', bez: 'Rentenversicherung',  einheit: '%',       min: 10, max: 30,   nk: 1, quelle: 'sv_beitraege', modul: 'sv' },

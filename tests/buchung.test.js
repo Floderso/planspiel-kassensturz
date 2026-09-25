@@ -26,11 +26,12 @@ const FAELLE = [
   { name: 'Kindergeld',     p: { kg: 359 },   staat: r => r.kg_auszahlung - BASIS.kg_auszahlung },
   { name: 'Bürgergeld',     p: { bg: 700 },   staat: r => r.bg_auszahlung - BASIS.bg_auszahlung },
   { name: 'CO₂-Preis',      p: { co2: 150 },  staat: r => -(r.rev.co2 - BASIS.rev.co2) },
-  { name: 'ohne Klimageld', p: { klimageld: false }, staat: r => -(r.rev.co2 - BASIS.rev.co2) },
+  { name: 'mit Klimageld',  p: { klimageld: true },  staat: r => -(r.rev.co2 - BASIS.rev.co2) },
   { name: 'KSt',            p: { kst: 25 },   staat: r => -(r.rev.kst + r.rev.gewst - BASIS.rev.kst - BASIS.rev.gewst) },
   { name: 'GewSt',          p: { gewst: 8 },  staat: r => -(r.rev.kst + r.rev.gewst - BASIS.rev.kst - BASIS.rev.gewst) },
   { name: 'ErbSt',          p: { erb: 40 },   staat: r => -(r.rev.erbschaft - BASIS.rev.erbschaft) },
   { name: 'Vermögensteuer', p: { verm: 1 },   staat: r => -(r.rev.vermoegen - BASIS.rev.vermoegen) },
+  { name: 'Bodenwertsteuer', p: { boden: 1 }, staat: r => -(r.rev.boden - BASIS.rev.boden) },
   { name: 'Zucman',         p: { zucman: 2 }, staat: r => -(r.rev.zucman - BASIS.rev.zucman) },
 ];
 

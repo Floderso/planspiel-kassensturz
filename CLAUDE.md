@@ -16,6 +16,7 @@ oder rätst, sieh dort nach:
 |---|---|
 | `docs/ARCHITECTURE.md` | Systemüberblick, Datenfluss, Komponenten |
 | `docs/ENGINE.md` | Wie die Rechenmodule arbeiten — ohne Code zu lesen |
+| `docs/RECHTSSTAND.md` | Rechtsstand des Status quo (2026), je Zahl die Rechtsgrundlage — bei jeder Änderung am Status quo mitpflegen |
 | `docs/API.md` | Alle Endpunkte mit Beispielen |
 | `docs/DEPLOYMENT.md` | Frontend und Backend ausrollen |
 | `docs/adrs/001–004` | Warum Engine im Client, warum Hono/Cloudflare, warum KV, warum Polling |

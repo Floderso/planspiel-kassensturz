@@ -66,7 +66,8 @@ const CO2_GEWICHT = (() => {
 // Staatsausgaben 2025 (Gesamtstaat, grob aggregiert)
 const STAATSAUSGABEN = {
   sozial:        850,  // inkl. Rente/GKV/Pflege/Bürgergeld (SV + Bund)
-  gesundheit:    320,
+  gesundheit:    341,  // 320 + 21: der durchschnittliche Zusatzbeitrag stieg 2026 auf 2,9 % (KV 17,5 %),
+                       // weil die GKV-Ausgaben stiegen — 1,2 Pp. × 1.750 Mrd. Lohnsumme (Referenzjahr 2026)
   bildung:       180,
   verteidigung:   90,
   infrastruktur: 120,
@@ -81,6 +82,11 @@ const STAATSAUSGABEN = {
   // dem Regelbedarf, der jetzt über die Haushalte gebucht wird (26,3 Mrd.). Hält den
   // Status-quo-Saldo, ohne den Ausgleichsposten zu vergrößern (PRUEFUNG-2.md I.4)
   grundsicherung_fix: 10.8,
+  // CO₂-Einnahmen fließen in den Klima- und Transformationsfonds (KTF) und werden dort
+  // ausgegeben (Förderung, EEG-Finanzierung) — ein Klimageld wurde nie eingeführt. 70 % des
+  // Aufkommens bei 55 €/t, bis 25.09.2026 als Klimageld im Status quo gebucht (PRUEFUNG.md B5).
+  // Schrumpft im Modell mit dem Emissionspfad (berechne.js). Nicht bei den Haushalten abgebildet.
+  klimafonds:     12.6,
   // Gegenposten: staatliche Einnahmen, die das Modell nicht als Steuer/SV abbildet
   // (Gebühren, Verkäufe, Vermögenseinkommen, Bundesbankgewinn; Destatis VGR 2024:
   // ~290 Mrd. € sonstige Einnahmen, hier anteilig für den modellierten Sektor).
@@ -140,7 +146,7 @@ const BASIS_MAKRO = {
   rentenniveau_sq:     48,  // Sicherungsniveau vor Steuern, % (§ 154 Abs. 3 SGB VI). Haltelinie 48 % bis
                             // 2031 mit dem Rentenpaket 2025 (Bundestag 05.12.2025, BMAS). Die RV-Ausgaben
                             // folgen diesem Niveau, nicht dem Beitragssatz (PRUEFUNG-2.md I.1)
-  kv_bbg_kv_sq:     66150,  // Beitragsbemessungsgrenze KV/PV 2025, € p.a. (GKV-Beitragsbemessungsgrenze 2025)
+  kv_bbg_kv_sq:     69750,  // Beitragsbemessungsgrenze KV/PV 2026, € p.a. (Sozialversicherungs-Rechengrößenverordnung 2026)
   kv_bbg_frei_bonus:   18,  // Aufkommensgewinn kv_bbg_frei bei kv=16,3 %, Mrd. €
   kv_kapital_bonus:     8,  // Aufkommensgewinn kv_kapital bei kv=16,3 %, Mrd. €
 };
@@ -250,9 +256,9 @@ const PRESETS = {
     synthetisch: false, abgeltung: 25,
     kst: 15, gewst: 14, gewst_aus: false,
     mwst: 19, mwst_erm: 7,
-    co2: 55, klimageld: true,
+    co2: 55, klimageld: false,
     erb: 20, betriebs: true, boden: 0.4, verm: 0, zucman: 0,
-    rv: 18.6, kv: 16.3, alpf: 6.2, buergerv: false, bbg: 90000, rentenniveau: 48,
+    rv: 18.6, kv: 17.5, alpf: 6.2, buergerv: false, bbg: 101400, rentenniveau: 48,
     bg: 563, kg: 259, neg_est: false, kleine_st: true,
     kapitalquote: 0, rendite_fonds: 7, startjahr: 2020,
     pkv_abschaffen: false, kv_kapital: false, kv_bbg_frei: false, anzahl_kv: 95, praevention: 0, bge: 0
@@ -276,7 +282,7 @@ const PRESETS = {
     mwst: 19, mwst_erm: 7,
     co2: 55, klimageld: true,
     erb: 10, betriebs: true, boden: 0.4, verm: 0, zucman: 0,
-    rv: 18.6, kv: 16.3, alpf: 6.2, buergerv: false, bbg: 90000,
+    rv: 18.6, kv: 17.5, alpf: 6.2, buergerv: false, bbg: 101400,
     bg: 563, kg: 255, neg_est: false, kleine_st: false,
     kapitalquote: 0, rendite_fonds: 7, startjahr: 2020,
     pkv_abschaffen: false, kv_kapital: false, kv_bbg_frei: false, anzahl_kv: 95, praevention: 0, bge: 0
@@ -300,7 +306,7 @@ const PRESETS = {
     mwst: 19, mwst_erm: 7,
     co2: 100, klimageld: true,
     erb: 30, betriebs: false, boden: 1.5, verm: 0, zucman: 0,
-    rv: 18.6, kv: 16.3, alpf: 6.2, buergerv: false, bbg: 90000,
+    rv: 18.6, kv: 17.5, alpf: 6.2, buergerv: false, bbg: 101400,
     bg: 600, kg: 280, neg_est: false, kleine_st: false,
     kapitalquote: 0, rendite_fonds: 7, startjahr: 2020,
     pkv_abschaffen: false, kv_kapital: false, kv_bbg_frei: false, anzahl_kv: 95, praevention: 0, bge: 0
@@ -324,7 +330,7 @@ const PRESETS = {
     mwst: 19, mwst_erm: 7,
     co2: 65, klimageld: true,
     erb: 20, betriebs: true, boden: 0.4, verm: 0, zucman: 0,
-    rv: 18.6, kv: 16.3, alpf: 6.2, buergerv: false, bbg: 90000,
+    rv: 18.6, kv: 17.5, alpf: 6.2, buergerv: false, bbg: 101400,
     bg: 550, kg: 259, neg_est: false, kleine_st: true,
     kapitalquote: 10, rendite_fonds: 7, startjahr: 2024,
     pkv_abschaffen: false, kv_kapital: false, kv_bbg_frei: false, anzahl_kv: 95, praevention: 3, bge: 0
@@ -341,7 +347,7 @@ const PRESETS = {
     mwst: 22, mwst_erm: 7,
     co2: 80, klimageld: false,
     erb: 30, betriebs: false, boden: 1.0, verm: 0, zucman: 0,
-    rv: 18.6, kv: 16.3, alpf: 6.2, buergerv: false, bbg: 90000,
+    rv: 18.6, kv: 17.5, alpf: 6.2, buergerv: false, bbg: 101400,
     bg: 0, kg: 255, neg_est: false, kleine_st: false,
     kapitalquote: 0, rendite_fonds: 7, startjahr: 2020,
     pkv_abschaffen: false, kv_kapital: false, kv_bbg_frei: false, anzahl_kv: 95, praevention: 0, bge: 1200
@@ -577,8 +583,8 @@ const TOOLTIPS = {
   },
   rv: {
     title: "Rentenversicherungsbeitrag",
-    text: "AN+AG je hälftig. Nur bis BBG (90.600 € West 2025) fällig — wirkt regressiv. SVR-Projektion: ohne Reform steigt Beitragssatz bis 2045 auf ~25%. Generationenkapital (Rentenpaket II 2024): 12 Mrd./Jahr in Staatsfonds ab 2024.",
-    quelle: "§ 158 SGB VI · 2025: 18,6% · BBG 90.600 € · Rentenpaket II BT-Drs. 20/10749 · DRV"
+    text: "AN+AG je hälftig. Nur bis zur BBG (101.400 € 2026, bundeseinheitlich) fällig — wirkt regressiv. Rentenpaket 2025: Haltelinie 48 % bis 2031, Mütterrente, Aktivrente. Rentenversicherungsbericht 2025: Beitragssatz 18,6 % bis 2027, danach 19,8–20,4 % (2030). Das Generationenkapital (Rentenpaket II) wurde nie beschlossen.",
+    quelle: "§ 158 SGB VI · 2026: 18,6 % · BBG 101.400 € (SV-Rechengrößenverordnung 2026) · Rentenpaket 2025 (Bundestag 05.12.2025) · BMAS Rentenversicherungsbericht 2025"
   },
   kv: {
     title: "Krankenversicherungsbeitrag",
@@ -587,8 +593,8 @@ const TOOLTIPS = {
   },
   alpf: {
     title: "Arbeitslosen- + Pflegeversicherung",
-    text: "ALV: 2,6% bis BBG 90.600 €. Pflegeversicherung: 3,6% (Kinderlose +0,6%) bis BBG 66.150 €. Pflegeversicherung unter massivem Reformdruck: Pflegebedürftige wachsen demografisch stark. Koalitionsvertrag 2025: Pflegereform für 2026 angekündigt.",
-    quelle: "§ 341 SGB III · § 55 SGB XI · 2025: 6,2% · Koalitionsvertrag CDU/SPD 2025 · BMG"
+    text: "ALV: 2,6% bis BBG 101.400 €. Pflegeversicherung: 3,6% (Kinderlose +0,6%) bis BBG 69.750 €. Pflegeversicherung unter massivem Reformdruck: Pflegebedürftige wachsen demografisch stark. Koalitionsvertrag 2025: Pflegereform für 2026 angekündigt.",
+    quelle: "§ 341 SGB III · § 55 SGB XI · 2026: 6,2% · Koalitionsvertrag CDU/SPD 2025 · BMG"
   },
   buergerv: {
     title: "Bürgerversicherung",
@@ -597,8 +603,8 @@ const TOOLTIPS = {
   },
   bg: {
     title: "Bürgergeld-Regelsatz",
-    text: "563 €/Monat für Alleinstehende (2025). ~5,5 Mio. Bedarfsgemeinschaften. ifo/Peichl (2025): Schlüsselreform ist METR-Senkung (Anrechnung 80% → 60%), nicht Regelsatz selbst. Simulation zeigt: METR D1 liegt bei 80%+ — stärkstes Arbeitsmarkthemmnis. ifo Forschungsbericht 159 (2025): Reformvariante mit 60% Anrechnungsquote senkt D1-METR auf ~64% und könnte das Arbeitsangebot im untersten Dezil spürbar steigern.",
-    quelle: "§ 20 SGB II · 2025: 563 € · Blömer/Fuest/Peichl ifo 01/2025 · ifo Forschungsbericht 159/2025 · ifo/ZEW METR-Simulation 2024"
+    text: "563 €/Monat für Alleinstehende (2026, Nullrunde). Seit 01.07.2026 Grundsicherungsgeld mit verschärften Sanktionen. ~5,5 Mio. Leistungsberechtigte (Personen, nicht Bedarfsgemeinschaften). Der Regler wirkt auf den Regelbedarf; Unterkunft und Mehrbedarfe stehen fest. ifo/Peichl (2025): Schlüsselreform ist METR-Senkung (Anrechnung 80% → 60%), nicht Regelsatz selbst. Simulation zeigt: METR D1 liegt bei 80%+ — stärkstes Arbeitsmarkthemmnis. ifo Forschungsbericht 159 (2025): Reformvariante mit 60% Anrechnungsquote senkt D1-METR auf ~64% und könnte das Arbeitsangebot im untersten Dezil spürbar steigern.",
+    quelle: "§ 20 SGB II · 2026: 563 € · Gesetz zur neuen Grundsicherung (Bundestag 2026) · Blömer/Fuest/Peichl ifo 01/2025 · ifo Forschungsbericht 159/2025 · ifo/ZEW METR-Simulation 2024"
   },
   kg: {
     title: "Kindergeld",
@@ -617,8 +623,8 @@ const TOOLTIPS = {
   },
   kapitalquote: {
     title: "Fondsquote Rentenversicherung",
-    text: "Anteil RV-Aufkommen in Staatsfonds (Generationenkapital). Rentenpaket II 2024: 12 Mrd./Jahr ab 2024 beschlossen (~4% des RV-Aufkommens). Modell zeigt: früherer Start hätte durch Zinseszins erheblich mehr Puffer erzeugt.",
-    quelle: "Rentenpaket II · BT-Drs. 20/10749 · Norges Bank NBIM 2024 · DRV Rentenversicherungsbericht"
+    text: "Anteil RV-Aufkommen in einem Staatsfonds (Generationenkapital) — ein Gedankenexperiment: Das Rentenpaket II mit 12 Mrd./Jahr wurde nie beschlossen, es scheiterte mit der Ampel. Modell zeigt: ein früherer Start hätte durch Zinseszins erheblich mehr Puffer erzeugt.",
+    quelle: "Entwurf Rentenpaket II, BT-Drs. 20/10749 (nicht beschlossen) · Norges Bank NBIM 2024 · BMAS Rentenversicherungsbericht 2025"
   },
   rendite_fonds: {
     title: "Erwartete Jahresrendite",
@@ -648,7 +654,7 @@ const TOOLTIPS = {
   bbg: {
     title: "Beitragsbemessungsgrenze (BBG)",
     text: "Bis zu dieser Einkommenshöhe werden SV-Beiträge fällig — darüber nicht. Wirkt stark regressiv: Wer mehr verdient als die BBG, zahlt keinen Grenzanteil mehr. Erhöhung würde Finanzierungsbasis verbreitern und Progressivität erhöhen. DIW: BBG-Anhebung = günstigste Reform zur SV-Finanzierung.",
-    quelle: "§ 6 SGB IV · RV-BBG 2025: 90.600 € · KV-BBG: 66.150 € · DIW Wochenbericht 2025"
+    quelle: "§ 6 SGB IV · RV-BBG 2026: 101.400 € · KV-BBG 2026: 69.750 € (SV-Rechengrößenverordnung 2026)"
   },
   zucman: {
     title: "Zucman-Mindeststeuer (Milliardäre)",

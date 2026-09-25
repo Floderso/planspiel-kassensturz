@@ -41,6 +41,12 @@
 // gebucht, Unterkunft/Mehrbedarfe (10,8 Mrd.) fest und bei den Haushalten. Gini
 // 0,3034 → 0,3101: das überzeichnete Kindergeld hatte ihn gedrückt. Saldo 2025
 // −118,6 → −118,1 (keine Erhebungskosten auf den festen Grundsicherungsposten).
+//
+// Erneuert am 2026-09-25, Rechtsstand 2026 (docs/RECHTSSTAND.md): Tarif § 32a 2026,
+// KV 17,5 % mit entsprechend höheren GKV-Ausgaben, BBG 101.400 / 69.750 €, kein
+// Klimageld im Status quo (die CO₂-Einnahmen fließen in den Klimafonds). Saldo 2025
+// −118,1 → −122,4: weniger MwSt (höhere Beiträge senken den Konsum, −2,8 Mrd.) und
+// ESt (Tarif 2026, −1,3 Mrd.). Gini 0,3101 → 0,3119 (kein Klimageld mehr).
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -48,11 +54,11 @@ import { simulierePfad } from '../js/rechner/transition.js';
 import { PRESETS } from '../js/data.js';
 
 const REFERENZ = [
-  { label: '2025–2028', saldo: -118.0541, schuldenquote: 63.5,    gini: 0.3101, emissionen: 649,     bip: 4470 },
-  { label: '2029–2032', saldo: -160.7673, schuldenquote: 67.349,  gini: 0.3106, emissionen: 500.392, bip: 4937.004 },
-  { label: '2033–2036', saldo: -222.311,  schuldenquote: 73.1302, gini: 0.3108, emissionen: 399.388, bip: 5452.7984 },
-  { label: '2037–2040', saldo: -287.3667, schuldenquote: 81.4269, gini: 0.3111, emissionen: 314.252, bip: 6022.4805 },
-  { label: '2041–2044', saldo: -360.1629, schuldenquote: 91.5308, gini: 0.3113, emissionen: 237.88,  bip: 6651.6802 },
+  { label: '2025–2028', saldo: -122.3666, schuldenquote: 63.5,    gini: 0.3119, emissionen: 649,     bip: 4470 },
+  { label: '2029–2032', saldo: -165.8691, schuldenquote: 67.709,  gini: 0.3116, emissionen: 500.392, bip: 4937.004 },
+  { label: '2033–2036', saldo: -228.3118, schuldenquote: 73.8418, gini: 0.3114, emissionen: 399.388, bip: 5452.7984 },
+  { label: '2037–2040', saldo: -294.389,  schuldenquote: 82.4819, gini: 0.3112, emissionen: 314.252, bip: 6022.4805 },
+  { label: '2041–2044', saldo: -368.3441, schuldenquote: 92.9211, gini: 0.3111, emissionen: 237.88,  bip: 6651.6802 },
 ];
 
 test('Status-quo-Pfad (5 Perioden) reproduziert die Referenzwerte', () => {

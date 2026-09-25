@@ -59,7 +59,9 @@ function werteVon(s) {
 function dominant(params) {
   const e = pfadEnde(params), r = e.result, b = BASIS.result;
   return r.saldo > b.saldo + 0.1
-      && r.hh_delta.delta.every(d => d > 1)
+      // gegen den Status-quo-Pfad derselben Periode, nicht gegen 2025: dort weichen die
+      // Haushalte schon ohne Beschluss ab (die CO₂-Last sinkt mit dem Emissionspfad)
+      && r.hh_delta.delta.every((d, i) => d > b.hh_delta.delta[i] + 1)
       && r.gini <= b.gini + 1e-6
       && r.emissionen <= b.emissionen + 1e-6
       && e.zustand.bip >= BASIS.zustand.bip - 1e-6;

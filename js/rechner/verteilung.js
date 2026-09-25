@@ -122,9 +122,9 @@ function berechneDezilDelta(dezile, params, est_dez, klima, bg, kg, zusatz = {})
     const brutto = d.brutto_adj;
     // K3: SV nur auf Arbeitseinkommen (nicht Kapital); KV-BBG (62.100 €) < RV/AL-BBG
     const arbeit_dez = brutto * (1 - d.kapital);
-    const bbg_rv_dez = params.bbg ?? 90000;
+    const bbg_rv_dez = params.bbg ?? PRESETS.status_quo.bbg;
     // kv_bbg_frei: kein KV-Beitragsdeckel → gesamtes Arbeitseinkommen KV-pflichtig
-    const bbg_kv_dez = params.kv_bbg_frei ? Infinity : Math.round(bbg_rv_dez * (BASIS_MAKRO.kv_bbg_kv_sq / 90000));
+    const bbg_kv_dez = params.kv_bbg_frei ? Infinity : Math.round(bbg_rv_dez * (BASIS_MAKRO.kv_bbg_kv_sq / PRESETS.status_quo.bbg));
     const sv_lohn = Math.min(arbeit_dez, bbg_rv_dez) * (params.rv + params.alpf * 0.42) / 100 * 0.5
                   + Math.min(arbeit_dez, bbg_kv_dez) * (params.kv + params.alpf * 0.58) / 100 * 0.5;
     // kv_kapital: Kapitalerträge von GKV-Mitgliedern werden KV-pflichtig (Mieteinnahmen, Zinsen, Dividenden)
@@ -181,8 +181,8 @@ function berechneNettoSQ(d) {
   // SV exakt wie berechneDezilDelta bei SQ-Parametern — die SQ-Referenz muss
   // dasselbe Modell mit denselben BBG-Konventionen sein, sonst sind die
   // Δ-Werte schon bei unveränderten Parametern ungleich null.
-  const bbg_rv_sq = sq.bbg ?? 90000;
-  const bbg_kv_sq = Math.round(bbg_rv_sq * (BASIS_MAKRO.kv_bbg_kv_sq / 90000));
+  const bbg_rv_sq = sq.bbg;
+  const bbg_kv_sq = BASIS_MAKRO.kv_bbg_kv_sq;
   const sv = Math.min(arbeit_sq, bbg_rv_sq) * (sq.rv + sq.alpf * 0.42) / 100 * 0.5
            + Math.min(arbeit_sq, bbg_kv_sq) * (sq.kv + sq.alpf * 0.58) / 100 * 0.5;
   const vornetto = brutto - est - sv;
@@ -191,7 +191,7 @@ function berechneNettoSQ(d) {
   const sq_co2_auf = BASIS_MAKRO.emissions * sq.co2 / 1000;
   const co2_last = sq_co2_auf * 1000 * CO2_GEWICHT[d.idx];
   const total_hh_sq = DEZILE.reduce((a,x)=>a+x.anzahl,0);
-  const klimageld_per_hh = sq_co2_auf * 0.7 * 1000 / total_hh_sq;
+  const klimageld_per_hh = sq.klimageld ? sq_co2_auf * 0.7 * 1000 / total_hh_sq : 0;
   let transfers = 0;
   transfers += sq.bg * 12 * BUERGERGELD_QUOTE[d.idx];
   transfers += sq.kg * 12 * KINDER_JE_HH[d.idx];

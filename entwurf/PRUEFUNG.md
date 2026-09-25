@@ -445,7 +445,7 @@ Steuerprogression lehren soll.
 | 7 | **A2** Klimasensitivität korrigieren, Schadensfunktion neu justieren | mittel | ✔ **erledigt** 24.09.: nationaler Klimaschaden entfernt (PRUEFUNG-2.md I.5); C2 mit erledigt |
 | 8 | **A5** Zinsdoppelzählung | wenige Zeilen | ✔ **erledigt** |
 | 9 | **B4** GGI-Referenz auf den Spielbereich strecken | eine Zeile | ✔ **erledigt** (60–150 %) |
-| 10 | **B5/B6** Referenzjahr vereinheitlichen, Klimageld aus dem Status quo | Fleißarbeit | offen |
+| 10 | **B5/B6** Referenzjahr vereinheitlichen, Klimageld aus dem Status quo | Fleißarbeit | ✔ **erledigt** 25.09.: Referenzjahr 2026, `docs/RECHTSSTAND.md` |
 | 11 | **C3** Ausgabenstruktur entzerren, Ausgleichsposten abschaffen | mittel | offen — **hat sich verschärft**, siehe unten |
 | 12 | **D** Dimensionstests ergänzen | klein | ✔ **erledigt** (8 Tests) |
 

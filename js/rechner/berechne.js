@@ -72,8 +72,8 @@ const FORMEL_QUELLEN_BERECHNE = {
     note:   'Verhaltensbedingte Aufkommensabweichung gegenüber mechanischer (statischer) Wirkung'
   },
   inzidenz: {
-    formel: 'Last_i = ΔKSt+ΔGewSt × (½ Anteil Arbeitseinkommen_i + ½ Anteil Kapitaleinkommen_i) + ΔErbSt+ΔVermSt × Anteil Vermögen_i + ΔZucman × D10c',
-    ref:    'Fuest/Peichl/Siegloch (2018) AER 108(2): Beschäftigte tragen rund 51 % der Gewerbesteuer · Harberger (1962) · CBO (2012) Distribution of Corporate Tax',
+    formel: 'Last_i = ΔKSt+ΔGewSt × (½ Anteil Arbeitseinkommen_i + ½ Anteil Kapitaleinkommen_i) + ΔErbSt+ΔVermSt+ΔBodenSt × Anteil Vermögen_i + ΔZucman × D10c',
+    ref:    'Fuest/Peichl/Siegloch (2018) AER 108(2): Beschäftigte tragen rund 51 % der Gewerbesteuer · Harberger (1962) · CBO (2012) Distribution of Corporate Tax · Mirrlees Review (2011) Tax by Design, Kap. 16 (Bodenwertsteuer)',
     note:   'Änderung gegenüber dem Status quo, in Größen von 2025. Summe über alle Haushalte = Aufkommensänderung. Vorher trafen diese Steuern keinen Haushalt: KSt 40 % brachte 76 Mrd., und niemand zahlte (PRUEFUNG-2.md N1)'
   }
 };
@@ -111,6 +111,9 @@ const ANTEIL_ARBEIT   = anteilAn(d => d.brutto * (1 - d.kapital));
 const ANTEIL_KAPITAL  = anteilAn(d => d.brutto * d.kapital);
 const ANTEIL_VERMOEGEN = anteilAn(d => d.vermoegen);
 const ANTEIL_ZUCMAN   = anteilAn(d => (d.label === 'D10c' ? 1 : 0));
+
+// Beitragsbemessungsgrenze RV des Status quo — Bezug aller BBG-Rechnungen
+const BBG_SQ = PRESETS.status_quo.bbg;
 
 function berechne(params, zustand = null) {
   // Periodenübergreifender Zustand für Multi-Perioden-Simulation
@@ -206,8 +209,8 @@ function berechne(params, zustand = null) {
     // Netto nach ESt und SV (SV-Basis = Arbeitseinkommen, K3-Vorkorrektur hier vereinfacht)
     const est_d = est_pro_dezil.find(x => x.d === d.d).est;
     const arbeit_mwst = d.brutto_adj * (1 - d.kapital);
-    const bbg_kv_mwst = params.kv_bbg_frei ? Infinity : Math.round((params.bbg ?? 90000) * (BASIS_MAKRO.kv_bbg_kv_sq / 90000));
-    const sv_d = Math.min(arbeit_mwst, params.bbg ?? 90000) * (params.rv + params.alpf * 0.42) / 100 * 0.5
+    const bbg_kv_mwst = params.kv_bbg_frei ? Infinity : Math.round((params.bbg ?? BBG_SQ) * (BASIS_MAKRO.kv_bbg_kv_sq / BBG_SQ));
+    const sv_d = Math.min(arbeit_mwst, params.bbg ?? BBG_SQ) * (params.rv + params.alpf * 0.42) / 100 * 0.5
                + Math.min(arbeit_mwst, bbg_kv_mwst) * (params.kv + params.alpf * 0.58) / 100 * 0.5;
     const netto = d.brutto_adj - est_d - sv_d;
     const konsum = netto * d.konsum;
@@ -239,15 +242,17 @@ function berechne(params, zustand = null) {
   const verm_auf  = kvs.verm;
 
   // ---------- 7. SV-BEITRÄGE ----------
-  const bbg = params.bbg ?? 90000;
-  // BBG-Erhöhung: ~12% der sozialversicherungspflichtigen Löhne liegt zwischen 90k und 160k
-  const bbg_lohnsumme_factor = 1 + Math.max(0, (bbg - 90000) / 90000) * 0.12;
+  const bbg = params.bbg ?? BBG_SQ;
+  // BBG-Erhöhung über den Status quo: ~12 % der sv-pflichtigen Löhne liegen zwischen BBG und
+  // knapp dem Doppelten. Bezug ist die BBG des Status quo — die Lohnsumme ist auf das Ist-
+  // Aufkommen kalibriert, eine Anhebung auf den Wert von 2026 bringt kein Extra-Aufkommen.
+  const bbg_lohnsumme_factor = 1 + Math.max(0, (bbg - BBG_SQ) / BBG_SQ) * 0.12;
   const lohnsumme_sv = BASIS_MAKRO.lohnsumme_sv * lohnbasis_faktor * bbg_lohnsumme_factor;
   const buerger_boost = params.buergerv ? 1.15 : 1.0;
   const rv_auf = lohnsumme_sv * params.rv / 100;
   // kv_bbg_frei/kv_kapital: Aufkommensschätzung skaliert mit aktuellem KV-Satz (ifo 159/2025, DIW)
-  const kv_bbg_frei_bonus = params.kv_bbg_frei ? BASIS_MAKRO.kv_bbg_frei_bonus * (params.kv / 16.3) : 0;
-  const kv_kapital_bonus  = params.kv_kapital  ? BASIS_MAKRO.kv_kapital_bonus  * (params.kv / 16.3) : 0;
+  const kv_bbg_frei_bonus = params.kv_bbg_frei ? BASIS_MAKRO.kv_bbg_frei_bonus * (params.kv / PRESETS.status_quo.kv) : 0;
+  const kv_kapital_bonus  = params.kv_kapital  ? BASIS_MAKRO.kv_kapital_bonus  * (params.kv / PRESETS.status_quo.kv) : 0;
   const kv_auf = lohnsumme_sv * params.kv / 100 * buerger_boost + kv_bbg_frei_bonus + kv_kapital_bonus;
   const al_auf = lohnsumme_sv * params.alpf / 100;
 
@@ -369,7 +374,10 @@ function berechne(params, zustand = null) {
   // Ersetzt ein BGE das Bürgergeld, entfallen auch Unterkunft und Mehrbedarfe (bei den
   // Haushalten ebenso, verteilung.js)
   const grundsicherung_entfaellt = bg_effektiv > 0 ? 0 : STAATSAUSGABEN.grundsicherung_fix;
-  const ausgaben_real = AUSGABEN_TOTAL - grundsicherung_entfaellt + bg_auszahlung + kg_auszahlung + neg_est_auszahlung + bge_brutto + admin_kosten - STAATSAUSGABEN.verwaltung - STAATSAUSGABEN.zinsen - rv_einsparung + sv_ausgaben_delta + demografie_aufschlag + invest_impuls;
+  // Der Klimafonds gibt aus, was der CO₂-Preis des Status quo auf dem Emissionspfad einbringt —
+  // er schrumpft mit den Emissionen. Mehraufkommen aus einem höheren Preis bleibt im Saldo.
+  const klimafonds_weniger = STAATSAUSGABEN.klimafonds * (1 - emissionen_basis / emissionsBasis(2025));
+  const ausgaben_real = AUSGABEN_TOTAL - grundsicherung_entfaellt - klimafonds_weniger + bg_auszahlung + kg_auszahlung + neg_est_auszahlung + bge_brutto + admin_kosten - STAATSAUSGABEN.verwaltung - STAATSAUSGABEN.zinsen - rv_einsparung + sv_ausgaben_delta + demografie_aufschlag + invest_impuls;
   const ausgaben_total = ausgaben_real * trend_faktor + zinsen_dyn;
 
   // ---------- 13. SALDO ----------
@@ -396,7 +404,9 @@ function berechne(params, zustand = null) {
   // in Größen von 2025, verteilt nach Arbeits-, Kapitaleinkommen und Vermögen (N1)
   const kvs_sq = kapitalUndVermoegensteuern(PRESETS.status_quo);
   const d_unt  = (kvs.kst + kvs.gewst) - (kvs_sq.kst + kvs_sq.gewst);
-  const d_verm = (kvs.erb + kvs.verm) - (kvs_sq.erb + kvs_sq.verm);
+  // Bodenwertsteuer: nicht überwälzbar, sie tragen die Eigentümer (Mirrlees Review 2011, Kap. 16)
+  const d_boden = BASIS_MAKRO.boden_wert * (params.boden - PRESETS.status_quo.boden) / 100;
+  const d_verm = (kvs.erb + kvs.verm) - (kvs_sq.erb + kvs_sq.verm) + d_boden;
   const d_zuc  = kvs.zucman - kvs_sq.zucman;
   const inzidenz = DEZILE.map((d, i) => 1000 * (
       d_unt  * (0.5 * ANTEIL_ARBEIT[i] + 0.5 * ANTEIL_KAPITAL[i])
@@ -454,8 +464,8 @@ function berechne(params, zustand = null) {
     const gs_est = grenzsteuersatzHaushalt(arbeit, params.freibetrag, params.eingang, params.spitze, params.grenze);
     // K3: Separate BBG für KV/PV (62.100 €) und RV/AL (params.bbg).
     // RV+AL Grenzbelastung fällt weg sobald Arbeitseinkommen ≥ RV-BBG
-    const bbg_rv_m = params.bbg ?? 90000;
-    const bbg_kv_m = Math.round(bbg_rv_m * (BASIS_MAKRO.kv_bbg_kv_sq / 90000));
+    const bbg_rv_m = params.bbg ?? BBG_SQ;
+    const bbg_kv_m = Math.round(bbg_rv_m * (BASIS_MAKRO.kv_bbg_kv_sq / BBG_SQ));
     const sv_grenz_rv = arbeit < bbg_rv_m ? (params.rv + params.alpf * 0.42) / 100 * 0.5 : 0;
     // kv_bbg_frei: kein Deckel → Grenzbelastung gilt bei jedem Einkommensniveau
     const sv_grenz_kv = (params.kv_bbg_frei || arbeit < bbg_kv_m) ? (params.kv + params.alpf * 0.58) / 100 * 0.5 : 0;

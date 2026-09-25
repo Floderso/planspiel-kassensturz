@@ -129,8 +129,9 @@ test('Schuldenbremse-Indikator konsistent zum Saldo (Art. 109 GG, −0,35 % BIP)
 });
 
 test('Klimageld: Auszahlung ist 70 % des CO₂-Aufkommens, Abschalten erhöht Netto-Aufkommen', () => {
-  const mit = berechne(SQ);
-  const ohne = berechne({ ...SQ, klimageld: false });
+  // Seit 25.09.2026 ohne Klimageld im Status quo (nie eingeführt, PRUEFUNG.md B5)
+  const mit = berechne({ ...SQ, klimageld: true });
+  const ohne = berechne(SQ);
   assert.ok(Math.abs(mit.klimageld_auszahlung - (mit.rev.co2 + mit.klimageld_auszahlung) * 0.7) < 1e-9);
   assert.equal(ohne.klimageld_auszahlung, 0);
   assert.ok(ohne.rev.co2 > mit.rev.co2);
