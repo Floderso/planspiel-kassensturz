@@ -1,0 +1,420 @@
+% SPDX-License-Identifier: CC-BY-4.0
+% Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
+% Teil I — Das Modell in Worten
+
+\section{Was für ein Modell das ist}
+
+Die Engine ist ein \emph{Mikrosimulationsmodell mit makroökonomischem Rahmen}. Sie bildet
+Deutschland durch zwölf typische Haushalte ab, je einen für die Einkommensdezile D1 bis D9 und
+drei für das oberste Dezil (D10a: 90.--95.~Perzentil, D10b: 95.--99., D10c: das oberste
+Prozent). Zusammen stehen sie für rund 41~Millionen Haushalte. Für jeden dieser Haushalte
+rechnet die Engine Steuern, Beiträge, Transfers und Nettoeinkommen aus; die Summe über alle
+Haushalte, gewichtet mit ihrer Zahl, ergibt die Einnahmen und Ausgaben des Staates.
+
+Darüber liegt ein einfacher Makrorahmen: ein nominales Bruttoinlandsprodukt, das mit einem
+Trend wächst, ein Schuldenstand, der sich aus dem Saldo fortschreibt, und ein
+Emissionspfad. Die Zeit läuft in \emph{Perioden}, im Standardkurs fünf zu je vier Jahren
+(2025--2044), entsprechend einer Legislaturperiode. Innerhalb einer Periode gilt eine Politik
+unverändert; zwischen den Perioden wird der Zustand fortgeschrieben.
+
+Drei Eigenschaften bestimmen, wie die Ergebnisse zu lesen sind:
+
+\begin{enumerate}
+\item \textbf{Alles ist ein Vergleich.} Die Engine sagt nicht, wie hoch das Nettoeinkommen
+  eines Haushalts 2030 sein \emph{wird}, sondern wie es sich gegenüber dem Status quo
+  \emph{derselben} Periode unterscheidet. Die Absolutwerte sind kalibriert, aber die Aussagen
+  des Planspiels liegen in den Differenzen.
+\item \textbf{Verhalten ist berücksichtigt, aber einfach.} Haushalte arbeiten etwas weniger,
+  wenn ihnen von einem zusätzlichen Euro weniger bleibt; sie konsumieren weniger, wenn die
+  Umsatzsteuer steigt; Unternehmen investieren weniger bei höheren Gewinnsteuern; Emissionen
+  sinken mit dem \COz-Preis. Jede dieser Reaktionen ist eine einzige Elastizität aus der
+  Literatur, keine geschätzte Nutzenfunktion. Es gibt keine Erwartungen, keine Optimierung
+  und keine Rückwirkung auf Löhne oder Preise.
+\item \textbf{Jede Zahl hat eine Quelle.} Elastizitäten, Faktoren und Tarifformeln stehen in
+  den Objekten \datei{FORMEL\_QUELLEN\_*} und \datei{ELAST\_QUELLEN} mit Fundstelle. Der Anhang
+  druckt sie vollständig ab. Wo keine Primärquelle erreichbar war, steht \enquote{Näherung}.
+\end{enumerate}
+
+\begin{merksatz}
+Zwölf Haushaltstypen, ein Staat, ein Makrorahmen, Perioden zu vier Jahren. Ergebnisse sind
+Unterschiede zum Status quo derselben Periode.
+\end{merksatz}
+
+\section{Eine Periode in zehn Schritten}
+\label{sec:zehn}
+
+Was geschieht, wenn ein Team eine Politik beschließt? Die Funktion \datei{berechne()} geht
+für jede Periode dieselben zehn Schritte, Abbildung~\ref{fig:ablauf} zeigt sie im Überblick.
+
+\begin{enumerate}[label=\arabic*.,leftmargin=2em]
+\item \textbf{Geltendes Recht einrechnen.} Zu den Reglern kommen die beschlossenen Pfade
+  hinzu, gemittelt über die Jahre der Periode: die Senkung der Körperschaftsteuer um je einen
+  Punkt ab 2028 und der steigende Rentenbeitrag nach §\,158 SGB~VI. Die Regler zeigen die Werte
+  von 2026.
+\item \textbf{Arbeitsangebot.} Für jeden Haushalt wird der Grenzsteuersatz mit dem des Status
+  quo verglichen. Bleibt vom letzten Euro mehr übrig, steigt das Arbeitseinkommen etwas.
+\item \textbf{Einkommensteuer.} Auf das angepasste Arbeitseinkommen wird der Tarif des
+  §\,32a EStG angewandt, auf Kapitaleinkommen die Abgeltungsteuer.
+\item \textbf{Weitere Steuern.} Körperschaft- und Gewerbesteuer auf die Unternehmensgewinne,
+  Umsatzsteuer auf den Konsum, Erbschaft-, Vermögen- und Bodensteuer, \COz-Abgabe auf die
+  bepreisten Emissionen.
+\item \textbf{Sozialbeiträge} auf die Löhne bis zur Beitragsbemessungsgrenze.
+\item \textbf{Transfers und Renten:} Bürgergeld, Kindergeld, gegebenenfalls Klimageld; die
+  Renten folgen dem Rentenniveau.
+\item \textbf{Haushalte.} Aus allem entsteht das Nettoeinkommen jedes Haushaltstyps, dazu
+  die Last aus Unternehmens- und Vermögensteuern, die am Ende Menschen tragen. Daraus folgen
+  Gini, Palma und Armutsrisikoquote.
+\item \textbf{Nachfrage.} Haushalte, die mehr (weniger) Geld haben als im Status quo, geben
+  einen Teil davon aus (weniger aus). Zusammen mit zusätzlichen öffentlichen Investitionen
+  verschiebt das die Wirtschaftsleistung dieser Periode.
+\item \textbf{Fortschreibung in Euro der Periode.} Alles bis hierher ist in Größen von 2025
+  gerechnet. Die Einnahmen werden mit dem tatsächlichen BIP der Periode hochgerechnet, die
+  Ausgaben mit dem Preis- und Lohntrend. Dazu kommen Zinsen, Verteidigung und
+  Sondervermögen.
+\item \textbf{Saldo und Schuldenbremse.} Einnahmen minus Ausgaben ergeben den Saldo, bereinigt
+  um Konjunktur und Ausnahmen den strukturellen Saldo, der gegen die Schuldenbremse geprüft
+  wird.
+\end{enumerate}
+
+Danach übergibt \datei{berechneTransition()} an die nächste Periode: Das BIP wächst mit dem
+Trend und den Angebotseffekten, die Schulden wachsen mit Zins und Defizit, die Emissionen
+summieren sich zum verbrauchten \COz-Budget.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  node distance=3.5mm and 5mm,
+  box/.style={draw=grau, rounded corners=2pt, fill=hell, align=center, font=\small,
+              minimum height=8mm, text width=27mm},
+  pfeil/.style={-{Stealth[length=2mm]}, thick, grau}]
+\node[box] (a) {1 Geltendes\\Recht};
+\node[box, right=of a] (b) {2 Arbeits-\\angebot};
+\node[box, right=of b] (c) {3 Einkommen-\\steuer};
+\node[box, right=of c] (d) {4 Weitere\\Steuern};
+\node[box, below=of d] (e) {5 Sozial-\\beiträge};
+\node[box, left=of e] (f) {6 Transfers\\und Renten};
+\node[box, left=of f] (g) {7 Haushalte:\\Netto, Gini};
+\node[box, left=of g] (h) {8 Nachfrage\\der Periode};
+\node[box, below=of h] (i) {9 Fortschreibung\\nominal};
+\node[box, right=of i] (j) {10 Saldo,\\Schuldenbremse};
+\node[box, right=of j, fill=white, text width=58mm] (k) {Übergang zur nächsten Periode:\\BIP, Schulden, Emissionen, Kapital};
+\draw[pfeil] (a)--(b); \draw[pfeil] (b)--(c); \draw[pfeil] (c)--(d); \draw[pfeil] (d)--(e);
+\draw[pfeil] (e)--(f); \draw[pfeil] (f)--(g); \draw[pfeil] (g)--(h); \draw[pfeil] (h)--(i);
+\draw[pfeil] (i)--(j); \draw[pfeil] (j)--(k);
+\end{tikzpicture}
+\caption{Ablauf einer Periode in \datei{berechne()} und Übergang in \datei{berechneTransition()}.}
+\label{fig:ablauf}
+\end{figure}
+
+\section{Die Haushalte}
+
+Jeder der zwölf Haushaltstypen ist durch wenige Zahlen beschrieben (Tabelle~\ref{tab:dezile}
+im Anhang): Bruttoeinkommen, Anteil der Kapitaleinkommen, Konsumquote, Vermögen, Zahl der
+Haushalte, das Bedarfsgewicht nach der neuen OECD-Skala und der Anteil der gesetzlichen Rente
+am Einkommen. Grundlage sind SOEP v40, der Mikrozensus 2024, die Verteilungsrechnung DINA-DE
+und der Vermögensbericht des DIW.
+
+Das oberste Dezil ist dreigeteilt, weil sich dort fast alles abspielt, was Vermögen- und
+Spitzensteuern betrifft: D10c, das oberste Prozent, hat im Mittel 700.000\,\euro{}
+Bruttoeinkommen, zu 45\,\% aus Kapital, und 7~Mio.\,\euro{} Vermögen.
+
+Zu jedem Haushaltstyp gibt es außerdem \emph{Profile}, die Haushalte und Staat gemeinsam
+benutzen: Kinder mit Kindergeldanspruch (zusammen 17~Mio.), Bürgergeldbezug (zusammen
+3,9~Mio. Regelsatz-Jahresäquivalente, nur D1 bis D4), die Last aus dem \COz-Preis
+(regressiv: 4\,\% des Einkommens in D1, 1\,\% in D10c) und die Grenzkonsumneigung. Dass
+beide Seiten dieselben Zahlen benutzen, ist nicht selbstverständlich: Bis September 2026
+zählten die Haushalte 36,5~Mio. Kinder, der Staat 17~Mio. Seitdem prüft
+\datei{tests/buchung.test.js}, dass die Summe über die Haushalte der Buchung des Staates
+entspricht.
+
+\begin{merksatz}
+Zwölf Haushaltstypen mit Einkommen, Vermögen, Kindern, Transferbezug, Rente und
+Konsumverhalten. Staat und Haushalte rechnen mit denselben Profilen.
+\end{merksatz}
+
+\section{Die Einkommensteuer}
+
+Der Tarif ist der amtliche Formeltarif des §\,32a EStG 2026: steuerfrei bis zum
+Grundfreibetrag (12.348\,\euro{}), dann eine Progressionszone, in der der Grenzsteuersatz
+linear von 14 auf knapp 24\,\% steigt, eine zweite bis 42\,\%, eine Proportionalzone mit 42\,\%
+und ab 277.826\,\euro{} der Spitzensatz von 45\,\%.
+
+Vier Regler greifen in den Tarif ein, und jeder wirkt nur dort, wo sein Name hinzeigt: Der
+\emph{Grundfreibetrag} verschiebt den ganzen Tarif, der \emph{Eingangssatz} hebt oder senkt den
+Beginn der Progression, der \emph{Spitzensatz} gilt nur oberhalb der \emph{Grenze}, und die
+Grenze verschiebt nur den Beginn der obersten Zone. Das klingt selbstverständlich, war es
+aber nicht: Bis September 2026 hob ein höherer Spitzensatz die 42-\%-Zone mit an, und ein
+Haushalt aus D5 zahlte für eine Reform der Spitzenverdiener mit.
+
+Weil die Daten \emph{Haushalts}einkommen sind, der Tarif aber je Steuerpflichtigem gilt,
+rechnet die Engine um: Nur 79\,\% des Bruttos sind zu versteuerndes Einkommen (Werbungskosten,
+Vorsorgeaufwand), und ein Haushalt besteht im Mittel aus 1,6 Tarifeinheiten (Einzelpersonen
+und zusammenveranlagte Paare). So trifft das Aufkommen die amtliche Größenordnung.
+
+Für das oberste Prozent reicht ein Durchschnitt nicht: Sein mittleres zu versteuerndes
+Einkommen liegt unter der Grenze des Spitzensatzes. Rechnete man nur mit dem Durchschnitt,
+zahlte niemand im Modell den Spitzensatz. Die Engine nimmt deshalb an, dass die Einkommen
+innerhalb von D10c einer Pareto-Verteilung folgen (Exponent 1,5, der schwere Rand der
+Schätzungen für Deutschland), und berechnet, welcher Teil davon über der Grenze liegt.
+
+\begin{merksatz}
+Tarif 2026 nach §\,32a EStG, umgerechnet auf Haushalte. Jeder Regler wirkt nur auf seine
+Zone. Das oberste Prozent ist als Verteilung modelliert, nicht als Durchschnitt.
+\end{merksatz}
+
+\section{Verhalten}
+
+Vier Reaktionen machen aus der mechanischen Rechnung eine Verhaltensrechnung.
+
+\textbf{Arbeitsangebot.} Steigt der Anteil, der vom letzten verdienten Euro übrig bleibt
+(eins minus Grenzsteuersatz), um 10\,\%, steigt das Arbeitseinkommen um 2\,\%
+(Elastizität 0,20, Konsens von Saez, Chetty und Gruber). Für das oberste Prozent ist die
+Elastizität doppelt so hoch (0,40), weil dort Einkommen leichter verlagert werden kann;
+oberhalb eines Grenzsteuersatzes von 45\,\% kommt Steuervermeidung hinzu, oberhalb von 60\,\%
+Wegzug. Alle Reaktionen sind nach unten und oben begrenzt.
+
+\textbf{Konsum.} Eine um einen Punkt höhere Umsatzsteuer senkt den besteuerten Konsum um
+0,35\,\%, getrennt für den Regel- und den ermäßigten Satz.
+
+\textbf{Investitionen.} Liegt die Summe aus Körperschaft- und Gewerbesteuersatz um zehn Punkte
+über 30\,\%, sinken Gewinne und Investitionen um 4\,\% (Elastizität $-0{,}40$, Meta-Analyse
+von Gechert und Heimberger). Das mindert die Bemessungsgrundlage sofort und das private
+Kapital langfristig.
+
+\textbf{Emissionen und Vermögen.} Ein um 100\,\euro{}/t höherer \COz-Preis senkt die bepreisten
+Emissionen um 30\,\%. Eine Vermögensteuer senkt das angegebene Vermögen, nach Erfahrungen aus
+der Schweiz (Brülhart u.\,a. 2022), hier halbiert.
+
+\begin{merksatz}
+Arbeit, Konsum, Investitionen, Emissionen und Vermögen reagieren über je eine Elastizität aus
+der Literatur. Alle Reaktionen sind begrenzt, damit extreme Regler nicht ins Unsinnige
+führen.
+\end{merksatz}
+
+\section{Die übrigen Einnahmen}
+
+\textbf{Umsatzsteuer.} 70\,\% des Konsums fallen unter den Regelsatz, 30\,\% unter den
+ermäßigten. Weil der Konsum der Haushalte nur einen Teil der Bemessungsgrundlage erfasst
+(dazu kommen Käufe von Staat, Wohnungsbau und befreiten Branchen), wird hochgerechnet, und
+3,7\,\% gehen durch Hinterziehung verloren (VAT Gap der EU-Kommission).
+
+\textbf{Unternehmenssteuern.} Körperschaftsteuer (15\,\%) und Gewerbesteuer (effektiv 14\,\%)
+haben getrennte Bemessungsgrundlagen, weil Personengesellschaften Gewerbe-, aber keine
+Körperschaftsteuer zahlen. Beide schrumpfen mit der Investitionsreaktion.
+
+\textbf{Vermögensbezogene Steuern.} Die Erbschaftsteuer rechnet mit 400\,\Mrd{} Erbmasse im
+Jahr, von der nach den persönlichen Freibeträgen 45\,\% steuerpflichtig bleiben;
+Betriebsvermögen ist weitgehend verschont. Eine Vermögensteuer trifft Vermögen über
+2~Mio.\,\euro{} (3.500\,\Mrd), eine Bodenwertsteuer den Bodenwert (5.000\,\Mrd). Die
+Mindeststeuer auf Milliardäre nach Zucman rechnet die gezahlte Einkommensteuer (rund 0,3\,\%
+des Vermögens) und eine gleichzeitige Vermögensteuer an.
+
+\textbf{\COz-Preis.} Die Emissionen folgen einem Basispfad nach dem Projektionsbericht 2025
+des Umweltbundesamts: 649~Mt im Jahr 2025, $-63\,\%$ bis 2030 und $-80\,\%$ bis 2040 gegenüber
+1990. Nur rund die Hälfte davon (327~Mt) trägt den nationalen \COz-Preis von 55\,\euro{}/t;
+nur auf diesen Teil wirkt der Regler. Das Aufkommen fließt in den Klimafonds; ein Klimageld
+gibt es im Status quo nicht, als Schalter aber schon: Es zahlt 70\,\% des Aufkommens pro
+Haushalt gleich aus.
+
+\textbf{Sozialbeiträge.} Renten-, Kranken-, Arbeitslosen- und Pflegeversicherung auf die
+sozialversicherungspflichtige Lohnsumme von 1.750\,\Mrd, bis zur Beitragsbemessungsgrenze.
+Der Beitragssatz wirkt \emph{nur auf die Einnahmen}. Das ist eine bewusste Entscheidung: Bis
+September 2026 folgten auch die Ausgaben dem Satz, und eine Senkung des Rentenbeitrags
+verbesserte den Saldo und machte alle Haushalte reicher.
+
+\begin{merksatz}
+Jede Steuerart hat ihre eigene Bemessungsgrundlage, kalibriert auf das Ist-Aufkommen.
+Beitragssätze bestimmen Einnahmen, nicht Leistungen.
+\end{merksatz}
+
+\section{Ausgaben, Transfers und Rente}
+
+Die Ausgaben des Staates beginnen mit dem Stand von 2025, grob nach Aufgaben gegliedert
+(soziale Sicherung, Gesundheit, Bildung, Verteidigung, Infrastruktur, Verwaltung, Zinsen).
+Die Stellgrößen ändern daran:
+
+\begin{itemize}
+\item \textbf{Bürgergeld und Kindergeld:} Regelsatz beziehungsweise Betrag je Kind, mal
+  Zahl der Berechtigten aus den Haushaltsprofilen, mal zwölf Monate. Unterkunft und
+  Mehrbedarfe (10,8\,\Mrd) bleiben fest.
+\item \textbf{Rentenniveau:} Die Rentenzahlungen (rund 362\,\Mrd) steigen oder fallen mit dem
+  Sicherungsniveau (Status quo 48\,\%). Jede Änderung kommt in genau der Höhe bei den
+  Haushalten an, die der Staat bucht, verteilt nach dem Rentenanteil ihres Einkommens.
+  Die Alterung erhöht die Rentenausgaben von allein, bis 2041 um ein Viertel.
+\item \textbf{Klimageld}, falls eingeschaltet.
+\item \textbf{Erhebungskosten:} Ändert sich das Steuersystem, ändern sich die Kosten, es zu
+  erheben (etwa 2,5\,\% des Einkommensteueraufkommens, 8\,\% der Erbschaftsteuer). In den
+  Saldo geht nur die Änderung gegenüber dem Status quo.
+\end{itemize}
+
+Dazu kommt geltendes Recht, das über die Jahre wirkt: Die Verteidigungsausgaben steigen nach
+dem Plan der Bundesregierung von 2,4 auf 3,5\,\% des BIP (2029), das Sondervermögen
+Infrastruktur gibt von 2026 bis 2036 jährlich 45\,\Mrd{} aus, und der Klimafonds schrumpft
+mit den Emissionen, aus deren Bepreisung er sich speist.
+
+\begin{merksatz}
+Ausgaben folgen Leistungen, nicht Beiträgen. Was der Staat für Haushalte ausgibt, kommt dort
+in derselben Höhe an.
+\end{merksatz}
+
+\section{Vom Staat zum Haushalt: wer trägt was}
+
+Das Nettoeinkommen eines Haushalts ist
+\begin{center}
+Brutto $-$ Einkommensteuer $-$ Beiträge $-$ Umsatzsteuer $-$ \COz-Last $+$ Transfers $+$
+Rentenänderung $-$ Last aus Unternehmens- und Vermögensteuern.
+\end{center}
+
+Zwei Posten verdienen eine Erklärung. \emph{Wer trägt eine Beitragserhöhung?} Formal zahlen
+Arbeitnehmer und Arbeitgeber je die Hälfte. Langfristig wälzen Arbeitgeber ihren Anteil
+aber über niedrigere Löhne auf die Beschäftigten ab (Meta-Analyse von Melguizo und
+González-Páramo). Die Engine lässt deshalb eine \emph{Änderung} der Beitragssätze voll bei
+den Haushalten ankommen.
+
+\emph{Wer trägt die Körperschaftsteuer?} Unternehmen sind keine Menschen; ihre Steuern tragen
+am Ende Beschäftigte über niedrigere Löhne oder Eigentümer über niedrigere Gewinne. Nach
+Fuest, Peichl und Siegloch (2018) tragen die Beschäftigten rund die Hälfte der
+Gewerbesteuer. Die Engine verteilt eine Änderung von Körperschaft- und Gewerbesteuer je zur
+Hälfte nach Arbeits- und Kapitaleinkommen, Erbschaft-, Vermögen- und Bodensteuer nach dem
+Vermögen, die Milliardärssteuer auf D10c.
+
+Aus den zwölf Nettoeinkommen entstehen die Verteilungsmaße. Wie in der amtlichen Statistik
+(EU-SILC) werden sie auf das \emph{Äquivalenzeinkommen} bezogen: Ein Haushalt mit vier
+Personen braucht mehr als einer mit einer, also wird durch das Bedarfsgewicht geteilt.
+Der \emph{Gini-Koeffizient} misst die Fläche zwischen Lorenzkurve und Gleichverteilung (0 =
+alle gleich, 1 = einer hat alles), die \emph{Palma-Ratio} teilt das Einkommen der oberen
+10\,\% durch das der unteren 40\,\%. Die \emph{Armutsrisikoquote} zählt, wer weniger als 60\,\%
+des mittleren Einkommens hat; weil ein Durchschnitt je Dezil dafür zu grob ist, wird der
+Anteil innerhalb der unteren drei Dezile aus dem Status quo fortgeschrieben.
+
+\begin{merksatz}
+Jede Steuer und jede Leistung landet bei einem Haushaltstyp. Verteilungsmaße werden wie in
+der amtlichen Statistik auf Äquivalenzeinkommen gerechnet.
+\end{merksatz}
+
+\section{Nachfrage}
+
+Wenn Haushalte mehr Geld haben, geben sie einen Teil davon aus, und dieser Teil ist unten
+größer als oben: Ein Haushalt in D1 gibt von einem zusätzlichen Euro 65~Cent aus, einer in
+D10c 15~Cent (Grenzkonsumneigung nach Jappelli und Pistaferri). Die Engine summiert die
+Änderung der Nettoeinkommen gegenüber dem Status quo, gewichtet mit dieser Neigung, und
+rechnet sie mit dem Steuer- und Transfermultiplikator (0,6 bei mittlerer Neigung, Gechert
+2015) in eine Nachfrageänderung um. Zusätzliche öffentliche Investitionen wirken mit dem
+Multiplikator 1,0.
+
+Die Nachfrageänderung wirkt \emph{nur in der laufenden Periode}: Sie hebt oder senkt das BIP
+und über das BIP die Einnahmen (etwa 37~Cent je Euro, der automatische Stabilisator). Sie
+wirkt symmetrisch: Wer konsolidiert, zahlt mit Wachstum; wer entlastet, gewinnt welches.
+Dauerhaft bleibt davon nur, was in öffentliches Kapital fließt.
+
+\begin{merksatz}
+Entlastung unten wirkt stärker auf die Nachfrage als oben. Nachfrage wirkt eine Periode,
+Kapital bleibt.
+\end{merksatz}
+
+\section{Von Periode zu Periode}
+
+\textbf{Wirtschaftsleistung.} Das nominale BIP wächst im Trend um 2,5\,\% im Jahr (2\,\%
+Inflation, 0,5\,\% real). Dazu kommen drei Niveaueffekte der Angebotsseite:
+\begin{itemize}
+\item \emph{Arbeit}: Mehr Arbeitsangebot hebt das BIP sofort, mit dem Arbeitsanteil 0,65.
+\item \emph{Privates Kapital}: Höhere Gewinnsteuern senken das Kapital langfristig (mit dem
+  Kapitalanteil 0,35), aber langsam: Der Kapitalstock passt sich um 7\,\% im Jahr an.
+\item \emph{Öffentliches Kapital}: Zusätzliche öffentliche Investitionen, auch das
+  Sondervermögen, bauen einen Kapitalstock auf, der mit 4\,\% im Jahr abschreibt. Ein
+  zusätzlicher Stock in Höhe des heutigen öffentlichen Kapitals (1.600\,\Mrd) hebt das BIP um
+  8\,\% (Bom und Ligthart 2014).
+\end{itemize}
+Alle drei sind Niveaus, keine Wachstumsraten: Eine höhere Körperschaftsteuer senkt das BIP
+auf ein niedrigeres Niveau, aber nicht jede Periode weiter.
+
+\textbf{Schulden.} Die Schuldenstandsquote wächst jedes Jahr mit dem Zins von 2,0\,\% und sinkt
+mit jedem Primärüberschuss; das BIP im Nenner wächst mit 2,5\,\%. Weil der Zins unter der
+Wachstumsrate liegt, stabilisiert sich eine Schuldenquote schon bei einem kleinen
+Primärdefizit. Ob \enquote{Sparen alternativlos} ist, entscheidet das Spiel also nicht vorab.
+
+\textbf{Emissionen.} Die jährlichen Emissionen folgen dem Basispfad, verringert um die
+Wirkung der Politik, und summieren sich Jahr für Jahr. Dem steht ein deutsches Restbudget von
+5.380~Mt gegenüber (Bevölkerungsanteil am globalen Budget für 1,7\,°C nach Forster u.\,a.
+2026). Einen Klimaschaden auf das deutsche BIP rechnet das Modell nicht: Deutschland
+verursacht 1,5\,\% der Weltemissionen, der Rückkanal auf die eigene Wirtschaft ist
+vernachlässigbar. Das Klimaziel steht über Emissionen und Budget im Spiel.
+
+\textbf{Demografie und Schocks.} Ein Rentenlastfaktor nach der 14. Bevölkerungsvorausberechnung
+erhöht die Rentenausgaben (1,00 in 2025, 1,25 in 2041). Die Lehrperson kann Schocks setzen:
+einen BIP-Einbruch, einen Sprung der Schuldenquote oder einen Zinsanstieg.
+
+\begin{merksatz}
+Das BIP wächst mit Trend, Arbeit, privatem und öffentlichem Kapital, alles als Niveaus. Die
+Schulden wachsen mit Zins und Defizit. Die Emissionen summieren sich gegen ein Budget.
+\end{merksatz}
+
+\section{Schuldenbremse und Tragfähigkeit}
+
+Seit der Reform von 2025 erlaubt die Schuldenbremse Bund und Ländern zusammen ein
+strukturelles Defizit von 0,70\,\% des BIP. Strukturell heißt: ohne Konjunktureinfluss (ein
+Prozent Nachfragelücke bewegt den Saldo um 0,5\,\% des BIP, Budget-Semielastizität der
+EU-Kommission) und ohne die Ausnahmen (Verteidigung über 1\,\% des BIP, Sondervermögen). Im
+Status quo der ersten Periode liegt der strukturelle Saldo bei \SQstruktur\,\% des BIP; die
+Schuldenbremse ist damit verletzt. Das Modell rechnet den Gesamtstaat, nicht Bund und Länder
+getrennt.
+
+Dazu kommen Tragfähigkeitsindikatoren aus \datei{abgeleitet.js}: der Primärsaldo, der
+Primärüberschuss, der die Schuldenquote gerade stabilisiert (Domar-Bedingung), die Lücke
+zwischen beiden und ein Index der Generationengerechtigkeit aus Schulden und verbrauchtem
+\COz-Budget.
+
+\section{Der Status quo als Referenz}
+
+Tabelle~\ref{tab:verlauf} zeigt, wohin der Status quo ohne jede Politikänderung führt. Er ist
+nicht stabil: Demografie, Verteidigung und Zinsen treiben das Defizit, und die
+Schuldenquote steigt von 63,5\,\% auf \SQschuldEnde\,\%. Die Teams entscheiden also nicht
+zwischen \enquote{weiter so} und Veränderung, sondern darüber, wer die Anpassung trägt.
+
+\begin{table}[h]
+\centering\small
+\input{generiert/verlauf.tex}
+\caption{Status quo über fünf Perioden. BIP und Schuldenquote zu Beginn der Periode, übrige
+Größen als Jahreswert der Periode, \COz{} kumuliert seit 2025 zu Periodenbeginn.}
+\label{tab:verlauf}
+\end{table}
+
+\section{Was das Modell nicht kann}
+\label{sec:grenzen}
+
+Ein Lehrmodell muss vereinfachen. Diese Vereinfachungen sollte kennen, wer die Ergebnisse
+erklärt:
+
+\begin{itemize}
+\item \textbf{Kein allgemeines Gleichgewicht.} Löhne, Preise und Zinsen reagieren nicht auf
+  die Politik. Der Zins ist fest (außer im Zinsschock).
+\item \textbf{Zwölf Haushaltstypen statt Millionen Haushalten.} Innerhalb eines Dezils sind
+  alle gleich, außer im obersten Prozent (Pareto-Rand) und bei der Armutsquote.
+\item \textbf{Näherungen} ohne Primärtabelle, weil die Quellen beim Anlegen nicht erreichbar
+  waren: Rentenanteile je Dezil, Profil der Grenzkonsumneigung, öffentlicher Kapitalstock,
+  Milliardärsvermögen, Pareto-Exponent. Sie sind im Code als solche markiert.
+\item \textbf{Restabweichung Haushalt gegen Staat.} Bei Umsatzsteuer und Beiträgen weicht die
+  Summe über die Haushalte noch um bis zu 9\,\% von der Buchung des Staates ab.
+\item \textbf{Nicht gerechnete Schockwirkungen.} Zwei der fünf Schockeffekte
+  (Investitionsrückgang, Emissionsminderung) stehen in der Bibliothek, wirken aber nicht; die
+  Oberfläche kennzeichnet sie.
+\item \textbf{Schuldenbremse} für den Gesamtstaat, nicht getrennt nach Bund und Ländern;
+  EU-Fiskalregeln fehlen.
+\end{itemize}
+
+Die Messung für Teil~III hat drei weitere Eigenschaften sichtbar gemacht:
+
+\begin{itemize}
+\item \textbf{Die Beitragsbemessungsgrenze wirkt asymmetrisch.} Eine Anhebung um 10.000\,\euro{}
+  verbessert den Saldo der ersten Periode um rund 6\,\Mrd, eine Senkung um denselben Betrag
+  \emph{verbessert} ihn ebenfalls, um rund 3,5\,\Mrd. Grund: Beim Staat sind Mehreinnahmen
+  aus der Grenze nach unten bei null abgeschnitten, bei den Haushalten sinken die Beiträge.
+  Die entlasteten Haushalte fragen mehr nach, und der Stabilisator hebt den Saldo. Das ist
+  ein Buchungsfehler; er ist zur Behebung vorgemerkt.
+\item \textbf{Der Spitzensteuersatz bringt wenig:} rund 0,3\,\Mrd{} je Prozentpunkt in der
+  ersten Periode, weniger als übliche Schätzungen (etwa 1 bis 2\,\Mrd). Ursache ist das
+  Zusammenspiel von Pareto-Rand, hoher Elastizität und Ausweichreaktion im obersten Prozent.
+\item \textbf{Die Mindeststeuer auf Milliardäre greift erst oberhalb von 0,3\,\%}, weil die
+  gezahlte Einkommensteuer angerechnet wird. Das ist gewollt, erklärt aber, warum kleine
+  Sätze nichts bewirken.
+\end{itemize}

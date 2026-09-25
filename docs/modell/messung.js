@@ -19,7 +19,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { simulierePfad } from '../../js/rechner/transition.js';
-import { PRESETS, DEZILE, KAPITALANTEIL, PRIVAT_ANPASSUNG, KURS_KONFIG_DEFAULT } from '../../js/data.js';
+import { PRESETS, DEZILE, KAPITALANTEIL, PRIVAT_ANPASSUNG, KURS_KONFIG_DEFAULT,
+         ELAST, ELAST_QUELLEN, BASIS_MAKRO, MPC_DEZIL, KINDER_JE_HH, BUERGERGELD_QUOTE, CO2_GEWICHT } from '../../js/data.js';
+import { FORMEL_QUELLEN_BERECHNE } from '../../js/rechner/berechne.js';
+import { FORMEL_QUELLEN_EST } from '../../js/rechner/einkommensteuer.js';
+import { FORMEL_QUELLEN_VERT } from '../../js/rechner/verteilung.js';
 
 const SQ = PRESETS.status_quo;
 const PERIODEN = 5;
@@ -249,9 +253,10 @@ function makros(m) {
 }
 
 function verlaufTabelle(m) {
+  const z = (v, nk) => ohneVz(v, nk).replace('-', '$-$');
   const rumpf = m.statusQuo.verlauf.map(e =>
-    `${e.label.replace('–', '--')} & ${ohneVz(e.bip, 0)} & ${ohneVz(e.schuldenquote, 1)} & ${ohneVz(e.saldo, 1)} & ${ohneVz(e.saldo_pct, 2)} & ${ohneVz(e.struktur, 2)} & ${ohneVz(e.emissionen, 0)} & ${ohneVz(e.co2_kumulat, 0)} & ${ohneVz(e.gini, 3)} \\\\`
-  ).join('\n').replace(/-(\d)/g, '$-$$1');
+    `${e.label.replace('–', '--')} & ${z(e.bip, 0)} & ${z(e.schuldenquote, 1)} & ${z(e.saldo, 1)} & ${z(e.saldo_pct, 2)} & ${z(e.struktur, 2)} & ${z(e.emissionen, 0)} & ${z(e.co2_kumulat, 0)} & ${z(e.gini, 3)} \\\\`
+  ).join('\n');
   return `\\begin{tabular}{lrrrrrrrr}\n\\toprule\nPeriode & BIP & Schulden & Saldo & Saldo & strukt. & Emiss. & CO\\textsubscript{2} kum. & Gini \\\\\n & Mrd.\\,\\euro{} & \\% BIP & Mrd.\\,\\euro{} & \\% BIP & \\% BIP & Mt/a & Mt & \\\\\n\\midrule\n${rumpf}\n\\bottomrule\n\\end{tabular}\n`;
 }
 
@@ -259,6 +264,50 @@ function verlaufDaten(m) {
   // pgfplots-Tabellen: x und Kennzahlen je Stellgröße
   return Object.fromEntries(Object.entries(m.verlaeufe).map(([key, pkt]) => [key,
     'x saldo gini emiss bip\n' + pkt.map(p => [p.x, p.saldo, p.gini, p.emiss, p.bip].map(v => v.toFixed(4)).join(' ')).join('\n') + '\n']));
+}
+
+// ── Daten und Quellen (Anhang) ───────────────────────────────────────────────
+// Kein Messergebnis, aber ebenfalls aus der Engine gelesen statt abgetippt
+
+/** Text aus den Quellenobjekten für LaTeX: Sonderzeichen maskieren. */
+const esc = t => String(t)
+  .replace(/\\/g, '\\textbackslash{}')
+  .replace(/([&%$#_{}])/g, '\\$1')
+  .replace(/~/g, '\\textasciitilde{}')
+  .replace(/\^/g, '\\textasciicircum{}')
+  .replace(/€/g, '\\euro{}');
+
+// CO₂-Last des Status quo, Mrd. € (bepreiste Emissionen × Preis), für die Last je Haushalt
+const CO2_LAST_SQ = BASIS_MAKRO.emissions * PRESETS.status_quo.co2 / 1000;
+
+function dezilDaten() {
+  const tsd = v => ohneVz(v / 1000, 0);
+  const rumpf = DEZILE.map((d, i) => [
+    d.label, tsd(d.brutto), ohneVz(d.kapital * 100, 0), ohneVz(d.konsum * 100, 0), ohneVz(d.gewicht, 1),
+    tsd(d.vermoegen), ohneVz(d.anzahl, 2), ohneVz(d.rente_anteil * 100, 1), ohneVz(MPC_DEZIL[i], 2),
+    ohneVz(KINDER_JE_HH[i], 2), ohneVz(BUERGERGELD_QUOTE[i], 2), ohneVz(CO2_LAST_SQ * 1000 * CO2_GEWICHT[i], 0),
+  ].join(' & ') + ' \\\\').join('\n');
+  return `\\begin{tabular}{lrrrrrrrrrrr}\n\\toprule\n` +
+    `Dezil & $B_i$ & $\\kappa_i$ & $c_i$ & $w_i$ & $V_i$ & $N_i$ & $\\rho_i$ & $m_i$ & $k_i$ & $q_i$ & $\\ell_i$ \\\\\n` +
+    ` & Tsd.\\,\\euro{} & \\% & \\% & & Tsd.\\,\\euro{} & Mio. & \\% & & & & \\euro{} \\\\\n\\midrule\n${rumpf}\n\\bottomrule\n\\end{tabular}\n`;
+}
+
+function elastTabelle() {
+  const rumpf = Object.entries(ELAST).map(([k, v]) => {
+    const q = ELAST_QUELLEN[k] ?? {};
+    return `\\texttt{${esc(k)}} & ${ohneVz(v, 3).replace('-', '$-$')} & ${esc(q.range ?? '')} & ${esc(q.ref ?? '')} \\\\`;
+  }).join('\n');
+  return `\\begin{longtable}{p{2.6cm}rp{2.2cm}p{8.2cm}}\n\\toprule\nSchlüssel & Wert & Spanne & Fundstelle \\\\\n\\midrule\n\\endhead\n${rumpf}\n\\bottomrule\n\\end{longtable}\n`;
+}
+
+function quellenTabelle() {
+  const gruppen = [['berechne.js', FORMEL_QUELLEN_BERECHNE], ['einkommensteuer.js', FORMEL_QUELLEN_EST], ['verteilung.js', FORMEL_QUELLEN_VERT]];
+  const rumpf = gruppen.map(([datei, q]) =>
+    `\\multicolumn{2}{l}{\\textbf{\\texttt{${esc(datei)}}}} \\\\\n` +
+    Object.entries(q).map(([k, e]) =>
+      `\\texttt{${esc(k)}} & {\\formelschrift ${esc(e.formel)}}\\newline ${esc(e.ref)} \\\\`).join('\n')
+  ).join('\n\\midrule\n');
+  return `\\begin{longtable}{p{3.2cm}p{11.6cm}}\n\\toprule\nQuelle & Formel und Fundstelle \\\\\n\\midrule\n\\endhead\n${rumpf}\n\\bottomrule\n\\end{longtable}\n`;
 }
 
 function schreibe() {
@@ -269,6 +318,9 @@ function schreibe() {
   const w = (name, inhalt) => fs.writeFileSync(path.join(ziel, name),
     `% Erzeugt von docs/modell/messung.js — nicht von Hand bearbeiten\n${inhalt}`);
   w('makros.tex', makros(m));
+  w('daten_dezile.tex', dezilDaten());
+  w('elastizitaeten.tex', elastTabelle());
+  w('quellen.tex', quellenTabelle());
   w('verlauf.tex', verlaufTabelle(m));
   w('kanaele.tex', tabelle(m.tisch, KANAELE, 'kanal', STELLGROESSEN));
   w('kennzahlen.tex', tabelle(m.tisch, KENNZAHLEN, 'kennzahl', STELLGROESSEN));
