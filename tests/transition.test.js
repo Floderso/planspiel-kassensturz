@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC-BY-4.0
-// Tests: Multi-Perioden-Übergänge, Emissionspfad, HANK-Multiplikator,
+// Tests: Multi-Perioden-Übergänge, Emissionspfad, Multiplikatoren,
 // abgeleitete Fiskalindikatoren (Domar, S2, GGI)
 //
 // Referenzen: UBA Projektionsbericht 2025, Kaplan/Moll/Violante (2018) AER,
@@ -7,7 +7,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { simulierePfad, hankMultiplikator, berechneTransition, getDemoForYear } from '../js/rechner/transition.js';
+import { simulierePfad, konsumMultiplikator, berechneTransition, getDemoForYear } from '../js/rechner/transition.js';
 import { berechneAbgeleitet, CO2_BUDGET_DE } from '../js/rechner/abgeleitet.js';
 import { berechne } from '../js/rechner/berechne.js';
 import { PRESETS, PERIOD_STATE_0, DEZILE, emissionsBasis, EMISSIONEN_1990 } from '../js/data.js';
@@ -35,15 +35,14 @@ test('Das CO₂-Budget (1,7 °C) ist im Status quo in den 2030ern aufgebraucht',
   assert.ok(pfad[4].zustand.co2_kumulat > CO2_BUDGET_DE, 'bis 2041 aufgebraucht');
 });
 
-test('HANK-Multiplikator: Transfers an untere Dezile multiplizieren stärker', () => {
-  const basis = 1.2; // INVEST_MULTIPLIKATOR (Gechert/Heimberger)
-  assert.equal(hankMultiplikator(null), basis);
-  assert.equal(hankMultiplikator({ delta: Array(DEZILE.length).fill(0) }), basis);
-
+test('Konsummultiplikator: Transfers an untere Dezile multiplizieren stärker', () => {
+  const mittel = 0.6; // MULTIPLIKATOR_STEUER_TRANSFER (Gechert 2015)
+  assert.equal(konsumMultiplikator(null), mittel);
+  assert.equal(konsumMultiplikator({ delta: Array(DEZILE.length).fill(0) }), mittel);
   const anUnten = { delta: DEZILE.map((_, i) => (i === 0 ? 1000 : 0)) };
   const anOben = { delta: DEZILE.map((_, i) => (i === DEZILE.length - 1 ? 1000 : 0)) };
-  assert.ok(hankMultiplikator(anUnten) > hankMultiplikator(anOben),
-    'MPC-Gewichtung: unteres Dezil (MPC~1) > oberstes (MPC~0,4)');
+  assert.ok(konsumMultiplikator(anUnten) > konsumMultiplikator(anOben));
+  assert.ok(konsumMultiplikator(anUnten) < 1, 'kein Konsummultiplikator über 1 (C4: vorher bis 2,67)');
 });
 
 test('berechneTransition: deutsche Emissionen verändern das deutsche BIP nicht', () => {
@@ -121,6 +120,36 @@ test('berechneAbgeleitet: Domar/S2/GGI-Konsistenz', () => {
     assert.ok(abl.ggi >= 0 && abl.ggi <= 1, `GGI ${abl.ggi}`);
     assert.ok(Math.abs(abl.ggi - (abl.ggi_schuld + abl.ggi_co2)) < 1e-12);
     assert.ok(abl.co2_budget_rest >= 0 && abl.co2_budget_rest <= CO2_BUDGET_DE);
-    assert.ok(abl.mu_hank > 0.5 && abl.mu_hank < 3, `HANK-Multiplikator ${abl.mu_hank}`);
+    assert.ok(abl.mu_hank > 0.1 && abl.mu_hank < 1, `Konsummultiplikator ${abl.mu_hank}`);
   }
+});
+
+// ── Nachfrage und öffentliches Kapital (PRUEFUNG-2.md I.3) ─────────────────
+
+test('Konsolidierung kostet Wachstum, Entlastung bringt welches — symmetrisch', () => {
+  const sq = berechne(SQ);
+  const spar = berechne({ ...SQ, bg: 400, kg: 200, mwst: 22 });
+  const entl = berechne({ ...SQ, freibetrag: 16000 });
+  assert.ok(spar.nachfrage_luecke < 0 && spar.bip_aktuell < sq.bip_aktuell, 'Sparkurs senkt das BIP der Periode');
+  assert.ok(entl.nachfrage_luecke > 0 && entl.bip_aktuell > sq.bip_aktuell, 'Entlastung hebt es');
+  // Vorher: Sparkurs BIP ±0, Konsolidierung war gratis
+  const saldoMechanisch = berechne({ ...SQ, bg: 400, kg: 200, mwst: 22 }, null, { ohneNachfrage: true }).saldo;
+  assert.ok(spar.saldo < saldoMechanisch, 'die Nachfragelücke frisst einen Teil der Konsolidierung');
+});
+
+test('Investitionsschub: Wirkung in der Größenordnung der Literatur, nicht +15 %', () => {
+  const pfad = i => simulierePfad([i, i, i, 0, 0].map(x => ({ ...SQ, invest_impuls: x })));
+  const sq = simulierePfad(sqParams(5)), inv = pfad(50);   // 600 Mrd. über 12 Jahre
+  const plus = inv[4].zustand.bip / sq[4].zustand.bip - 1;
+  assert.ok(plus > 0.005 && plus < 0.05, `BIP 2041 +${(plus * 100).toFixed(1)} % (vorher +15 %)`);
+  // nach dem Ende der Investitionen klingt der Effekt mit der Abschreibung ab
+  const plus3 = inv[3].zustand.bip / sq[3].zustand.bip - 1;
+  assert.ok(plus < plus3 + 1e-9, 'kein weiteres Wachstum aus einem Impuls, der aufgehört hat');
+});
+
+test('Die Nachfragelücke wird nicht fortgeschrieben', () => {
+  const einmal = simulierePfad([{ ...SQ, bg: 400, kg: 200, mwst: 22 }, ...sqParams(4)]);
+  const basis = simulierePfad(sqParams(5));
+  assert.ok(Math.abs(einmal[1].zustand.bip - basis[1].zustand.bip) / basis[1].zustand.bip < 0.001,
+    'ein Sparjahr senkt das Potenzial der Folgeperiode nicht');
 });

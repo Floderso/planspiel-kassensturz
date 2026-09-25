@@ -208,6 +208,38 @@ const BIP_WACHSTUM_NOMINAL_JAHR = 0.025;
  * schließen. Zwischen den Ankern linear. Bis 24.09.2026 blieben die Emissionen im Status
  * quo 20 Jahre konstant (PRUEFUNG-2.md I.5).
  */
+/**
+ * Nachfrage und öffentliches Kapital (PRUEFUNG-2.md I.3). Bis 25.09.2026 wirkte nur der
+ * Investitionsimpuls auf das BIP — als dauerhafter, kumulierender Niveaueffekt 1 + I·n·μ/BIP
+ * mit μ ≈ 1,2 × (Konsumquote/0,45), ohne Abschreibung. Steuern und Transfers hatten keinen
+ * Nachfrageeffekt: Konsolidierung kostete kein Wachstum.
+ *
+ * Jetzt: Nachfrage als Strom je Periode, symmetrisch. Die Einkommensänderung der Haushalte
+ * gegenüber dem Status quo wirkt mit dezilspezifischer Grenzkonsumneigung, öffentliche
+ * Investitionen mit einem Investitionsmultiplikator — nur in der laufenden Periode. Dauerhaft
+ * wirkt allein der öffentliche Kapitalstock, mit Abschreibung.
+ */
+// Grenzkonsumneigung je Dezil: Mittel ~0,48, unten ~0,65, ganz oben niedrig
+// (Jappelli/Pistaferri 2014, AEJ: Macro 6(4): MPC nach Liquidität 0,35–0,65; Fagereng/Holm/
+// Natvik 2021, AEJ: Macro, zum Gefälle nach Vermögen). Profil über die Dezile: Näherung.
+// Ersetzt DEZILE[i].konsum, eine DURCHSCHNITTLICHE Konsumquote (PRUEFUNG.md C4).
+const MPC_DEZIL = [0.65, 0.62, 0.58, 0.55, 0.52, 0.48, 0.45, 0.42, 0.38, 0.32, 0.25, 0.15];
+const MPC_MITTEL = 0.48;
+// Steuer- und Transfermultiplikator bei durchschnittlicher MPC; je Dezil skaliert mit MPC/0,48
+// (Gechert 2015, Oxford Economic Papers 67(3), Meta-Analyse: ~0,6–0,7)
+const MULTIPLIKATOR_STEUER_TRANSFER = 0.6;
+// Kurzfristiger Multiplikator öffentlicher Investitionen (Gechert 2015: ~1,0)
+const MULTIPLIKATOR_INVEST = 1.0;
+// Produktionselastizität öffentlichen Kapitals (Bom/Ligthart 2014, J. of Economic Surveys
+// 28(5): ~0,08, Kerninfrastruktur ~0,12)
+const OEFF_KAPITAL_ELASTIZITAET = 0.08;
+// Öffentliches Nettoanlagevermögen, Mrd. € — 1.338 Mrd. 2015 zu Wiederbeschaffungspreisen
+// (Wirtschaftsdienst 1/2019), auf 2025 fortgeschrieben: Näherung
+const OEFF_KAPITALSTOCK = 1600;
+// Abschreibungsrate öffentlichen Kapitals p. a. (Näherung: Abschreibungen des Staates
+// ~4–5 % des Nettoanlagevermögens, Destatis VGR)
+const OEFF_ABSCHREIBUNG = 0.04;
+
 const EMISSIONEN_1990 = 1252;
 const EMISSIONS_ANKER = [
   [2025, 649], [2030, EMISSIONEN_1990 * 0.37], [2040, EMISSIONEN_1990 * 0.20], [2045, EMISSIONEN_1990 * 0.15],
@@ -821,6 +853,7 @@ const PERIOD_STATE_0 = {
   co2_kumulat:      0,      // Mio. t CO₂e kumuliert seit 2025
   lohnbasis_faktor: 1.0,    // Arbeitsmarkt-Zustandsindex (1,0 = Status quo 2025)
   renten_faktor:    1.0,    // wird per Periode aus DEMOGRAFIE_KURVE gesetzt
+  oeff_kapital:     0,      // öffentliches Kapital über dem Status-quo-Pfad, Mrd. € (Preise 2025)
   jahr:             2025,   // Startjahr der Periode — wird per Periode gesetzt (Emissionsbasispfad)
   trend_faktor:     1.0,    // nominaler Trend seit 2025, (1 + BIP_WACHSTUM_NOMINAL_JAHR)^Jahre —
                             // Preis- und Lohnniveau, an dem die Ausgaben wachsen (PRUEFUNG-2.md I.2)
@@ -949,6 +982,7 @@ const ZUKUNFTS_SZENARIEN = [
 ];
 
 export { ZINS_EFFEKTIV, BIP_WACHSTUM_NOMINAL_JAHR, EMISSIONEN_1990, EMISSIONS_ANKER, emissionsBasis };
+export { MPC_DEZIL, MPC_MITTEL, MULTIPLIKATOR_STEUER_TRANSFER, MULTIPLIKATOR_INVEST, OEFF_KAPITAL_ELASTIZITAET, OEFF_KAPITALSTOCK, OEFF_ABSCHREIBUNG };
 
 export { KINDER_JE_HH, KINDERGELD_KINDER, BUERGERGELD_QUOTE, CO2_GEWICHT };
 export { DEZILE, ELAST, ELAST_QUELLEN, BASIS_AUFKOMMEN, ADMIN_QUOTE, BASIS_MAKRO, STAATSAUSGABEN, PRESETS, MOD_DEFS, AUSGABEN_TOTAL, CHALLENGES, CHALLENGE_CTX, TOOLTIPS, REFORM_TOURS, KPI_BENCH, BGE_LABOR_EFF, DEMOGRAFIE_KURVE, PERIOD_STATE_0, ZUKUNFTS_SZENARIEN, KURS_KONFIG_DEFAULT, SCHOCK_BIBLIOTHEK };

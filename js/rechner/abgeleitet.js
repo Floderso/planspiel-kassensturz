@@ -15,14 +15,14 @@
 //   ggi_schuld    GGI-Schulden-Teilindex
 //   ggi_co2       GGI-Klima-Teilindex
 //   co2_budget_rest  Verbleibendes DE 1,5°C-Budget (Mt CO₂e)
-//   mu_hank       HANK-Multiplikator der letzten Periode (aus prevResult)
+//   mu_hank       Konsummultiplikator der letzten Periode (MPC-gewichtet, transition.js)
 //
 // Quellen:
 //   Domar (1944) Rev.Econ.Stat. · Blanchard (2019) AEA Presidential Address
 //   IPCC AR6 WG3 Ch.3 · SRU (2022) Wege zur ressourcenschonenden Treibhausgasneutralität
 //   IMF Fiscal Monitor 2024 · SVR Jahresgutachten 2024/25
 
-import { ZINS_SCHULDEN, BIP_WACHSTUM_NOMINAL, hankMultiplikator } from './transition.js';
+import { ZINS_SCHULDEN, BIP_WACHSTUM_NOMINAL, konsumMultiplikator } from './transition.js';
 
 // Verbleibendes deutsches CO₂-Budget für 1,7 °C ab Anfang 2025 (Mt)
 // Globales Restbudget 525 Gt CO₂ für 1,7 °C (50 %), Forster et al. (2026) Indicators of
@@ -76,7 +76,7 @@ function berechneAbgeleitet(result, zustand) {
   const co2_budget_rest = Math.max(0, CO2_BUDGET_DE - zustand.co2_kumulat);
 
   // ── HANK-Multiplikator ────────────────────────────────────────────────
-  const mu_hank = hankMultiplikator(result.hh_delta);
+  const mu_hank = konsumMultiplikator(result.hh_delta);   // Feldname für die Anzeige beibehalten
 
   return {
     D_t,

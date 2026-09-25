@@ -5,9 +5,10 @@
 // ═══════════════════════════════════════════════════════
 //
 // berechneTransition(prevState, prevResult, nextStartJahr, n) → PeriodState
-//   Leitet den Anfangszustand der nächsten Periode (n Jahre) ab.
-//   Enthält den HANK-Multiplikator (Kaplan/Moll/Violante 2018). Einen
-//   Klimaschaden aus deutschen Emissionen gibt es bewusst nicht mehr (s. u.).
+//   Leitet den Anfangszustand der nächsten Periode (n Jahre) ab: Trend,
+//   private Investitionen, Arbeitsangebot und öffentlicher Kapitalstock.
+//   Die Nachfrage wirkt nur innerhalb einer Periode (berechne.js, 10a).
+//   Einen Klimaschaden aus deutschen Emissionen gibt es bewusst nicht (s. u.).
 //
 // simulierePfad(perioden_params, kursKonfig?) → ErgebnisPfad[]
 //   Iteriert alle Perioden, gibt Zeitreihe zurück.
@@ -16,22 +17,22 @@
 //
 // Quellen:
 //   BIP-Wachstum:       BIP_WACHSTUM_NOMINAL_JAHR in data.js (2,5 % nominal, PRUEFUNG.md F1)
-//   Fiskalmultiplikator: Gechert/Heimberger (2022) NIER · ECB WP 1267
-//   HANK-Multiplikator: Kaplan/Moll/Violante (2018) AER · McKay/Nakamura/Steinsson (2016)
+//   Multiplikatoren:    Gechert (2015) Oxford Economic Papers · Jappelli/Pistaferri (2014) AEJ: Macro
+//   Öffentl. Kapital:   Bom/Ligthart (2014) J. of Economic Surveys · Wirtschaftsdienst 1/2019
 //   Emissionspfad:      UBA Projektionsbericht 2025 · emissionsBasis() in data.js
 //   Zinssatz:           Bundesbank DP 28/2018 · BMF Finanzplan 2025–2029
 //   Demografie:         Destatis 14. Bev.-Vorausberechnung 2021 · DEMOGRAFIE_KURVE in data.js
 
-import { DEZILE, DEMOGRAFIE_KURVE, PERIOD_STATE_0, KURS_KONFIG_DEFAULT,
-         ZINS_EFFEKTIV, BIP_WACHSTUM_NOMINAL_JAHR, emissionsBasis } from '../data.js';
+import { DEZILE, DEMOGRAFIE_KURVE, PERIOD_STATE_0, KURS_KONFIG_DEFAULT, PRESETS,
+         ZINS_EFFEKTIV, BIP_WACHSTUM_NOMINAL_JAHR, emissionsBasis,
+         MPC_DEZIL, MPC_MITTEL, MULTIPLIKATOR_STEUER_TRANSFER,
+         OEFF_KAPITAL_ELASTIZITAET, OEFF_KAPITALSTOCK, OEFF_ABSCHREIBUNG } from '../data.js';
 import { berechne } from './berechne.js';
 
 // Zins und Wachstum kommen aus data.js — EINE Quelle für alle Module.
 // Vorher standen hier eigene Werte, die denen in berechne.js widersprachen.
 const BIP_WACHSTUM_NOMINAL = BIP_WACHSTUM_NOMINAL_JAHR;
 const ZINS_SCHULDEN        = ZINS_EFFEKTIV;
-const INVEST_MULTIPLIKATOR = 1.2;    // Fiskalmultiplikator öffentl. Investitionen (Gechert/Heimberger)
-const HANK_MPC_BENCHMARK   = 0.45;  // Rep.-Agent-Benchmark MPC (Kaplan/Moll/Violante 2018)
 
 // Lookup DEMOGRAFIE_KURVE nach Startjahr — clamped an Randbereichen
 function getDemoForYear(jahr) {
@@ -39,20 +40,20 @@ function getDemoForYear(jahr) {
   return DEMOGRAFIE_KURVE[idx];
 }
 
-// HANK-Multiplikator: MPC-gewichteter Fiskalmultiplikator (Kaplan/Moll/Violante 2018)
-// Positive Einkommensdeltas je Dezil werden mit dezil-spezifischer MPC gewichtet.
-// Effekt: Impulse an untere Dezile (MPC~1) erzeugen größeren Multiplikator als an obere (MPC~0,4).
-function hankMultiplikator(hh_delta) {
-  if (!hh_delta?.delta) return INVEST_MULTIPLIKATOR;
-  const positiv = hh_delta.delta.map((d, i) => ({
-    dv:  Math.max(0, d * DEZILE[i].anzahl),
-    mpc: DEZILE[i].konsum,
-  }));
-  const total = positiv.reduce((a, p) => a + p.dv, 0);
-  if (total < 1e-6) return INVEST_MULTIPLIKATOR;
-  const mpc_eff = positiv.reduce((a, p) => a + (p.dv / total) * p.mpc, 0);
-  return INVEST_MULTIPLIKATOR * (mpc_eff / HANK_MPC_BENCHMARK);
+// Konsummultiplikator einer Einkommensänderung: MPC-gewichtet über die Dezile, die gewinnen,
+// skaliert auf den Steuer-/Transfermultiplikator bei mittlerer MPC. Nur für die Anzeige
+// (abgeleitet.js); gerechnet wird die Nachfrage in berechne.js, Abschnitt 10a.
+function konsumMultiplikator(hh_delta) {
+  if (!hh_delta?.delta) return MULTIPLIKATOR_STEUER_TRANSFER;
+  const gewichte = hh_delta.delta.map((d, i) => Math.max(0, d * DEZILE[i].anzahl));
+  const summe = gewichte.reduce((a, g) => a + g, 0);
+  if (summe < 1e-6) return MULTIPLIKATOR_STEUER_TRANSFER;
+  const mpc = gewichte.reduce((a, g, i) => a + g / summe * MPC_DEZIL[i], 0);
+  return MULTIPLIKATOR_STEUER_TRANSFER * mpc / MPC_MITTEL;
 }
+
+// Wirkung des zusätzlichen öffentlichen Kapitals auf das Potenzial
+const kapitalFaktor = k => 1 + OEFF_KAPITAL_ELASTIZITAET * k / OEFF_KAPITALSTOCK;
 
 // Kein Klimaschaden aus deutschen Emissionen. Bis 24.09.2026 erwärmten deutsche
 // Emissionen im Modell die Erde (Klimasensitivität 1.100-fach zu hoch, PRUEFUNG.md A2),
@@ -78,17 +79,20 @@ function applySchock(zustand, schock) {
 function berechneTransition(prevState, prevResult, nextStartJahr, n) {
   const demo = getDemoForYear(nextStartJahr);
 
-  // ── HANK-Multiplikator ────────────────────────────────────────────────
-  const mu_g = hankMultiplikator(prevResult.hh_delta);
-
   // ── BIP ──────────────────────────────────────────────────────────────
   const wachstum_basis      = Math.pow(1 + BIP_WACHSTUM_NOMINAL, n);
   const invest_privat_bonus = 1 + (prevResult.investment_factor - 1) * 0.15;
   const labor_bonus         = 1 + (prevResult.avg_labor - 1) * 0.10;
-  const invest_impuls       = prevResult.invest_impuls ?? 0;
-  const invest_impuls_bonus = 1 + (invest_impuls * n * mu_g) / prevState.bip;
+  // Öffentliches Kapital: Zusatzinvestitionen gegenüber dem Status quo bauen einen Stock auf,
+  // der abschreibt; er wirkt über die Produktionselastizität dauerhaft auf das Potenzial.
+  // Vorher: 1 + I·n·μ/BIP als bleibender, kumulierender Niveaueffekt ohne Abschreibung —
+  // 600 Mrd. über 12 Jahre ergaben +15 % BIP (PRUEFUNG-2.md I.3).
+  const zusatz = (prevResult.invest_impuls ?? 0) - (PRESETS.status_quo.invest_impuls || 0);
+  let kapital_next = prevState.oeff_kapital ?? 0;
+  for (let j = 0; j < n; j++) kapital_next = kapital_next * (1 - OEFF_ABSCHREIBUNG) + zusatz;
+  const kapital_bonus = kapitalFaktor(kapital_next) / kapitalFaktor(prevState.oeff_kapital ?? 0);
   const bip_next = prevState.bip * wachstum_basis * invest_privat_bonus
-                   * labor_bonus * invest_impuls_bonus;
+                   * labor_bonus * kapital_bonus;
 
   // ── SCHULDENQUOTE ─────────────────────────────────────────────────────
   // Lehrbuchform der Schuldendynamik, jahresweise:
@@ -124,6 +128,7 @@ function berechneTransition(prevState, prevResult, nextStartJahr, n) {
     lohnbasis_faktor: Math.max(0.70, Math.min(1.30, lohnbasis_next)),
     renten_faktor:    demo.renten_faktor,
     jahr:             nextStartJahr,
+    oeff_kapital:     kapital_next,
     // Trend ohne Politik- und Klimaeffekte: daran wachsen die Ausgaben. Die
     // Einnahmen folgen dem tatsächlichen BIP (berechne.js, Abschnitt 10b).
     trend_faktor:     (prevState.trend_faktor ?? 1) * wachstum_basis,
@@ -169,4 +174,4 @@ function simulierePfad(perioden_params, kursKonfig = KURS_KONFIG_DEFAULT) {
   return ergebnisse;
 }
 
-export { berechneTransition, simulierePfad, applySchock, getDemoForYear, hankMultiplikator, ZINS_SCHULDEN, BIP_WACHSTUM_NOMINAL };
+export { berechneTransition, simulierePfad, applySchock, getDemoForYear, konsumMultiplikator, ZINS_SCHULDEN, BIP_WACHSTUM_NOMINAL };

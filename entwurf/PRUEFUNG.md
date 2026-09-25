@@ -316,6 +316,8 @@ Einzelposition unüberprüfbar.
 
 ### C4 · MPC und Konsumquote sind nicht dasselbe
 
+> ✔ **Erledigt 25.09.2026:** eigenes MPC-Profil (`MPC_DEZIL`), siehe PRUEFUNG-2.md VI.3.
+
 Der HANK-Multiplikator gewichtet mit `DEZILE[i].konsum` — das ist die
 *durchschnittliche* Konsumquote (1,00 bis 0,40), verglichen wird sie
 mit einem *marginalen* Benchmark (0,45). Dadurch kann der Multiplikator

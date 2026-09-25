@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: CC-BY-4.0
 // Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
 import { DEZILE, ELAST, BASIS_MAKRO, STAATSAUSGABEN, PRESETS, BASIS_AUFKOMMEN, ADMIN_QUOTE, AUSGABEN_TOTAL, BGE_LABOR_EFF, PERIOD_STATE_0, ZINS_EFFEKTIV, emissionsBasis,
-         KINDER_JE_HH, BUERGERGELD_QUOTE, CO2_GEWICHT } from '../data.js';
+         KINDER_JE_HH, BUERGERGELD_QUOTE, CO2_GEWICHT, MPC_DEZIL, MPC_MITTEL,
+         MULTIPLIKATOR_STEUER_TRANSFER, MULTIPLIKATOR_INVEST } from '../data.js';
 import { estHaushalt, grenzsteuersatzHaushalt } from './einkommensteuer.js';
 import { aequivalenzEinkommen, berechneGini, berechneMedianGewichtet, berechnePalma, berechneDezilDelta, berechneNettoSQ } from './verteilung.js';
 
@@ -115,7 +116,7 @@ const ANTEIL_ZUCMAN   = anteilAn(d => (d.label === 'D10c' ? 1 : 0));
 // Beitragsbemessungsgrenze RV des Status quo — Bezug aller BBG-Rechnungen
 const BBG_SQ = PRESETS.status_quo.bbg;
 
-function berechne(params, zustand = null) {
+function berechne(params, zustand = null, optionen = {}) {
   // Periodenübergreifender Zustand für Multi-Perioden-Simulation
   const bip_faktor       = zustand ? zustand.bip / BASIS_MAKRO.bip : 1.0;
   const renten_faktor    = zustand ? (zustand.renten_faktor    ?? 1.0) : 1.0;
@@ -323,6 +324,40 @@ function berechne(params, zustand = null) {
     al: al_auf,
     klein: klein_auf
   };
+  // Inzidenz der Unternehmens- und Vermögensteuern: Änderung gegenüber dem Status quo,
+  // in Größen von 2025, verteilt nach Arbeits-, Kapitaleinkommen und Vermögen (N1)
+  const kvs_sq = kapitalUndVermoegensteuern(PRESETS.status_quo);
+  const d_unt  = (kvs.kst + kvs.gewst) - (kvs_sq.kst + kvs_sq.gewst);
+  // Bodenwertsteuer: nicht überwälzbar, sie tragen die Eigentümer (Mirrlees Review 2011, Kap. 16)
+  const d_boden = BASIS_MAKRO.boden_wert * (params.boden - PRESETS.status_quo.boden) / 100;
+  const d_verm = (kvs.erb + kvs.verm) - (kvs_sq.erb + kvs_sq.verm) + d_boden;
+  const d_zuc  = kvs.zucman - kvs_sq.zucman;
+  const inzidenz = DEZILE.map((d, i) => 1000 * (
+      d_unt  * (0.5 * ANTEIL_ARBEIT[i] + 0.5 * ANTEIL_KAPITAL[i])
+    + d_verm * ANTEIL_VERMOEGEN[i]
+    + d_zuc  * ANTEIL_ZUCMAN[i]));
+  const hh_delta = berechneDezilDelta(dezile, params, est_pro_dezil, klimageld_auszahlung, bg_auszahlung, kg_auszahlung,
+                                      { renten: renten_delta, co2_brutto: co2_auf, inzidenz });
+
+  // ---------- 10a. NACHFRAGE (PRUEFUNG-2.md I.3) ----------
+  // Die Einkommensänderung der Haushalte gegenüber dem Status quo DERSELBEN Periode wirkt
+  // mit ihrer Grenzkonsumneigung auf die Nachfrage, öffentliche Investitionen mit dem
+  // Investitionsmultiplikator — nur in dieser Periode, symmetrisch: Konsolidierung kostet
+  // Wachstum, Entlastung bringt welches. Die Lücke wirkt auf BIP und Einnahmen der Periode
+  // und wird nicht fortgeschrieben. Dauerhaft wirkt nur der öffentliche Kapitalstock
+  // (transition.js). Werte in Größen von 2025.
+  const invest_impuls = params.invest_impuls || 0;
+  let nachfrage_luecke = 0, konsum_impuls = 0;
+  if (!optionen.ohneNachfrage) {
+    const sq = berechne(PRESETS.status_quo, zustand, { ohneNachfrage: true });
+    konsum_impuls = DEZILE.reduce((a, d, i) =>
+      a + d.anzahl * (hh_delta.delta[i] - sq.hh_delta.delta[i]) * MPC_DEZIL[i], 0) / 1000;   // Mrd.
+    const impuls = konsum_impuls * MULTIPLIKATOR_STEUER_TRANSFER / MPC_MITTEL
+                 + MULTIPLIKATOR_INVEST * (invest_impuls - (PRESETS.status_quo.invest_impuls || 0));
+    nachfrage_luecke = impuls / BASIS_MAKRO.bip;
+  }
+  const nachfrage_faktor = 1 + nachfrage_luecke;
+
   // ---------- 10b. NOMINALE FORTSCHREIBUNG ----------
   // Alles oben ist in Größen von 2025 gerechnet. Bis 24.09.2026 blieb es dabei:
   // ESt, MwSt, Beiträge und Ausgaben standen 20 Jahre auf dem Stand von 2025,
@@ -332,8 +367,9 @@ function berechne(params, zustand = null) {
   // der Tarif gilt als indexiert (keine kalte Progression). KSt und GewSt tragen
   // bip_faktor schon über den Gewinn; der CO₂-Preis ist ein Preis und folgt dem
   // Preisniveau. Die Werte je Haushalt bleiben in Preisen von 2025.
-  const EINNAHMEN_FAKTOR = { kst: 1, gewst: 1, co2: trend_faktor };
-  for (const k of Object.keys(rev)) rev[k] *= EINNAHMEN_FAKTOR[k] ?? bip_faktor;
+  // Die Nachfragelücke der Periode wirkt auf alle BIP-gebundenen Einnahmen (automatischer Stabilisator).
+  const EINNAHMEN_FAKTOR = { kst: nachfrage_faktor, gewst: nachfrage_faktor, co2: trend_faktor };
+  for (const k of Object.keys(rev)) rev[k] *= EINNAHMEN_FAKTOR[k] ?? bip_faktor * nachfrage_faktor;
   const einnahmen_total = Object.values(rev).reduce((a,b)=>a+b,0);
 
   // ---------- 11. VERWALTUNGSKOSTEN ----------
@@ -366,8 +402,7 @@ function berechne(params, zustand = null) {
   const sv_ausgaben_delta = dezile.reduce((a, d, i) => a + d.anzahl * renten_delta[i], 0) / 1000;
   // Demografieaufschlag: steigende RV-Ausgaben durch Alterung (RV-Anteil ~390 Mrd.)
   const demografie_aufschlag = SV_AUSG.rv * (renten_faktor - 1.0);
-  // invest_impuls: zusätzliche öffentliche Investitionen (Mrd./Jahr, reduziert Saldo)
-  const invest_impuls = params.invest_impuls || 0;
+  // invest_impuls: zusätzliche öffentliche Investitionen (Mrd./Jahr, reduziert Saldo) — Abschnitt 10a
   // Alle Ausgaben außer den Zinsen wachsen mit dem nominalen Trend (Preise und
   // Löhne), nicht mit dem BIP: eine Rezession senkt sie nicht. Die Zinsen sind
   // schon nominal, sie kommen aus dem Schuldenstand (PRUEFUNG-2.md I.2).
@@ -400,20 +435,6 @@ function berechne(params, zustand = null) {
   if (klein_auf > 0) nst += 7;
 
   // ---------- 15. HAUSHALTSBELASTUNG pro Dezil (vs. Status Quo) ----------
-  // Inzidenz der Unternehmens- und Vermögensteuern: Änderung gegenüber dem Status quo,
-  // in Größen von 2025, verteilt nach Arbeits-, Kapitaleinkommen und Vermögen (N1)
-  const kvs_sq = kapitalUndVermoegensteuern(PRESETS.status_quo);
-  const d_unt  = (kvs.kst + kvs.gewst) - (kvs_sq.kst + kvs_sq.gewst);
-  // Bodenwertsteuer: nicht überwälzbar, sie tragen die Eigentümer (Mirrlees Review 2011, Kap. 16)
-  const d_boden = BASIS_MAKRO.boden_wert * (params.boden - PRESETS.status_quo.boden) / 100;
-  const d_verm = (kvs.erb + kvs.verm) - (kvs_sq.erb + kvs_sq.verm) + d_boden;
-  const d_zuc  = kvs.zucman - kvs_sq.zucman;
-  const inzidenz = DEZILE.map((d, i) => 1000 * (
-      d_unt  * (0.5 * ANTEIL_ARBEIT[i] + 0.5 * ANTEIL_KAPITAL[i])
-    + d_verm * ANTEIL_VERMOEGEN[i]
-    + d_zuc  * ANTEIL_ZUCMAN[i]));
-  const hh_delta = berechneDezilDelta(dezile, params, est_pro_dezil, klimageld_auszahlung, bg_auszahlung, kg_auszahlung,
-                                      { renten: renten_delta, co2_brutto: co2_auf, inzidenz });
 
   // ---------- 16. GINI ----------
   // Beide Ungleichheitsmaße auf Äquivalenzeinkommen wie EU-SILC, damit sie mit
@@ -453,7 +474,7 @@ function berechne(params, zustand = null) {
   }, 0) / total_hh_all * 100;
 
   // ---------- 19. SCHULDENQUOTE Δ ----------
-  const bip_aktuell = BASIS_MAKRO.bip * bip_faktor;
+  const bip_aktuell = BASIS_MAKRO.bip * bip_faktor * nachfrage_faktor;
   const schuldenquote_delta = -(saldo / bip_aktuell) * 100;
 
   // ---------- 20. METR (Marginal Effective Tax Rate) je Dezil ----------
@@ -514,7 +535,7 @@ function berechne(params, zustand = null) {
     // GKV-Reform-Boni (für GKV-Panel-Darstellung)
     kv_bbg_frei_bonus, kv_kapital_bonus,
     // Multi-Perioden-Felder
-    emissionen, emissionen_basis, bip_aktuell, invest_impuls, demografie_aufschlag, sv_ausgaben_delta, zinsen_dyn,
+    emissionen, emissionen_basis, bip_aktuell, invest_impuls, nachfrage_luecke, konsum_impuls, demografie_aufschlag, sv_ausgaben_delta, zinsen_dyn,
   };
 }
 

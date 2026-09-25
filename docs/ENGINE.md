@@ -208,7 +208,13 @@ Iteriert alle Perioden der Simulation. Gibt ein Array zurück (ein Eintrag je Pe
 - **Kein Klimaschaden aus deutschen Emissionen:** Bis 24.09.2026 senkte ein DICE-Term das BIP mit einer
   1.100-fach zu hohen Klimasensitivität; ein hoher CO₂-Preis erzeugte so einen nationalen
   Wachstumsgewinn (`entwurf/PRUEFUNG-2.md` I.5)
-- **HANK-Multiplikator:** Fiskalmultiplikator gewichtet nach dezil-spezifischen MPCs (Kaplan/Moll/Violante 2018)
+- **Nachfrage (Strom, symmetrisch):** `berechne()` Abschnitt 10a — Einkommensänderung der Haushalte
+  gegenüber dem Status quo derselben Periode × Grenzkonsumneigung je Dezil (`MPC_DEZIL`, 0,65 → 0,15)
+  × 0,6/0,48 (Gechert 2015), plus Investitionsimpuls × 1,0. Die Lücke wirkt auf BIP und Einnahmen
+  der Periode und wird nicht fortgeschrieben; Konsolidierung kostet Wachstum
+- **Öffentliches Kapital:** Zusatzinvestitionen bauen `oeff_kapital` auf (Abschreibung 4 % p. a.),
+  Potenzial × (1 + 0,08 × K / 1.600 Mrd.) (Bom/Ligthart 2014). Ersetzt den kumulierenden
+  Niveaueffekt 1 + I·n·μ/BIP (`entwurf/PRUEFUNG-2.md` I.3)
 - **Demografie:** Renten-Faktor aus `DEMOGRAFIE_KURVE` erhöht die Rentenausgaben automatisch
 - **Sozialversicherung:** Beitragssätze wirken nur auf die Einnahmen. Die Rentenzahlungen
   folgen dem Rentenniveau; jedes Dezil trägt einen Rentenanteil (`DEZILE[i].rente_anteil`,
@@ -238,7 +244,7 @@ berechneAbgeleitet(result, zustand) → AbgeleiteteIndikatoren
 | `s2` | Tragfähigkeitslücke: `ps_t − ps_star` (> 0 = tragfähig) | IMF Fiscal Monitor 2024 |
 | `ggi` | Generationengerechtigkeit-Index [0, 1]: 50 % Schulden + 50 % CO₂ | Eigene Konstruktion |
 | `co2_budget_rest` | Verbleibendes DE-CO₂-Budget für 1,5°C (Mt) | IPCC AR6, SRU (2022) |
-| `mu_hank` | HANK-Fiskalmultiplikator der Periode | Kaplan/Moll/Violante (2018) AER |
+| `mu_hank` | Konsummultiplikator der Periode (MPC-gewichtet; Name historisch) | Gechert (2015) · Jappelli/Pistaferri (2014) |
 
 ---
 
@@ -256,7 +262,7 @@ Rentenreform-Steuerung vorgesehen.
 |---|---|
 | Einkommensteuer-Tarif | § 32a EStG 2025 |
 | Arbeitsangebots-Elastizität | Saez/Chetty/Gruber · ifo Schnelldienst 01/2025 |
-| HANK-Multiplikator | Kaplan/Moll/Violante (2018) AER |
+| Multiplikatoren, öffentliches Kapital | Gechert (2015) · Jappelli/Pistaferri (2014) · Bom/Ligthart (2014) |
 | Fiskalmultiplikator Investitionen | Gechert/Heimberger (2022) NIER |
 | Domar-Schuldbedingung | Domar (1944) · Blanchard (2019) AEA Presidential Address |
 | Emissionspfad, CO₂-Budget | UBA Projektionsbericht 2025 · Forster et al. (2026) IGCC 2025, ESSD |

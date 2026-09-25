@@ -13,10 +13,13 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { berechne } from '../js/rechner/berechne.js';
+import { berechne as berechneEngine } from '../js/rechner/berechne.js';
 import { PRESETS, DEZILE } from '../js/data.js';
 
 const SQ = PRESETS.status_quo;
+// Gebucht wird die direkte Wirkung; die Rückwirkung über die Nachfrage (berechne.js 10a)
+// ist eine zweite Runde und bleibt hier aus.
+const berechne = p => berechneEngine(p, null, { ohneNachfrage: true });
 const BASIS = berechne(SQ);
 
 /** Änderung des Nettoeinkommens aller Haushalte zusammen, Mrd. € */
