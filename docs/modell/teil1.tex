@@ -371,7 +371,7 @@ nicht stabil: Demografie, Verteidigung und Zinsen treiben das Defizit, und die
 Schuldenquote steigt von 63,5\,\% auf \SQschuldEnde\,\%. Die Teams entscheiden also nicht
 zwischen \enquote{weiter so} und Veränderung, sondern darüber, wer die Anpassung trägt.
 
-\begin{table}[h]
+\begin{table}[!htb]
 \centering\small
 \input{generiert/verlauf.tex}
 \caption{Status quo über fünf Perioden. BIP und Schuldenquote zu Beginn der Periode, übrige
@@ -411,9 +411,13 @@ Die Messung für Teil~III hat drei weitere Eigenschaften sichtbar gemacht:
   aus der Grenze nach unten bei null abgeschnitten, bei den Haushalten sinken die Beiträge.
   Die entlasteten Haushalte fragen mehr nach, und der Stabilisator hebt den Saldo. Das ist
   ein Buchungsfehler; er ist zur Behebung vorgemerkt.
-\item \textbf{Der Spitzensteuersatz bringt wenig:} rund 0,3\,\Mrd{} je Prozentpunkt in der
-  ersten Periode, weniger als übliche Schätzungen (etwa 1 bis 2\,\Mrd). Ursache ist das
-  Zusammenspiel von Pareto-Rand, hoher Elastizität und Ausweichreaktion im obersten Prozent.
+\item \textbf{Der Spitzensteuersatz bringt wenig:} rund \wert{zerl}{spitze}{gesamt}\,\Mrd{} je
+  Prozentpunkt in der ersten Periode, weniger als übliche Schätzungen (etwa 1 bis 2\,\Mrd).
+  Die Zerlegung in Abschnitt~\ref{sec:zerlegung} zeigt, dass das fast ganz an der Rechnung
+  selbst liegt (\wert{zerl}{spitze}{mechanisch}\,\Mrd{} mechanisch), nicht am Verhalten
+  (\wert{zerl}{spitze}{verhalten}\,\Mrd): Der Satz trifft nur den Teil der Einkommen im
+  obersten Prozent, der nach dem Pareto-Rand über der Grenze liegt. Ob der Rand zu dünn ist,
+  wäre mit der Einkommensteuerstatistik zu prüfen.
 \item \textbf{Die Mindeststeuer auf Milliardäre greift erst oberhalb von 0,3\,\%}, weil die
   gezahlte Einkommensteuer angerechnet wird. Das ist gewollt, erklärt aber, warum kleine
   Sätze nichts bewirken.

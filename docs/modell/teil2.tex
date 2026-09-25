@@ -1,4 +1,480 @@
 % SPDX-License-Identifier: CC-BY-4.0
 % Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
 % Teil II — Das Modell in Formeln
-\emph{In Arbeit (Zwischenziel 3).}
+%
+% Jede Gleichung entspricht einer Stelle im Code; der Verweis steht am Rand der Absätze
+% als Datei und Abschnitt. Konstanten stehen mit ihrem Wert aus data.js und ihrer Quelle.
+
+\section{Notation}
+\label{sec:notation}
+
+\textbf{Indizes und Aggregation.} Haushaltstypen $i\in\{1,\dots,12\}$ (D1 bis D9, D10a, D10b,
+D10c), Perioden $t=0,1,\dots$ mit Startjahr $\tau_t$ und Länge $n_t$ Jahre (Standard $n=4$).
+$N_i$ ist die Zahl der Haushalte in Millionen. Für eine Größe $x_i$ in \euro{} je Haushalt ist
+\begin{equation}
+  \mathcal{S}[x] \;=\; \frac{1}{1000}\sum_{i=1}^{12} N_i\,x_i \qquad\text{in Mrd.\,\euro{}.}
+\end{equation}
+$\operatorname{clip}(x,a,b)=\min(b,\max(a,x))$, $[x]^+=\max(0,x)$, $\mathbf{1}[\cdot]$ ist die
+Indikatorfunktion. Größen mit Hochstellung SQ sind im Status quo gerechnet (Politik
+$\theta^{SQ}$, dieselbe Periode).
+
+\textbf{Haushaltsdaten} (Tabelle~\ref{tab:dezile}): Bruttoeinkommen $B_i$, Kapitalanteil
+$\kappa_i$, durchschnittliche Konsumquote $c_i$, Bedarfsgewicht $w_i$, Vermögen $V_i$,
+Rentenanteil $\rho_i$, Grenzkonsumneigung $m_i$, Kindergeldkinder $k_i$, Bürgergeldquote $q_i$,
+\COz-Gewicht $\gamma_i$ mit $\sum_i N_i\gamma_i=1$.
+
+\textbf{Politik} $\theta$ (Regler, Werte des Status quo in Klammern): Grundfreibetrag $F$
+(12.348\,\euro), Eingangssatz $t_0$ (14\,\%), Spitzensatz $t_5$ (45\,\%), Grenze der obersten
+Zone $G$ (277.826\,\euro), Abgeltungsteuer $t_A$ (25\,\%), Umsatzsteuer $v_R$ (19\,\%) und
+$v_E$ (7\,\%), \COz-Preis $p$ (55\,\euro/t), Körperschaftsteuer $t_K$ (15\,\%),
+Gewerbesteuer $t_G$ (14\,\%), Erbschaftsteuer $e$ (20\,\%), Vermögensteuer $t_V$ (0), Bodensteuer
+$t_B$ (0,4\,\%), Zucman-Steuer $t_Z$ (0), Beitragssätze $\beta_R$ (18,6\,\%), $\beta_K$ (17,5\,\%),
+$\beta_A$ (6,2\,\%), Beitragsbemessungsgrenze $\bar B$ (101.400\,\euro), Rentenniveau $\nu$
+(48\,\%), Bürgergeld $g_B$ (563\,\euro/Monat), Kindergeld $g_K$ (259\,\euro/Monat), Klimageld
+$\chi\in\{0,1\}$ (0), öffentlicher Investitionsimpuls $I$ (0). Sätze gehen in den Formeln als
+Prozentzahl ein, wo ein Bruch $/100$ steht, sonst als Anteil.
+
+\textbf{Zustand} zu Beginn der Periode $t$: nominales BIP $Y_t$, Schuldenquote $b_t$ in \%,
+kumulierte Emissionen $C_t$, Lohnbasisindex $\ell_t$, Rentenlastfaktor $R_t$, nominaler Trend
+$P_t$, zusätzlicher öffentlicher Kapitalstock $K^g_t$, Niveaus des privaten Kapitals $k_t$ und
+der Arbeit $a_t$. Startwerte: $Y_0=4.470$, $b_0=63{,}5$, $C_0=0$, $\ell_0=R_0=P_0=k_0=a_0=1$,
+$K^g_0=0$. Wir schreiben $y_t=Y_t/Y_0$.
+
+\section{Das Gleichungssystem auf einer Seite}
+\label{sec:ueberblick}
+
+Für eine Periode mit Zustand $s_t$ und Politik $\theta$ rechnet die Engine (Abschnittsnummern
+aus \datei{berechne.js}):
+
+\begin{align}
+\tilde\theta &= \theta \text{ mit } \tilde t_K=[t_K-\bar\sigma_K]^+,\ \tilde\beta_R=\beta_R+\bar\sigma_R
+  \tag{R}\\
+\lambda_i &= \Lambda_i\bigl(M_i(\tilde\theta)-M_i(\theta^{SQ})\bigr)
+  \tag{1}\\
+T_i &= T^{HH}_i\bigl(\lambda_iB_i(1-\kappa_i)\bigr) + \tfrac{t_A}{100}\lambda_iB_i\kappa_i
+  \tag{2}\\
+\mathcal{R}^0 &= \bigl(R^0_k\bigr)_{k\in\mathcal K}
+  \tag{3--8}\\
+Y^H_i &= \lambda_iB_i - T_i - SV_i - U_i - L^{\text{CO}_2}_i + \mathit{Tr}_i + \Delta P_i - Z_i,
+  \qquad \Delta_i = Y^H_i - Y^{H,SQ_0}_i
+  \tag{15}\\
+J &= \tfrac{0{,}6}{0{,}48}\,\mathcal{S}\bigl[m\,(\Delta-\Delta^{SQ,t})\bigr] + 1{,}0\,(I-I^{SQ}),\qquad
+  \eta = 1+J/Y_0
+  \tag{10a}\\
+\mathcal{R} &= \textstyle\sum_{k\in\mathcal K} \phi_k\,R^0_k,\qquad \phi_k\in\{y\eta,\;P\}
+  \tag{10b}\\
+\mathcal{A} &= \bigl(A^{\text{real}}+V^{\text{zus}}\bigr)P + \bar S^{\text{SV}} + \tfrac{r}{100}\,b\,Y
+  \tag{12}\\
+S &= \mathcal{R}-\mathcal{A},\qquad s = 100\,S/(Y\eta)
+  \tag{13}\\
+s^{\text{str}} &= s - 50(\eta-1) + [\bar v-1]^+ + 100\,\bar S^{\text{SV}}/(Y\eta)
+  \tag{19b}
+\end{align}
+Dabei ist $\mathcal K$ die Menge der Einnahmearten (Einkommen-, Körperschaft-, Gewerbe-,
+Umsatz-, Erbschaft-, Boden-, Vermögen-, Zucman-Steuer, \COz, Renten-, Kranken-,
+Arbeitslosen- und Pflegebeiträge, übrige Verbrauchsteuern). Die Marken rechts sind die
+Abschnittsnummern in \datei{berechne.js}: (R) geltendes Recht, (1) Arbeitsangebot,
+(2) Einkommensteuer, (3--8) übrige Einnahmen, (15) Nettoeinkommen, (10a) Nachfrage,
+(10b) Fortschreibung, (12) Ausgaben, (13) Saldo, (19b) Schuldenbremse.
+
+Übergang zur Periode $t+1$ (\datei{transition.js}), mit $g=2{,}5\,\%$, $r=2{,}0\,\%$:
+\begin{align}
+Y_{t+1} &= Y_t\,(1+g)^{n}\;\frac{k_{t+1}}{k_t}\;\frac{a_{t+1}}{a_t}\;\frac{\Phi(K^g_{t+1})}{\Phi(K^g_t)}\\
+D_{j+1} &= D_j(1+r) - (S+Z^{\text{dyn}}),\quad D_0=b_tY_t/100,\quad b_{t+1}=100\,D_n/Y_{t+1}\\
+C_{t+1} &= C_t + \sum_{j=0}^{n-1} E^B(\tau+j)\,\frac{E}{E^B(\tau)}
+\end{align}
+
+Die folgenden Abschnitte spezifizieren jede Zeile vollständig.
+
+\section{Geltendes Recht als Pfad}
+
+Zwei Regler zeigen die Werte von 2026, das geltende Recht ändert sie danach. Für jede Periode
+wird über ihre Jahre $\tau,\dots,\tau+n-1$ gemittelt, $\bar f(\tau,n)=\frac1n\sum_{j=0}^{n-1}f(\tau+j)$:
+\begin{align}
+\sigma_K(j) &= \operatorname{clip}(j-2027,\,0,\,5),\\
+\sigma_R(j) &= \text{linear durch } (2027;0),\,(2030;1{,}5),\,(2039;2{,}55),\ \text{danach konstant},
+\end{align}
+nach \S\,23 Abs.\,1 KStG (Gesetz vom 18.07.2025) und \S\,158 SGB~VI (Pfad des BMAS
+Rentenversicherungsberichts 2025),
+und $\tilde t_K=[t_K-\bar\sigma_K]^+$, $\tilde\beta_R=\beta_R+\bar\sigma_R$. Im Folgenden steht
+$\theta$ für die so ergänzte Politik. Ebenso gemittelt werden die Verteidigungsquote
+$v(j)$ (\% BIP, linear durch 2,4 / 2,6 / 3,0 / 3,3 / 3,5 für 2025--2029, danach 3,5) und das
+Sondervermögen $S^{\text{SV}}(j)=500/11$\,\Mrd{} für $2026\le j\le 2036$, sonst 0.
+
+\section{Einkommensteuer}
+\label{sec:est}
+
+\textbf{Tarif je Tarifeinheit} (\datei{einkommensteuer.js}, \S\,32a EStG 2026). Mit den
+Zonenbreiten $w_2=5.451$ und $w_3=52.079$, dem Abstand zur obersten Zone $G'=[G-F]^+$,
+$e_2=\min(w_2,G')$, $e_3=\min(w_2+w_3,G')$ und den Grenzsätzen
+\begin{equation}
+r_0=t_0,\qquad r_4=\min(0{,}42,\,t_5),\qquad r_m=r_0+0{,}35607\,(r_4-r_0),\qquad r_5=t_5
+\end{equation}
+ist für ein zu versteuerndes Einkommen $z$ und $x=[z-F]^+$, $x'=\min(x,G')$:
+\begin{equation}
+T(z)=T_2\bigl(\min(x',e_2)\bigr)+\mathbf 1[x'>e_2]\,T_3\bigl(\min(x',e_3)-e_2\bigr)
+     +\mathbf 1[x'>e_3]\,r_4(x'-e_3)+\mathbf 1[x>G']\,r_5(x-G')
+\end{equation}
+mit $T_2(u)=r_0u+(r_m-r_0)\frac{u^2}{2w_2}$ und $T_3(u)=r_mu+(r_4-r_m)\frac{u^2}{2w_3}$. Der
+Grenzsteuersatz $T'(z)$ ist in Zone~2 und 3 linear, sonst konstant; $T$ ist stetig und
+stückweise quadratisch, $T'$ stetig bis auf den Sprung $r_5-r_4$ bei $G$. Bei den Werten
+des Status quo liegt $r_m=0{,}2397$, wie im Gesetz.
+
+\textbf{Haushalt.} Mit der zvE-Quote $q=0{,}79$ und $s=1{,}6$ Tarifeinheiten je Haushalt
+(§§\,26, 32a Abs.\,5 EStG; Destatis ESt-Statistik, Mikrozensus 2024):
+\begin{equation}
+T^{HH}(B)=s\,T\!\left(\frac{qB}{s}\right),\qquad M(B)=\frac{dT^{HH}}{dB}=q\,T'\!\left(\frac{qB}{s}\right).
+\end{equation}
+
+\textbf{Pareto-Rand (D10c).} Das zvE $x$ je Tarifeinheit sei Pareto-verteilt mit Mittel
+$\mu=qB/s$ und Exponent $\alpha=1{,}5$, also Untergrenze $x_m=\mu(\alpha-1)/\alpha$
+(Atkinson/Piketty/Saez 2011; Bartels/Jenderny 2015). Dann ist
+\begin{gather}
+\mathbb E[x-G]^+=\begin{cases}\mu-G & G\le x_m,\\[2pt] \dfrac{x_m^{\alpha}\,G^{1-\alpha}}{\alpha-1} & G>x_m,\end{cases}\\
+\Pr[x>G]=\min\bigl(1,(x_m/G)^\alpha\bigr),
+\end{gather}
+und die Engine rechnet für D10c
+\begin{align}
+T^{HH}_{12}(B)&=s\Bigl[T_{G=\infty}(\mu)+(r_5-r_4)\,\mathbb E[x-G]^+\Bigr],\\
+M_{12}(B)&=q\Bigl[T'_{G=\infty}(\mu)+(r_5-r_4)\Pr[x>G]\Bigr].
+\end{align}
+
+\section{Verhalten}
+
+\textbf{Arbeitsangebot} (\datei{berechne.js}, 1). Für jeden Haushalt ist
+$M_i=M(B_i(1-\kappa_i))$ der Grenzsteuersatz auf Arbeit und
+\begin{equation}
+\lambda^{\text{roh}}_i=1+\varepsilon_i\,\frac{(1-M_i)-(1-M^{SQ}_i)}{\max(10^{-4},\,1-M^{SQ}_i)},
+\qquad
+\varepsilon_i=\begin{cases}0{,}40&i=\text{D10c}\\0{,}20&\text{sonst}\end{cases}
+\end{equation}
+(Saez\slash{}Chetty\slash{}Gruber; für D10c die Elastizität des zu versteuernden Einkommens nach
+Saez\slash{}Slemrod\slash{}Giertz 2012). Für D10c kommen Ausweichen und Wegzug hinzu,
+\begin{equation}
+\Omega_{12}=\max\bigl(0{,}40,\;1-0{,}50\,[M_{12}-0{,}45]^+-0{,}10\,[M_{12}-0{,}60]^+\bigr),\qquad\Omega_i=1\text{ sonst},
+\end{equation}
+und mit einem Grundeinkommen $b^{G}$ (nur klassische Fläche) der Faktor $\psi_i\min(1{,}67,\,b^G/1200)$:
+\begin{equation}
+\lambda_i=\max\Bigl(0{,}55,\;\operatorname{clip}(\lambda^{\text{roh}}_i,0{,}55,1{,}25)\,\Omega_i\,\bigl(1-\psi_i\min(1{,}67,b^G/1200)\bigr)\Bigr).
+\end{equation}
+Das angepasste Bruttoeinkommen ist $\tilde B_i=\lambda_iB_i$, der Durchschnitt
+$\bar\lambda=\sum_iN_i\lambda_i/\sum_iN_i$.
+
+\textbf{Investitionen} (\datei{kapitalUndVermoegensteuern()}):
+\begin{equation}
+I_f=1+\varepsilon_I\Bigl(\frac{t_K+t_G}{100}-0{,}30\Bigr),\quad \varepsilon_I=-0{,}40,\qquad
+\pi=\operatorname{clip}(I_f,0{,}7,1{,}2)
+\end{equation}
+(Gechert/Heimberger 2022). $\pi$ skaliert die Gewinnbasen, $I_f$ geht in den Kapitalstock.
+
+\textbf{Konsum} (Umsatzsteuer, 4): $f_R=\operatorname{clip}\bigl(1+\varepsilon_C\frac{v_R-19}{100},0{,}85,1{,}1\bigr)$,
+$f_E$ ebenso mit $v_E-7$, $\varepsilon_C=-0{,}35$ (Lewbel/Pendakur 2009).
+
+\textbf{Emissionen} (5): $\varphi=1+\varepsilon_E\frac{p-55}{100}$, $\varepsilon_E=-0{,}30$
+(EWI/DIW BEHG-Evaluation 2023).
+
+\textbf{Vermögen:} deklariertes Vermögen $\propto e^{-\varepsilon_Vt_V}$, $\varepsilon_V=0{,}215$ je
+Prozentpunkt (Brülhart u.\,a. 2022, halbiert).
+
+\section{Einnahmen in Größen von 2025}
+
+\textbf{Einkommensteuer} (2): $T_i=T^{HH}_i(\tilde B_i(1-\kappa_i))+\frac{t_A}{100}\tilde B_i\kappa_i$,
+Aufkommen $R^0_{\text{ESt}}=\mathcal S[T]$. (Bei synthetischer Besteuerung:
+$T_i=T^{HH}_i(\tilde B_i)$ auf das ganze Einkommen, Kapitalteil nicht negativ.)
+
+\textbf{Unternehmenssteuern} (3), Gewinnbasen kalibriert auf 45 bzw. 75\,\Mrd:
+\begin{equation}
+R^0_K=300\,\pi\,\frac{t_K}{100},\qquad R^0_G=536\,\pi\,\frac{t_G}{100}.
+\end{equation}
+
+\textbf{Umsatzsteuer} (4). Mit den Arbeitnehmerbeiträgen
+\begin{equation}
+SV^{AN}_i=\tfrac12\Bigl[\min(W_i,\bar B)\,\frac{\beta_R+0{,}42\beta_A}{100}+\min(W_i,\bar B_K)\,\frac{\beta_K+0{,}58\beta_A}{100}\Bigr]
+\end{equation}
+mit $W_i=\tilde B_i(1-\kappa_i)$ und $\bar B_K=\bar B\cdot69.750/101.400$
+ist das Vornetto $N^v_i=\tilde B_i-T_i-SV^{AN}_i$ und
+\begin{equation}
+R^0_U=\Phi_U\,\mathcal S\Bigl[c\,N^v\Bigl(0{,}7\frac{v_R}{100+v_R}f_R+0{,}3\frac{v_E}{100+v_E}f_E\Bigr)\Bigr],\qquad
+\Phi_U=0{,}963\cdot1{,}68.
+\end{equation}
+0,963 ist der VAT-Gap (CASE 2024), 1,68 rechnet die Konsumbasis der Haushalte auf die volle
+Bemessungsgrundlage hoch (kalibriert auf das BMF-Ist 2024).
+
+\textbf{\COz} (5). Mit dem Emissionspfad $E^B(j)$ (linear durch 649\,Mt (2025),
+$0{,}37\cdot1.252$ (2030), $0{,}20\cdot1.252$ (2040), $0{,}15\cdot1.252$ (2045); UBA
+Projektionsbericht 2025) und dem bepreisten Anteil $\varsigma=327/649$:
+\begin{align}
+E&=E^B(\tau)\Bigl[(1-\varsigma)+\varsigma\operatorname{clip}(\varphi,0{,}4,1{,}1)\Bigr],\\
+R^{\text{brutto}}_{\text{CO}_2}&=\varsigma\,E^B(\tau)\operatorname{clip}(\varphi,0{,}4,1{,}1)\,\frac{p}{1000},\qquad
+R^0_{\text{CO}_2}=(1-0{,}7\chi)\,R^{\text{brutto}}_{\text{CO}_2}.
+\end{align}
+
+\textbf{Vermögensbezogene Steuern} (6, 7b), Basen in \Mrd:
+\begin{align}
+R_E&=0{,}45\cdot400\Bigl[0{,}6\,\frac{e\,\beta_{\text{BV}}}{100}+0{,}4\,\frac{\min(e,15)}{200}\Bigr],\quad \beta_{\text{BV}}=0{,}3\ \text{(Verschonung) sonst }0{,}9\\
+R_V&=3.500\,e^{-0{,}215\,t_V}\,\frac{t_V}{100},\qquad R_B=5.000\,\frac{t_B}{100}\\
+R_Z&=600\,\bigl(1-0{,}15\min(1,t_Z/2)\bigr)\,\frac{[t_Z-0{,}3-t_V]^+}{100}.
+\end{align}
+
+\textbf{Sozialbeiträge} (7). Lohnsumme mit Lohnbasisindex und BBG-Aufschlag,
+\begin{equation}
+L^{SV}=1.750\;\ell_t\Bigl(1+0{,}12\,\Bigl[\frac{\bar B-\bar B^{SQ}}{\bar B^{SQ}}\Bigr]^+\Bigr),\qquad
+R_{RV}=L^{SV}\frac{\beta_R}{100},\ R_{KV}=L^{SV}\frac{\beta_K}{100},\ R_{AL}=L^{SV}\frac{\beta_A}{100}.
+\end{equation}
+Die positive Klammer ist die Ursache der Asymmetrie aus Abschnitt~\ref{sec:grenzen}: Auf der
+Haushaltsseite wirkt $\bar B$ in $SV^{AN}_i$ in beide Richtungen.
+
+\textbf{Übrige Verbrauchsteuern} (8): $R_{kl}=109$\,\Mrd{} (Energie, Tabak, Kfz, Sonstige,
+Solidaritätszuschlag), entfällt nur bei Abschaffung.
+
+\section{Transfers, Renten, Erhebungskosten}
+
+\textbf{Transfers} (9). Mit $g_B^{\text{eff}}=g_B\,\mathbf 1[b^G<g_B]$:
+\begin{equation}
+BG=\mathcal S[12\,g^{\text{eff}}_B\,q],\qquad KG=\mathcal S[12\,g_K\,k].
+\end{equation}
+Das Profil $k_i$ ist auf 17~Mio. Kinder normiert, $q_i$ auf 3,9~Mio. Regelsatzjahre.
+
+\textbf{Renten} (9, 12). Mit $\nu^{SQ}=48$:
+\begin{equation}
+\Delta P_i=B_i\,\rho_i\,R_t\Bigl(\frac{\nu}{\nu^{SQ}}-1\Bigr),\qquad \Delta\mathit{RV}=\mathcal S[\Delta P].
+\end{equation}
+Staat und Haushalte buchen dieselbe Summe (\datei{tests/rentenniveau.test.js}).
+
+\textbf{Erhebungskosten} (11), Quoten $a_k$ aus \datei{ADMIN\_QUOTE} (BRH, OECD Tax
+Administration 2024):
+\begin{equation}
+\mathit{Adm}=\sum_k a_k R^0_k + 0{,}2\,R^0_{\text{ESt}}(a_{\text{Kap}}-a_{\text{ESt}})
+ + a_{\text{Tr}}(BG+KG),\qquad \Delta\mathit{Adm}=\mathit{Adm}-\mathit{Adm}^{SQ_0}.
+\end{equation}
+
+\section{Haushalte und Verteilung}
+\label{sec:haushalte}
+
+\textbf{Inzidenz} der Unternehmens- und Vermögensteuern (10). Verteilungsschlüssel mit
+$\sum_iN_ia^{(\cdot)}_i=1$: $a^L_i\propto B_i(1-\kappa_i)$, $a^K_i\propto B_i\kappa_i$,
+$a^V_i\propto V_i$, $a^Z_i\propto\mathbf 1[i=\text{D10c}]$. Mit den Änderungen in Größen von
+2025
+\begin{gather}
+\delta_U=(R^0_K+R^0_G)-(R^0_K+R^0_G)^{SQ},\qquad \delta_Z=R_Z-R_Z^{SQ},\\
+\delta_W=(R_E+R_V)-(R_E+R_V)^{SQ}+5.000\,\tfrac{t_B-t_B^{SQ}}{100},\\
+Z_i=1000\Bigl[\delta_U\bigl(\tfrac12a^L_i+\tfrac12a^K_i\bigr)+\delta_Wa^V_i+\delta_Za^Z_i\Bigr]
+\end{gather}
+(Fuest/Peichl/Siegloch 2018; Harberger 1962; Mirrlees Review 2011, Kap.\,16).
+
+\textbf{Nettoeinkommen} (\datei{verteilung.js}). Beiträge mit überwälzter
+Arbeitgeberänderung (Melguizo\slash{}González-Páramo 2013),
+\begin{multline}
+SV_i=SV^{AN}_i+\tfrac12\Bigl[\min(W_i,\bar B)\,\frac{\Delta(\beta_R+0{,}42\beta_A)}{100}\\
++\min(W_i,\bar B_K)\,\frac{\Delta(\beta_K+0{,}58\beta_A)}{100}\Bigr],
+\end{multline}
+$\Delta$ jeweils gegenüber dem Status quo. Umsatzsteuer mit dem Satzindex
+$\sigma(v)=0{,}7\frac{v_R}{100+v_R}+0{,}3\frac{v_E}{100+v_E}$:
+\begin{equation}
+U_i=c_i\,N^v_i\Bigl[\sigma(v)+(\Phi_U-1)\bigl(\sigma(v)-\sigma(v^{SQ})\bigr)\Bigr].
+\end{equation}
+\COz-Last, Transfers und Nettoeinkommen:
+\begin{align}
+L^{\text{CO}_2}_i&=1000\,R^{\text{brutto}}_{\text{CO}_2}\,\gamma_i,\\
+\mathit{Tr}_i&=12\,g_B^{\text{eff}}q_i+12\,g_Kk_i+GS_i\,\mathbf 1[\neg\text{BGE}]+12\cdot1{,}71\,b^G
+             +\frac{1000\cdot0{,}7\chi R^{\text{brutto}}_{\text{CO}_2}}{\sum_jN_j},\\
+Y^H_i&=\tilde B_i-T_i-SV_i-U_i-L^{\text{CO}_2}_i+\mathit{Tr}_i+\Delta P_i-Z_i,\qquad
+\Delta_i=Y^H_i-Y^{H,SQ_0}_i.
+\end{align}
+$GS_i$ verteilt die festen 10,8\,\Mrd{} für Unterkunft und Mehrbedarfe nach $q_i$.
+$Y^{H,SQ_0}_i$ ist das Nettoeinkommen bei Status-quo-Politik ohne Verhaltensreaktion
+(\datei{berechneNettoSQ}).
+
+\textbf{Ungleichheit} (16). Äquivalenzeinkommen $\hat y_i=Y^H_i/w_i$, aufsteigend sortiert,
+Bevölkerungsanteile $p_j$ und Einkommensanteile $\ell_j$ kumuliert zu $P_j$, $L_j$:
+\begin{equation}
+\text{Gini}=1-\sum_j (P_j-P_{j-1})(L_j+L_{j-1}),\qquad
+\text{Palma}=\frac{\sum_{j\in\text{oben }10\,\%}N_j\hat y_j}{\sum_{j\in\text{unten }40\,\%}N_j\hat y_j},
+\end{equation}
+wobei in die Palma-Summen nur ganze Haushaltstypen eingehen, die vollständig im jeweiligen
+Bereich liegen.
+
+\textbf{Armutsrisiko} (18). Mit der Armutsgrenze $z=0{,}6\cdot\operatorname{med}_N(Y^H)$ und den
+Anteilen des Status quo $\varpi=(0{,}90;\,0{,}62;\,0{,}05;\,0;\dots)$ (SOEP v40):
+\begin{equation}
+\text{AR}=\frac{100}{\sum_iN_i}\sum_{i\le3}N_i\operatorname{clip}\Bigl(\varpi_i\Bigl[\frac{Y^H_i/Y^{H,SQ_0}_i}{z/z^{SQ_0}}\Bigr]^{-1{,}5},0,1\Bigr).
+\end{equation}
+
+\section{Nachfrage und Fortschreibung}
+
+\textbf{Nachfrage} (10a). Gegen den Status quo \emph{derselben} Periode (die Engine rechnet
+ihn mit demselben Zustand ohne Nachfrage):
+\begin{equation}
+J=\frac{0{,}6}{0{,}48}\,\mathcal S\bigl[m\,(\Delta-\Delta^{SQ,t})\bigr]+1{,}0\,(I-I^{SQ}),\qquad
+\eta=1+\frac{J}{Y_0}.
+\end{equation}
+0,6 ist der Steuer- und Transfermultiplikator bei mittlerer Grenzkonsumneigung 0,48, 1,0 der
+Investitionsmultiplikator (Gechert 2015). Nenner ist das BIP von 2025, weil $J$ in Größen
+von 2025 gerechnet ist.
+
+\textbf{Einnahmen nominal} (10b):
+\begin{equation}
+\mathcal R=\eta\,y\,(R^0_K+R^0_G)+P\,R^0_{\text{CO}_2}+y\,\eta\!\!\sum_{k\notin\{K,G,\text{CO}_2\}}\!\!R^0_k.
+\end{equation}
+Aufkommenselastizität 1 zum BIP (indexierter Tarif, keine kalte Progression); der
+\COz-Preis folgt dem Preisniveau.
+
+\textbf{Ausgaben} (12). Mit der Summe der Ausgabenposten 2025 $A^0$ (einschließlich des
+Ausgleichspostens für sonstige Einnahmen, $-221{,}4$), den Zinsen 2025 $Z^0=54$, dem
+Klimafonds $KF=12{,}6$ und den Sozialausgaben $390$ für die Rente:
+\begin{multline}
+A^{\text{real}}=A^0-Z^0-GS\,\mathbf 1[\text{BGE}]-KF\Bigl(1-\frac{E^B(\tau)}{649}\Bigr)
++BG+KG+\Delta\mathit{Adm}+\Delta\mathit{RV}+390\,(R_t-1)+I\\
+{}+(\text{BGE, negative ESt, Renteneinsparung; nur klassische Fläche}),
+\end{multline}
+\begin{equation}
+V^{\text{zus}}=\frac{\bar v(\tau,n)-2{,}4}{100}\,Y_0,\qquad
+\mathcal A=(A^{\text{real}}+V^{\text{zus}})\,P+\bar S^{\text{SV}}(\tau,n)+Z^{\text{dyn}},\qquad
+Z^{\text{dyn}}=\frac{r\,b_t}{100}\,Y_t.
+\end{equation}
+
+\textbf{Saldo} (13, 19): $S=\mathcal R-\mathcal A$, $\text{BIP}=Y_t\eta$, $s=100\,S/\text{BIP}$.
+
+\textbf{Schuldenbremse} (19b), Budget-Semielastizität $0{,}5$ (Mourre u.\,a. 2019):
+\begin{equation}
+s^{\text{str}}=s-0{,}5\cdot100(\eta-1)+[\bar v-1{,}0]^++\frac{100\,\bar S^{\text{SV}}}{\text{BIP}},\qquad
+\text{eingehalten}\iff s^{\text{str}}\ge-0{,}70.
+\end{equation}
+
+\section{Übergang zwischen Perioden}
+\label{sec:uebergang}
+
+Aus Zustand $s_t$ (nach einem etwaigen Schock) und Ergebnis der Periode (\datei{berechneTransition()}):
+
+\textbf{Angebot.} Privates Kapital nähert sich seinem Zielniveau mit der Anpassungsrate
+$\delta_p=0{,}07$, Arbeit wirkt sofort, Kapitalanteil $\alpha=0{,}35$ (Cobb-Douglas, Lohnquote
+0,65):
+\begin{equation}
+k^*=1+\alpha(I_f-1),\qquad k_{t+1}=k_t+\bigl(1-(1-\delta_p)^n\bigr)(k^*-k_t),\qquad
+a_{t+1}=1+(1-\alpha)(\bar\lambda-1).
+\end{equation}
+
+\textbf{Öffentliches Kapital} mit Abschreibung $\delta_g=0{,}04$ und Produktionselastizität
+$0{,}08$ auf einen Stock von 1.600\,\Mrd{} (Bom/Ligthart 2014):
+\begin{equation}
+K^g\leftarrow K^g(1-\delta_g)+\Bigl(I-I^{SQ}+\frac{\bar S^{\text{SV}}}{P}\Bigr)\quad(n\text{-mal}),\qquad
+\Phi(K)=1+0{,}08\,\frac{K}{1.600}.
+\end{equation}
+
+\textbf{BIP, Schulden, Emissionen:}
+\begin{align}
+Y_{t+1}&=Y_t(1+g)^n\,\frac{k_{t+1}}{k_t}\,\frac{a_{t+1}}{a_t}\,\frac{\Phi(K^g_{t+1})}{\Phi(K^g_t)},\\
+D_{j+1}&=D_j\,(1+r+\Delta r^{\text{Schock}})-\bigl(S+Z^{\text{dyn}}\bigr),\quad j=0,\dots,n-1,\qquad
+b_{t+1}=\Bigl[\frac{100\,D_n}{Y_{t+1}}\Bigr]^+,\\
+C_{t+1}&=C_t+\frac{E}{E^B(\tau)}\sum_{j=0}^{n-1}E^B(\tau+j).
+\end{align}
+Das Primärsaldo $S+Z^{\text{dyn}}$ steht in der Schuldengleichung, nicht der Gesamtsaldo,
+sonst würden die Zinsen doppelt gezählt.
+
+\textbf{Übrige Zustände:}
+\begin{gather}
+\ell_{t+1}=\operatorname{clip}\bigl(\ell_t(1-\alpha_n+\alpha_n\bar\lambda),0{,}7,1{,}3\bigr),\qquad \alpha_n=\min(0{,}3,\,0{,}15\,n/4),\\
+P_{t+1}=P_t(1+g)^n,\qquad R_{t+1}=\mathcal D(\tau+n),
+\end{gather}
+$\mathcal D$ die Demografiekurve (linear durch 1,00 / 1,06 / 1,14 / 1,20 / 1,25 / 1,27 in
+2025 / 29 / 33 / 37 / 41 / 45; 14.\ koordinierte Bevölkerungsvorausberechnung).
+
+\textbf{Schocks} wirken auf den Zustand zu Beginn der Periode: $Y_t\leftarrow Y_t(1-\mu)$,
+$b_t\leftarrow b_t+\beta$, $r\leftarrow r+\Delta r$ für den Übergang.
+
+\section{Abgeleitete Indikatoren}
+
+Aus \datei{abgeleitet.js}, alle in Prozentpunkten des BIP:
+\begin{gather}
+ps=s+r\,b,\qquad ps^*=(r-g)\,b,\qquad \text{Lücke}=ps-ps^*,\\
+\text{GGI}=\tfrac12\operatorname{clip}\Bigl(\frac{b-60}{150-60},0,1\Bigr)+\tfrac12\operatorname{clip}\Bigl(\frac{C}{5.380},0,1\Bigr).
+\end{gather}
+Das Budget von 5.380\,Mt ist der deutsche Bevölkerungsanteil (1,025\,\%) am globalen Budget
+von 525\,Gt für 1,7\,°C (Forster u.\,a. 2026).
+
+\section{Eigenschaften des Systems}
+\label{sec:eigenschaften}
+
+\begin{enumerate}[label=(E\arabic*)]
+\item \textbf{Normierung.} Für $\theta=\theta^{SQ}$ ist $\lambda_i=1$ (bis auf den
+  Rundungseinfluss des Klammerwerts $M^{SQ}$), $\Delta_i=\Delta^{SQ,t}_i$, $J=0$, $\eta=1$ und
+  $Z_i=0$. Jede Wirkung ist damit eine Differenz zum Status quo derselben Periode.
+\item \textbf{Buchungsidentität.} $\mathcal S[\Delta P]=\Delta\mathit{RV}$,
+  $\mathcal S[12g_Kk]=KG$, $\mathcal S[L^{\text{CO}_2}]=R^{\text{brutto}}_{\text{CO}_2}$ und
+  $\mathcal S[Z]=\delta_U+\delta_W+\delta_Z$ gelten exakt (\datei{tests/buchung.test.js}); bei
+  Umsatzsteuer und Beiträgen bleibt eine Restabweichung.
+\item \textbf{Stückweise Glattheit.} Das System ist stetig, aber nicht überall
+  differenzierbar: Knicke liegen an den Tarifgrenzen, an $M_{12}=0{,}45$ und $0{,}60$, an den
+  Klammern von $\lambda_i$, $\pi$, $f_R$, $f_E$, $\varphi$, bei $\bar B=\bar B^{SQ}$ und bei
+  $t_Z=0{,}3+t_V$. Die Messwerte in Teil~III sind deshalb endliche Differenzen für genau den
+  angegebenen Schritt; Tabelle~\ref{tab:symmetrie} zeigt, wo $+\Delta$ und $-\Delta$
+  voneinander abweichen.
+\item \textbf{Linearität der Nachfrage.} $J$ ist linear in $\Delta_i$; Entlastung und
+  Belastung wirken betragsgleich mit umgekehrtem Vorzeichen.
+\item \textbf{Keine dominante Strategie.} Keine einzelne Stellgröße und kein Paar an den
+  Rändern verbessert über fünf Perioden Saldo und jedes Dezil, ohne Gini, Emissionen oder
+  BIP zu verschlechtern (\datei{tests/dominanz.test.js}).
+\end{enumerate}
+
+\section{Zerlegung der Wirkungen}
+\label{sec:zerlegung}
+
+Jede gemessene Saldowirkung $\Delta S$ der ersten Periode lässt sich exakt in drei Teile
+zerlegen, indem man das Modell stufenweise einschaltet:
+\begin{equation}
+\Delta S=\underbrace{\Delta S\big|_{\varepsilon=0,\;\eta=1}}_{\text{mechanisch}}
++\underbrace{\Bigl(\Delta S\big|_{\eta=1}-\Delta S\big|_{\varepsilon=0,\;\eta=1}\Bigr)}_{\text{Verhalten}}
++\underbrace{\Bigl(\Delta S-\Delta S\big|_{\eta=1}\Bigr)}_{\text{Nachfrage}}.
+\end{equation}
+\emph{Mechanisch} heißt: alle Elastizitäten aus \datei{ELAST} auf null, keine Nachfrage, also
+die reine Rechnung mit festen Bemessungsgrundlagen. \emph{Verhalten} ist, was Arbeitsangebot,
+Konsum, Investitionen, Emissionen und Vermögen daran ändern. \emph{Nachfrage} ist, was die
+veränderte Kaufkraft der Haushalte über das BIP an Einnahmen kostet oder bringt. Die
+Reihenfolge ist festgelegt; eine andere Reihenfolge verschiebt kleine Beträge zwischen
+Verhalten und Nachfrage, weil beide über das Nettoeinkommen verbunden sind.
+
+\begin{table}[!htb]
+\centering\footnotesize
+\setlength{\tabcolsep}{4pt}
+\input{generiert/zerlegung.tex}
+\caption{Zerlegung der Saldowirkung in der ersten Periode (2025--2028, Jahreswert). Oben die
+Stellgrößen am Tisch, unten die der klassischen Fläche. Anteile nur, wo die Gesamtwirkung
+mindestens 0,05\,\Mrd{} beträgt.}
+\label{tab:zerlegung}
+\end{table}
+
+Was die Zerlegung zeigt:
+
+\begin{itemize}
+\item \textbf{Beiträge verlieren ein Viertel über die Nachfrage.} Ein Punkt Rentenbeitrag
+  bringt mechanisch \wert{zerl}{rv}{mechanisch}\,\Mrd, die Nachfrage nimmt davon
+  \wert{zerl}{rv}{nachfrage}\,\Mrd{} wieder weg. Der Grund: Beiträge treffen die Mitte und den unteren Bereich, wo die
+  Grenzkonsumneigung hoch ist. Verhalten spielt keine Rolle, weil Beiträge im Modell nicht
+  in den Grenzsteuersatz des Arbeitsangebots eingehen.
+\item \textbf{Der Grundfreibetrag finanziert sich zu einem guten Teil selbst.} Mechanisch
+  kosten 1.000\,\euro{} mehr Freibetrag \wert{zerl}{freibetrag}{mechanisch}\,\Mrd; mehr
+  Arbeitsangebot bringt \wert{zerl}{freibetrag}{verhalten}\,\Mrd{} zurück, die Nachfrage
+  \wert{zerl}{freibetrag}{nachfrage}\,\Mrd. Netto bleiben \wert{zerl}{freibetrag}{gesamt}\,\Mrd.
+\item \textbf{Bei der Umsatzsteuer wirken beide Kanäle.} Von \wert{zerl}{mwst}{mechanisch}\,\Mrd{}
+  mechanisch kostet die Konsumreaktion \wert{zerl}{mwst}{verhalten}\,\Mrd{} und die Nachfrage
+  \wert{zerl}{mwst}{nachfrage}\,\Mrd.
+\item \textbf{Unternehmenssteuern verlieren über die Bemessungsgrundlage.} Bei der
+  Körperschaftsteuer kostet die Investitionsreaktion \wert{zerl}{kst}{verhalten}\,\Mrd{} von
+  \wert{zerl}{kst}{mechanisch}\,\Mrd{} mechanisch. Der größere Preis zeigt sich erst im Pfad:
+  das niedrigere private Kapital senkt das BIP 2041 um \wert{pfad}{kst}{bip}\,\Mrd.
+\item \textbf{Der \COz-Preis untergräbt seine eigene Basis}, wie beabsichtigt: Die
+  Emissionsminderung kostet \wert{zerl}{co2}{verhalten}\,\Mrd{} der mechanischen
+  \wert{zerl}{co2}{mechanisch}\,\Mrd.
+\item \textbf{Das Klimageld} kostet mechanisch \wert{zerl}{klimageld}{mechanisch}\,\Mrd; über
+  die Nachfrage fließen \wert{zerl}{klimageld}{nachfrage}\,\Mrd{} zurück, weil es unten mehr
+  Kaufkraft schafft als oben.
+\end{itemize}
+
+\begin{table}[!htb]
+\centering\small
+\input{generiert/symmetrie.tex}
+\caption{Nichtlinearität: Saldowirkung einer Erhöhung um den Schritt und einer Senkung um
+denselben Schritt (mit umgekehrtem Vorzeichen), erste Periode, \Mrd. Gleiche Werte heißen:
+in diesem Bereich linear.}
+\label{tab:symmetrie}
+\end{table}

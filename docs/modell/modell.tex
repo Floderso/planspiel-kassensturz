@@ -33,12 +33,13 @@
 \newunicodechar{≥}{\ensuremath{\geq}}
 \newunicodechar{≈}{\ensuremath{\approx}}
 \newunicodechar{→}{\ensuremath{\rightarrow}}
-\newcommand{\formelschrift}{\ttfamily\small}
+\newcommand{\formelschrift}{\ttfamily\footnotesize}
 \usepackage[ngerman]{babel}
 \usepackage[autostyle]{csquotes}
 \usepackage{microtype}
 \usepackage[margin=2.4cm]{geometry}
 \usepackage{amsmath,amssymb,mathtools}
+\numberwithin{equation}{section}
 \usepackage{booktabs,longtable,tabularx,array,multirow}
 \usepackage{graphicx}
 \usepackage{eurosym}
@@ -69,6 +70,9 @@
 % Merksätze am Ende eines Abschnitts
 \newenvironment{merksatz}{\par\medskip\noindent\begin{tabular}{@{}p{\linewidth}@{}}\toprule\textbf{Kern.}\ }{\\\bottomrule\end{tabular}\par\medskip}
 
+% Einzelne Messwerte: \wert{bereich}{stellgröße}{feld}, abgelegt von messung.js
+\newcommand{\wertdef}[4]{\expandafter\def\csname wert-#1-#2-#3\endcsname{#4}}
+\newcommand{\wert}[3]{\ifcsname wert-#1-#2-#3\endcsname\csname wert-#1-#2-#3\endcsname\else\textbf{??}\fi}
 \input{generiert/makros.tex}
 
 \title{Kassensturz Planspiel\\[0.3em]\large Die Rechenengine in Worten, in Formeln und als Wirkungsgraph}

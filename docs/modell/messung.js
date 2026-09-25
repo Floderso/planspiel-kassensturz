@@ -19,9 +19,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { simulierePfad } from '../../js/rechner/transition.js';
-import { PRESETS, DEZILE, KAPITALANTEIL, PRIVAT_ANPASSUNG, KURS_KONFIG_DEFAULT,
+import { PRESETS, DEZILE, KAPITALANTEIL, PRIVAT_ANPASSUNG, KURS_KONFIG_DEFAULT, PERIOD_STATE_0,
          ELAST, ELAST_QUELLEN, BASIS_MAKRO, MPC_DEZIL, KINDER_JE_HH, BUERGERGELD_QUOTE, CO2_GEWICHT } from '../../js/data.js';
-import { FORMEL_QUELLEN_BERECHNE } from '../../js/rechner/berechne.js';
+import { berechne, FORMEL_QUELLEN_BERECHNE } from '../../js/rechner/berechne.js';
 import { FORMEL_QUELLEN_EST } from '../../js/rechner/einkommensteuer.js';
 import { FORMEL_QUELLEN_VERT } from '../../js/rechner/verteilung.js';
 
@@ -55,10 +55,10 @@ export const WEITERE = [
   { key: 'mwst_erm',  bez: 'USt ermäßigt',         schritt: 1,      einheit: '1 Pp.' },
   { key: 'abgeltung', bez: 'Abgeltungsteuer',      schritt: 1,      einheit: '1 Pp.' },
   { key: 'bbg',       bez: 'Beitragsbemessungsgr.', schritt: 10000,  einheit: '10.000 €' },
-  { key: 'verm',      bez: 'Vermögensteuer',       schritt: 0.1,    einheit: '0,1 Pp.' },
+  { key: 'verm',      bez: 'Vermögensteuer',       schritt: 0.1,    einheit: '0,1 Pp.', min: 0 },
   { key: 'boden',     bez: 'Bodenwertsteuer',      schritt: 0.1,    einheit: '0,1 Pp.' },
   // 1 Pp.: unter 0,3 % greift die Anrechnung der Einkommensteuer, 0,1 Pp. wirkte gar nicht
-  { key: 'zucman',    bez: 'Zucman-Mindeststeuer', schritt: 1,      einheit: '1 Pp.' },
+  { key: 'zucman',    bez: 'Zucman-Mindeststeuer', schritt: 1,      einheit: '1 Pp.', min: 0 },
 ];
 
 // ── Was gemessen wird ───────────────────────────────────────────────────────
@@ -101,6 +101,31 @@ export const PFAD = [
 
 const pfad = params => simulierePfad(Array.from({ length: PERIODEN }, () => ({ ...params })));
 
+// ── Zerlegung (Teil II) ─────────────────────────────────────────────────────
+// Die Saldowirkung der ersten Periode in drei Teile, die sich genau addieren:
+//   mechanisch  — ohne Verhaltensreaktion (alle ELAST null) und ohne Nachfrage
+//   Verhalten   — mit ELAST, ohne Nachfrage, minus mechanisch
+//   Nachfrage   — volles Modell minus Verhalten ohne Nachfrage
+// ELAST wird dafür vorübergehend auf null gesetzt und danach zurückgesetzt.
+// Nicht über ELAST laufen und darum im mechanischen Teil enthalten: die feste
+// Ausweichquote der Zucman-Steuer (15 % bei 2 %) und die Klammern der Engine.
+const ZUSTAND_P1 = { ...PERIOD_STATE_0, renten_faktor: 1, jahr: 2025, laenge: KURS_KONFIG_DEFAULT.perioden_laenge_jahre };
+
+function ohneVerhalten(f) {
+  const gesichert = { ...ELAST };
+  for (const k of Object.keys(ELAST)) ELAST[k] = 0;
+  try { return f(); } finally { Object.assign(ELAST, gesichert); }
+}
+
+function zerlege(params) {
+  const saldo = (p, opt) => berechne(p, ZUSTAND_P1, opt).saldo;
+  const d = opt => saldo(params, opt) - saldo(SQ, opt);
+  const mech = ohneVerhalten(() => d({ ohneNachfrage: true }));
+  const mitVerhalten = d({ ohneNachfrage: true });
+  const gesamt = d({});
+  return { mechanisch: mech, verhalten: mitVerhalten - mech, nachfrage: gesamt - mitVerhalten, gesamt };
+}
+
 function verschoben(s) {
   return s.klappe ? { ...SQ, [s.key]: !SQ[s.key] } : { ...SQ, [s.key]: SQ[s.key] + s.schritt };
 }
@@ -124,7 +149,9 @@ export function messe() {
   const symmetrie = s => {
     if (s.klappe) return null;
     const auf = pfad({ ...SQ, [s.key]: SQ[s.key] + s.schritt })[0].result.saldo - b1.result.saldo;
-    const ab  = b1.result.saldo - pfad({ ...SQ, [s.key]: SQ[s.key] - s.schritt })[0].result.saldo;
+    // Unter dem kleinsten zulässigen Wert (Steuersatz 0) gibt es keine Senkung
+    const ab  = SQ[s.key] - s.schritt < (s.min ?? -Infinity) ? null
+              : b1.result.saldo - pfad({ ...SQ, [s.key]: SQ[s.key] - s.schritt })[0].result.saldo;
     return { auf, ab };
   };
   // Strukturelle Gewichte: wie ein Kanal auf eine Kennzahl weiterwirkt. Nicht
@@ -168,6 +195,7 @@ export function messe() {
     statusQuo,
     tisch:    STELLGROESSEN.map(zeile),
     weitere:  WEITERE.map(zeile),
+    zerlegung: Object.fromEntries([...STELLGROESSEN, ...WEITERE].map(s => [s.key, zerlege(verschoben(s))])),
     symmetrie: Object.fromEntries([...STELLGROESSEN, ...WEITERE].map(s => [s.key, symmetrie(s)])),
     verlaeufe,
   };
@@ -182,7 +210,7 @@ export function zahl(v, nk = 1) {
   if (r === 0) return s;
   return (r < 0 ? '$-$' : '$+$') + s;
 }
-const ohneVz = (v, nk = 1) => Number(v.toFixed(nk)).toLocaleString('de-DE', { minimumFractionDigits: nk, maximumFractionDigits: nk });
+const ohneVz = (v, nk = 1) => (Number(v.toFixed(nk)) || 0).toLocaleString('de-DE', { minimumFractionDigits: nk, maximumFractionDigits: nk });
 const tex = s => s.replace(/%/g, '\\%').replace(/€/g, '\\euro{}').replace(/CO₂/g, 'CO\\textsubscript{2}').replace(/−/g, '$-$');
 
 // Stellen je Einheit, damit kleine und große Wirkungen lesbar bleiben
@@ -227,6 +255,32 @@ function graphKanten(zeilen, zeilenMax) {
   return aus.join('\n') + '\n';
 }
 
+function zerlegungTabelle(m) {
+  const alle = [...STELLGROESSEN, ...WEITERE];
+  const zeile = s => {
+    const z = m.zerlegung[s.key];
+    const anteil = v => Math.abs(z.gesamt) < 0.05 ? '--' : ohneVz(100 * v / z.gesamt, 0).replace('-', '$-$');
+    return `${tex(s.bez)} (${tex(s.einheit)}) & ${zahl(z.mechanisch, 2)} & ${zahl(z.verhalten, 2)} & ${zahl(z.nachfrage, 2)} & ${zahl(z.gesamt, 2)} & ${anteil(z.mechanisch)} & ${anteil(z.verhalten)} & ${anteil(z.nachfrage)} \\\\`;
+  };
+  const block = defs => defs.map(zeile).join('\n');
+  return `\\begin{tabular}{lrrrrrrr}\n\\toprule\n` +
+    ` & \\multicolumn{4}{c}{Saldowirkung, Mrd.\\,\\euro{}/a} & \\multicolumn{3}{c}{Anteil in \\%} \\\\\n` +
+    `\\cmidrule(lr){2-5}\\cmidrule(lr){6-8}\n` +
+    `Stellgröße (Schritt) & mechan. & Verhalten & Nachfrage & gesamt & mech. & Verh. & Nachfr. \\\\\n\\midrule\n` +
+    `${block(STELLGROESSEN)}\n\\midrule\n${block(WEITERE)}\n\\bottomrule\n\\end{tabular}\n`;
+}
+
+function symmetrieTabelle(m) {
+  const alle = [...STELLGROESSEN, ...WEITERE].filter(s => !s.klappe);
+  const rumpf = alle.map(s => {
+    const v = m.symmetrie[s.key];
+    if (v.ab === null) return `${tex(s.bez)} (${tex(s.einheit)}) & ${zahl(v.auf, 2)} & -- & Status quo am Rand \\\\`;
+    const abw = Math.abs(v.auf - v.ab) / Math.max(0.05, Math.abs(v.auf));
+    return `${tex(s.bez)} (${tex(s.einheit)}) & ${zahl(v.auf, 2)} & ${zahl(v.ab, 2)} & ${abw < 0.02 ? 'linear' : ohneVz(100 * abw, 0) + '\\,\\%'} \\\\`;
+  }).join('\n');
+  return `\\begin{tabular}{lrrr}\n\\toprule\nStellgröße (Schritt) & $+\\Delta$ & $-\\Delta$ & Abweichung \\\\\n\\midrule\n${rumpf}\n\\bottomrule\n\\end{tabular}\n`;
+}
+
 function makros(m) {
   const sq = m.statusQuo;
   const zeilen = [
@@ -249,7 +303,21 @@ function makros(m) {
     ['Wanpassung', ohneVz(m.struktur.anpassung_n, 3)],
     ['Wschuld', ohneVz(m.struktur.saldo_schuld, 3)],
   ];
-  return zeilen.map(([n, v]) => `\\newcommand{\\${n}}{${v.replace('-', '$-$')}}`).join('\n') + '\n';
+  // Einzelwerte für den Fließtext: \\wert{bereich}{stellgröße}{feld}, z. B. \\wert{zerl}{rv}{mechanisch}
+  const einzel = [];
+  const def = (b, k, f, v, nk) => einzel.push(`\\wertdef{${b}}{${k}}{${f}}{${ohneVz(v, nk).replace('-', '$-$')}}`);
+  for (const [k, z] of Object.entries(m.zerlegung)) {
+    for (const [f, v] of Object.entries(z)) def('zerl', k, f, v, 2);
+    for (const f of ['mechanisch', 'verhalten', 'nachfrage']) {
+      if (Math.abs(z.gesamt) >= 0.05) def('anteil', k, f, 100 * z[f] / z.gesamt, 0);
+    }
+  }
+  for (const z of [...m.tisch, ...m.weitere]) {
+    for (const [f, v] of Object.entries(z.kennzahl)) def('p1', z.key, f, v, NK[KENNZAHLEN.find(k => k.id === f).einheit] ?? 1);
+    for (const [f, v] of Object.entries(z.pfad)) def('pfad', z.key, f, v, NK[PFAD.find(k => k.id === f).einheit] ?? 1);
+    for (const [f, v] of Object.entries(z.kanal)) def('kanal', z.key, f, v, NK[KANAELE.find(k => k.id === f).einheit] ?? 1);
+  }
+  return zeilen.map(([n, v]) => `\\newcommand{\\${n}}{${v.replace('-', '$-$')}}`).join('\n') + '\n' + einzel.join('\n') + '\n';
 }
 
 function verlaufTabelle(m) {
@@ -318,6 +386,8 @@ function schreibe() {
   const w = (name, inhalt) => fs.writeFileSync(path.join(ziel, name),
     `% Erzeugt von docs/modell/messung.js — nicht von Hand bearbeiten\n${inhalt}`);
   w('makros.tex', makros(m));
+  w('zerlegung.tex', zerlegungTabelle(m));
+  w('symmetrie.tex', symmetrieTabelle(m));
   w('daten_dezile.tex', dezilDaten());
   w('elastizitaeten.tex', elastTabelle());
   w('quellen.tex', quellenTabelle());
