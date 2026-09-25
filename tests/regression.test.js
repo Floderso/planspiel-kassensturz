@@ -67,6 +67,10 @@
 // Erneuert am 2026-09-25, Angebotsseite als Niveau: privates Kapital nähert sich seinem
 // Zielniveau (Kapitalanteil 0,35, Anpassung 7 % p. a.), Arbeit wirkt sofort (0,65).
 // Schuldenquote 2041 108,0 → 108,4 %.
+//
+// Erneuert am 2026-09-25, geltendes Recht über die Jahre: KSt-Senkung 15 → 10 % (2028–2032)
+// und RV-Beitragssatz nach § 158 SGB VI (18,6 → 20,1 % 2030 → 21,15 % 2039, RVB 2025).
+// Schuldenquote 2041 108,4 → 102,5 %: Die Demografie tragen jetzt die Beitragszahler.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -74,11 +78,11 @@ import { simulierePfad } from '../js/rechner/transition.js';
 import { PRESETS } from '../js/data.js';
 
 const REFERENZ = [
-  { label: '2025–2028', saldo: -174.3204, schuldenquote: 63.5, gini: 0.3115, emissionen: 649, bip: 4470 },
-  { label: '2029–2032', saldo: -256.7105, schuldenquote: 71.6044, gini: 0.3112, emissionen: 500.392, bip: 4967.4712 },
-  { label: '2033–2036', saldo: -317.1134, schuldenquote: 83.5807, gini: 0.311, emissionen: 399.388, bip: 5521.595 },
-  { label: '2037–2040', saldo: -337.0801, schuldenquote: 96.6652, gini: 0.3108, emissionen: 314.252, bip: 6126.3076 },
-  { label: '2041–2044', saldo: -423.7974, schuldenquote: 108.3955, gini: 0.3107, emissionen: 237.88, bip: 6745.0397 },
+  { label: '2025–2028', saldo: -172.9805, schuldenquote: 63.5, gini: 0.3116, emissionen: 649, bip: 4470 },
+  { label: '2029–2032', saldo: -240.7177, schuldenquote: 71.487, gini: 0.3121, emissionen: 500.392, bip: 4967.9091 },
+  { label: '2033–2036', saldo: -289.3747, schuldenquote: 82.1801, gini: 0.3123, emissionen: 399.388, bip: 5528.7714 },
+  { label: '2037–2040', saldo: -291.4951, schuldenquote: 93.3776, gini: 0.3124, emissionen: 314.252, bip: 6143.0585 },
+  { label: '2041–2044', saldo: -365.4307, schuldenquote: 102.4658, gini: 0.3123, emissionen: 237.88, bip: 6770.7181 },
 ];
 
 test('Status-quo-Pfad (5 Perioden) reproduziert die Referenzwerte', () => {

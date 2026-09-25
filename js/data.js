@@ -287,6 +287,22 @@ function verteidigungQuote(jahr) {
 }
 const SONDERVERMOEGEN_JAHR = 500 / 11;                // Mrd. € nominal, 2026–2036
 const sondervermoegen = jahr => (jahr >= 2026 && jahr <= 2036) ? SONDERVERMOEGEN_JAHR : 0;
+// KSt-Senkung: 15 % → je 1 Pp. pro Jahr ab 2028 → 10 % ab 2032 (§ 23 Abs. 1 KStG, Gesetz für ein
+// steuerliches Investitionssofortprogramm, BGBl. 18.07.2025). Wirkt zusätzlich zum Regler.
+const kstSenkung = jahr => Math.max(0, Math.min(5, jahr - 2027));
+// RV-Beitragssatz nach geltendem Recht: Er folgt den Ausgaben (§ 158 SGB VI). BMAS
+// Rentenversicherungsbericht 2025, Mitte der Modellvarianten: 18,6 % bis 2027, 20,1 % (2030),
+// 21,15 % (2039), danach gehalten. Wirkt zusätzlich zum Regler. Vorher blieb der Satz bis 2041
+// bei 18,6 %, und die ganze Demografie landete im Defizit statt bei den Beitragszahlern.
+const RV_SATZ_PFAD = [[2027, 18.6], [2030, 20.1], [2039, 21.15]];
+function rvAnstieg(jahr) {
+  const p = RV_SATZ_PFAD;
+  if (jahr <= p[0][0]) return 0;
+  for (let i = 1; i < p.length; i++) {
+    if (jahr <= p[i][0]) return p[i - 1][1] + (p[i][1] - p[i - 1][1]) * (jahr - p[i - 1][0]) / (p[i][0] - p[i - 1][0]) - p[0][1];
+  }
+  return p[p.length - 1][1] - p[0][1];
+}
 const SCHULDENBREMSE_STRUKTURELL = 0.70;              // % BIP, Bund 0,35 + Länder 0,35
 const VERTEIDIGUNG_AUSNAHME_AB = 1.0;                 // % BIP, darüber ausgenommen
 // Budget-Semielastizität: Änderung des Saldos je Prozent Produktionslücke, % BIP
@@ -1043,7 +1059,7 @@ const ZUKUNFTS_SZENARIEN = [
 ];
 
 export { ZINS_EFFEKTIV, BIP_WACHSTUM_NOMINAL_JAHR, EMISSIONEN_1990, EMISSIONS_ANKER, emissionsBasis };
-export { NATO_QUOTE_2025, verteidigungQuote, sondervermoegen, SCHULDENBREMSE_STRUKTURELL, VERTEIDIGUNG_AUSNAHME_AB, BUDGET_SEMIELASTIZITAET };
+export { kstSenkung, rvAnstieg, NATO_QUOTE_2025, verteidigungQuote, sondervermoegen, SCHULDENBREMSE_STRUKTURELL, VERTEIDIGUNG_AUSNAHME_AB, BUDGET_SEMIELASTIZITAET };
 export { KAPITALANTEIL, PRIVAT_ANPASSUNG };
 export { MPC_DEZIL, MPC_MITTEL, MULTIPLIKATOR_STEUER_TRANSFER, MULTIPLIKATOR_INVEST, OEFF_KAPITAL_ELASTIZITAET, OEFF_KAPITALSTOCK, OEFF_ABSCHREIBUNG };
 

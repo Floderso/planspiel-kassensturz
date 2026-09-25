@@ -164,3 +164,15 @@ test('Steuerpolitik verschiebt das BIP-Niveau, nicht die Wachstumsrate', () => {
   assert.ok(Math.abs(schritte[schritte.length - 1]) < Math.abs(schritte[0]) / 3, 'die Wirkung klingt ab');
   assert.ok(abst[11] > -0.03, `langfristig ${(abst[11] * 100).toFixed(1)} % (Grenzwert ~−2 %)`);
 });
+
+test('Geltendes Recht über die Jahre: KSt-Senkung bis 2032, RV-Beitrag nach § 158 SGB VI', () => {
+  const pfad = simulierePfad(sqParams(5));
+  assert.equal(pfad[0].result.kst_senkung, 0.25);              // 2025–2028: nur 2028 schon gesenkt
+  assert.equal(pfad[2].result.kst_senkung, 5);                 // 2033–2036: 10 %
+  assert.equal(pfad[0].result.rv_anstieg > 0, true);           // 2028 beginnt der Anstieg
+  assert.ok(Math.abs(18.6 + pfad[4].result.rv_anstieg - 21.15) < 1e-9, 'ab 2039 21,15 %');
+  // Statisch (Kalibrierungsjahr 2025) gilt beides nicht
+  const statisch = berechne(SQ);
+  assert.equal(statisch.kst_senkung, 0);
+  assert.equal(statisch.rv_anstieg, 0);
+});

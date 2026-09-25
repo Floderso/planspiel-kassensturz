@@ -3,7 +3,7 @@
 import { DEZILE, ELAST, BASIS_MAKRO, STAATSAUSGABEN, PRESETS, BASIS_AUFKOMMEN, ADMIN_QUOTE, AUSGABEN_TOTAL, BGE_LABOR_EFF, PERIOD_STATE_0, ZINS_EFFEKTIV, emissionsBasis,
          KINDER_JE_HH, BUERGERGELD_QUOTE, CO2_GEWICHT, MPC_DEZIL, MPC_MITTEL,
          MULTIPLIKATOR_STEUER_TRANSFER, MULTIPLIKATOR_INVEST, NATO_QUOTE_2025, verteidigungQuote,
-         sondervermoegen, SCHULDENBREMSE_STRUKTURELL, VERTEIDIGUNG_AUSNAHME_AB, BUDGET_SEMIELASTIZITAET } from '../data.js';
+         sondervermoegen, kstSenkung, rvAnstieg, SCHULDENBREMSE_STRUKTURELL, VERTEIDIGUNG_AUSNAHME_AB, BUDGET_SEMIELASTIZITAET } from '../data.js';
 import { estHaushalt, grenzsteuersatzHaushalt } from './einkommensteuer.js';
 import { aequivalenzEinkommen, berechneGini, berechneMedianGewichtet, berechnePalma, berechneDezilDelta, berechneNettoSQ } from './verteilung.js';
 
@@ -136,6 +136,16 @@ function berechne(params, zustand = null, optionen = {}) {
   const bip_faktor       = zustand ? zustand.bip / BASIS_MAKRO.bip : 1.0;
   const renten_faktor    = zustand ? (zustand.renten_faktor    ?? 1.0) : 1.0;
   const trend_faktor     = zustand ? (zustand.trend_faktor     ?? bip_faktor) : 1.0;
+  // Jahre der Periode, für Rechtsstand-Pfade gemittelt. Ohne Periodenzustand gilt 2025 allein.
+  const jahre = zustand ? Array.from({ length: zustand.laenge ?? 4 }, (_, k) => (zustand.jahr ?? 2025) + k) : [2025];
+  const mittel = f => jahre.reduce((a, j) => a + f(j), 0) / jahre.length;
+  // Geltendes Recht, das sich über die Jahre ändert, wirkt zusätzlich zum Regler
+  // (docs/RECHTSSTAND.md): die beschlossene KSt-Senkung ab 2028 und der RV-Beitragssatz,
+  // der nach § 158 SGB VI den Ausgaben folgt. Die Regler zeigen die Werte von 2026.
+  const kst_senkung = mittel(kstSenkung);
+  const rv_anstieg  = mittel(rvAnstieg);
+  const gesetzlich = p => ({ ...p, kst: Math.max(0, p.kst - kst_senkung), rv: p.rv + rv_anstieg });
+  params = gesetzlich(params);
   const lohnbasis_faktor = zustand ? (zustand.lohnbasis_faktor ?? 1.0) : 1.0;
 
   // Dynamische Zinslast: im Multi-Perioden-Modus aus aktuellem Schuldenstand ableiten.
@@ -341,7 +351,7 @@ function berechne(params, zustand = null, optionen = {}) {
   };
   // Inzidenz der Unternehmens- und Vermögensteuern: Änderung gegenüber dem Status quo,
   // in Größen von 2025, verteilt nach Arbeits-, Kapitaleinkommen und Vermögen (N1)
-  const kvs_sq = kapitalUndVermoegensteuern(PRESETS.status_quo);
+  const kvs_sq = kapitalUndVermoegensteuern(gesetzlich(PRESETS.status_quo));
   const d_unt  = (kvs.kst + kvs.gewst) - (kvs_sq.kst + kvs_sq.gewst);
   // Bodenwertsteuer: nicht überwälzbar, sie tragen die Eigentümer (Mirrlees Review 2011, Kap. 16)
   const d_boden = BASIS_MAKRO.boden_wert * (params.boden - PRESETS.status_quo.boden) / 100;
@@ -364,7 +374,7 @@ function berechne(params, zustand = null, optionen = {}) {
   const invest_impuls = params.invest_impuls || 0;
   let nachfrage_luecke = 0, konsum_impuls = 0;
   if (!optionen.ohneNachfrage) {
-    const sq = berechne(PRESETS.status_quo, zustand, { ohneNachfrage: true });
+    const sq = berechne(PRESETS.status_quo, zustand, { ohneNachfrage: true });   // passt sich selbst an
     konsum_impuls = DEZILE.reduce((a, d, i) =>
       a + d.anzahl * (hh_delta.delta[i] - sq.hh_delta.delta[i]) * MPC_DEZIL[i], 0) / 1000;   // Mrd.
     const impuls = konsum_impuls * MULTIPLIKATOR_STEUER_TRANSFER / MPC_MITTEL
@@ -434,9 +444,6 @@ function berechne(params, zustand = null, optionen = {}) {
   const ausgaben_real = AUSGABEN_TOTAL - grundsicherung_entfaellt - klimafonds_weniger + bg_auszahlung + kg_auszahlung + neg_est_auszahlung + bge_brutto + (admin_kosten - admin_referenz) - STAATSAUSGABEN.zinsen - rv_einsparung + sv_ausgaben_delta + demografie_aufschlag + invest_impuls;
   // Rechtsstand 2026: Anstieg der Verteidigungsausgaben über 2025 (NATO-Plan) und das
   // Sondervermögen Infrastruktur, gemittelt über die Jahre der Periode (docs/RECHTSSTAND.md)
-  // Ohne Periodenzustand gilt das Kalibrierungsjahr 2025 allein
-  const jahre = zustand ? Array.from({ length: zustand.laenge ?? 4 }, (_, k) => (zustand.jahr ?? 2025) + k) : [2025];
-  const mittel = f => jahre.reduce((a, j) => a + f(j), 0) / jahre.length;
   const verteidigung_quote = mittel(verteidigungQuote);                                  // % BIP
   const verteidigung_zusatz = (verteidigung_quote - NATO_QUOTE_2025) / 100 * BASIS_MAKRO.bip;   // Größen 2025
   const sondervermoegen_nominal = mittel(sondervermoegen);
@@ -567,7 +574,7 @@ function berechne(params, zustand = null, optionen = {}) {
     rv_einsparung, bge_brutto,
     // Research-basierte Erweiterungen (QUELLENRECHERCHE.md)
     saldo_bip_pct, schuldenbremse_ok, struktureller_saldo_pct, schuldenbremse_luecke,
-    verteidigung_quote, sondervermoegen_real,
+    verteidigung_quote, sondervermoegen_real, kst_senkung, rv_anstieg,
     dynamisch_kst, dynamisch_est, dynamisch_delta,
     investment_factor, avg_labor,
     // GKV-Reform-Boni (für GKV-Panel-Darstellung)

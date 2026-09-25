@@ -99,7 +99,14 @@ export function schockDerRunde(runde, kurs = STANDARDKURS) {
 }
 
 /** Der Zustand, mit dem eine Runde gerechnet wird: der Anfangszustand samt Ereignis. */
-const wirksam = (zustand, runde, kurs) => applySchock(zustand, schockDerRunde(runde, kurs));
+// Die Engine mittelt Rechtsstand-Pfade (KSt-Senkung, Verteidigung, Sondervermögen) über die
+// Jahre der Runde — sie braucht Startjahr und Länge. Ohne die Länge rechnete der Tisch bei
+// ungleichen Runden andere Zahlen als simulierePfad().
+const wirksam = (zustand, runde, kurs) => ({
+  ...applySchock(zustand, schockDerRunde(runde, kurs)),
+  jahr:   jahreDerRunde(runde, kurs).von,
+  laenge: laengeDerRunde(runde, kurs),
+});
 
 /**
  * Was ein Ereignis bewirkt, als Klartext — und ob das Modell es rechnet.

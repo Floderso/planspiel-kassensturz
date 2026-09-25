@@ -16,13 +16,13 @@ also nicht dasselbe Jahr; die Lücke ist dokumentiert, nicht geschlossen.
 | Einkommensteuertarif | Grundfreibetrag 12.348 €; Zonen bis 17.799 / 69.878 / 277.825 €; 14 / 42 / 45 %. Spitzensatz 45 % erreicht im Modell nur der Pareto-Rand von D10c | § 32a Abs. 1 EStG 2026 (Steuerfortentwicklungsgesetz, BGBl. 2024 I Nr. 449) |
 | Kindergeld | 259 € je Kind und Monat, rund 17 Mio. Kinder | § 66 EStG, Stand 2026 |
 | Bürgergeld / Grundsicherungsgeld | Regelbedarf 563 € (Nullrunde 2026); seit 01.07.2026 Grundsicherungsgeld | § 20 SGB II; Gesetz zur neuen Grundsicherung. Sanktionen nicht abgebildet |
-| Rentenversicherung | 18,6 %, BBG 101.400 € (bundeseinheitlich) | § 158 SGB VI; SV-Rechengrößenverordnung 2026 |
+| Rentenversicherung | 18,6 % 2026, danach nach § 158 SGB VI den Ausgaben folgend: 20,1 % (2030), 21,15 % (2039), zusätzlich zum Regler; BBG 101.400 € | § 158 SGB VI; BMAS Rentenversicherungsbericht 2025 (Mitte der Varianten); SV-Rechengrößenverordnung 2026 |
 | Rentenniveau | 48 % (Haltelinie bis 2031) | § 154 Abs. 3 SGB VI; Rentenpaket 2025 (Bundestag 05.12.2025) |
 | Krankenversicherung | 17,5 % (14,6 % + 2,9 % durchschn. Zusatzbeitrag), BBG 69.750 € | § 241, § 242a SGB V; SV-Rechengrößenverordnung 2026 |
 | Arbeitslosen- und Pflegeversicherung | 2,6 % + 3,6 % | § 341 SGB III, § 55 SGB XI |
 | CO₂-Preis (BEHG) | 55 €/t — Untergrenze des Preiskorridors 55–65 €/t 2026 | § 10 BEHG. ETS 2 startet erst 2028 (nicht eigens abgebildet) |
 | Klimageld | nicht eingeführt; CO₂-Einnahmen fließen in den Klima- und Transformationsfonds | KTFG; bis 25.09.2026 fälschlich im Status quo (PRUEFUNG.md B5) |
-| Körperschaftsteuer | 15 % (Senkung ab 2028 beschlossen, nicht abgebildet) | § 23 KStG |
+| Körperschaftsteuer | 15 % 2026, ab 2028 je 1 Pp. weniger bis 10 % (2032), zusätzlich zum Regler | § 23 Abs. 1 KStG; Gesetz für ein steuerliches Investitionssofortprogramm (BGBl. 18.07.2025) |
 | Gewerbesteuer | effektiv 14 % (Messzahl 3,5 % × Hebesatz ~400 %) | § 11 GewStG. Der Regler zeigt die effektive Belastung |
 | Mehrwertsteuer | 19 % / 7 % | § 12 UStG |
 | Erbschaftsteuer | effektiv nach Modell, Betriebsvermögen begünstigt | ErbStG |
@@ -39,9 +39,12 @@ also nicht dasselbe Jahr; die Lücke ist dokumentiert, nicht geschlossen.
 | EU-Fiskalregeln | Nettoausgabenpfad | fehlt ganz |
 | Grundsteuerreform | seit 2025 in Kraft, Ländermodelle (BW Bodenwert, BY Fläche, HH Wohnlage) | Regler „Boden" ist eine Bodenwertsteuer, kein Abbild des Ländermix |
 | Demografie | Modell: 14. Bevölkerungsvorausberechnung; aktuell ist die 15. (2022); nur die Rente altert | KV, Pflege und Arbeitskräftepotenzial altern nicht mit |
-| KSt-Senkung ab 2028 | beschlossen (1 Pp. pro Jahr bis 10 % 2032) | Status quo hält 15 % |
 | ETS 2 | Start 2028, dann europäischer Preis | BEHG-Preis gilt im Modell weiter |
 | Sanktionen Grundsicherung | seit 01.07.2026 verschärft | kein Verhaltenskanal |
+
+**Regler und Recht:** KSt-Satz und RV-Beitragssatz ändern sich nach geltendem Recht über die
+Jahre. Die Regler zeigen den Wert von 2026; der gesetzliche Pfad wirkt zusätzlich. Wer die
+Senkung oder den Anstieg nicht will, verschiebt den Regler entsprechend.
 
 ## Wie hier gepflegt wird
 
