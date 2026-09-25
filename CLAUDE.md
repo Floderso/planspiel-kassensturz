@@ -16,10 +16,12 @@ oder rätst, sieh dort nach:
 |---|---|
 | `docs/ARCHITECTURE.md` | Systemüberblick, Datenfluss, Komponenten |
 | `docs/ENGINE.md` | Wie die Rechenmodule arbeiten — ohne Code zu lesen |
+| `docs/RECHTSSTAND.md` | Rechtsstand des Status quo (2026), je Zahl die Rechtsgrundlage — bei jeder Änderung am Status quo mitpflegen |
 | `docs/API.md` | Alle Endpunkte mit Beispielen |
 | `docs/DEPLOYMENT.md` | Frontend und Backend ausrollen |
 | `docs/adrs/001–004` | Warum Engine im Client, warum Hono/Cloudflare, warum KV, warum Polling |
 | `entwurf/PRUEFUNG.md` · `entwurf/GUTACHTEN-2026-09.md` | Fachprüfungen der Engine: bekannte Modellfehler, veralteter Rechtsstand, Reparaturreihenfolge — vor jeder Arbeit an `js/rechner/` lesen |
+| `docs/modell/modell.pdf` | Die Engine in Worten, in Formeln und als gemessener Wirkungsgraph. Nach Änderungen an `js/rechner/` oder `data.js`: `node docs/modell/messung.js`, dann `cd docs/modell && latexmk -pdf modell.tex` — `tests/modelldoku.test.js` wird sonst rot |
 
 Diese Datei wiederholt das nicht. Sie hält nur fest, was sonst nirgends steht.
 
@@ -29,7 +31,7 @@ Diese Datei wiederholt das nicht. Sie hält nur fest, was sonst nirgends steht.
 npm start          # statischer Server auf :8000 (werkzeug/entwicklungsserver.js)
                    # sendet no-store — python3 -m http.server tat das nicht,
                    # und veraltete Module haben dadurch Seiten zerschossen (ADR 005)
-npm test           # node --test tests/*.test.js  → aktuell 70 Tests
+npm test           # node --test tests/*.test.js  → aktuell rund 145 Tests
 ```
 
 Unterprojekte haben eigene `package.json`:
@@ -105,6 +107,12 @@ Kommentare mitzuziehen.
   Kennzahlen endlich sein und in ihrem Definitionsbereich liegen
 - **Komparative Statik** — die Vorzeichen der Reaktionen müssen der
   ökonomischen Theorie entsprechen
+- **Keine dominante Strategie** (`dominanz.test.js`) — keine Stellgröße darf
+  Saldo und alle Dezile verbessern, ohne dass Gini, Emissionen oder BIP
+  schlechter werden. Entstanden nach der zweiten Fachprüfung
+  (`entwurf/PRUEFUNG-2.md` I.1): Eine Senkung der Rentenbeiträge sanierte den
+  Haushalt und machte alle reicher. Wer eine neue Stellgröße einführt, nimmt
+  sie dort mit auf
 
 Wer an der Engine rechnet, schreibt in dieser Form weiter. Ein Test, der nur
 den Ist-Zustand festschreibt, hilft hier nicht: Er merkt nicht, wenn das

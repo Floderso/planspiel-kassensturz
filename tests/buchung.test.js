@@ -1,0 +1,87 @@
+// SPDX-License-Identifier: CC-BY-4.0
+// Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
+// ═══════════════════════════════════════════════════════
+// TESTS · Σ Haushalte = Staatsbuchung
+//
+// Die zweite Fachprüfung (entwurf/PRUEFUNG-2.md I.4) fand Haushalts- und
+// Staatsseite in verschiedenen Welten: 36,5 Mio. Kinder gegen 17 Mio., eine
+// CO₂-Last von 60,8 Mrd. gegen 18 Mrd. Aufkommen, 26,3 gegen 37,2 Mrd.
+// Bürgergeld. Dazu trafen Unternehmens- und Vermögensteuern keinen Haushalt
+// (N1). Hier gilt: Was der Staat für eine Stellgröße mehr ausgibt oder
+// einnimmt, kommt in genau dieser Höhe bei den Haushalten an.
+// ═══════════════════════════════════════════════════════
+
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { berechne as berechneEngine } from '../js/rechner/berechne.js';
+import { PRESETS, DEZILE } from '../js/data.js';
+
+const SQ = PRESETS.status_quo;
+// Gebucht wird die direkte Wirkung; die Rückwirkung über die Nachfrage (berechne.js 10a)
+// ist eine zweite Runde und bleibt hier aus.
+const berechne = p => berechneEngine(p, null, { ohneNachfrage: true });
+const BASIS = berechne(SQ);
+
+/** Änderung des Nettoeinkommens aller Haushalte zusammen, Mrd. € */
+const haushalte = r => DEZILE.reduce((a, d, i) => a + d.anzahl * r.hh_delta.delta[i], 0) / 1000;
+
+const FAELLE = [
+  { name: 'Kindergeld',     p: { kg: 359 },   staat: r => r.kg_auszahlung - BASIS.kg_auszahlung },
+  { name: 'Bürgergeld',     p: { bg: 700 },   staat: r => r.bg_auszahlung - BASIS.bg_auszahlung },
+  { name: 'CO₂-Preis',      p: { co2: 150 },  staat: r => -(r.rev.co2 - BASIS.rev.co2) },
+  { name: 'mit Klimageld',  p: { klimageld: true },  staat: r => -(r.rev.co2 - BASIS.rev.co2) },
+  { name: 'KSt',            p: { kst: 25 },   staat: r => -(r.rev.kst + r.rev.gewst - BASIS.rev.kst - BASIS.rev.gewst) },
+  { name: 'GewSt',          p: { gewst: 8 },  staat: r => -(r.rev.kst + r.rev.gewst - BASIS.rev.kst - BASIS.rev.gewst) },
+  { name: 'ErbSt',          p: { erb: 40 },   staat: r => -(r.rev.erbschaft - BASIS.rev.erbschaft) },
+  { name: 'Vermögensteuer', p: { verm: 1 },   staat: r => -(r.rev.vermoegen - BASIS.rev.vermoegen) },
+  { name: 'Bodenwertsteuer', p: { boden: 1 }, staat: r => -(r.rev.boden - BASIS.rev.boden) },
+  { name: 'Zucman',         p: { zucman: 2 }, staat: r => -(r.rev.zucman - BASIS.rev.zucman) },
+];
+
+for (const f of FAELLE) {
+  test(`${f.name}: Haushalte spüren genau, was der Staat bucht`, () => {
+    const r = berechne({ ...SQ, ...f.p });
+    const hh = haushalte(r), st = f.staat(r);
+    assert.ok(Math.abs(st) > 0.1, `${f.name} bewegt nichts`);
+    assert.ok(Math.abs(hh - st) < 1e-6, `Haushalte ${hh.toFixed(2)} gegen Staat ${st.toFixed(2)} Mrd. €`);
+  });
+}
+
+test('Die CO₂-Last der Haushalte ist das Aufkommen, nicht das Dreifache', () => {
+  // Ohne Klimageld auf beiden Seiten: Der Wegfall des CO₂-Preises entlastet die
+  // Haushalte um genau das Bruttoaufkommen (18 Mrd. € bei 55 €/t), nicht um 60,8 Mrd.
+  const mit = berechne({ ...SQ, klimageld: false });
+  const ohne = berechne({ ...SQ, co2: 0, klimageld: false });
+  const entlastung = haushalte(ohne) - haushalte(mit);
+  assert.ok(Math.abs(entlastung - mit.rev.co2) < 1e-6, `Entlastung ${entlastung.toFixed(2)} Mrd. €`);
+  assert.ok(Math.abs(mit.rev.co2 - 18) < 0.1);
+});
+
+test('Eine höhere Körperschaftsteuer trifft Beschäftigte und Kapitaleigner', () => {
+  const r = berechne({ ...SQ, kst: 25 });
+  r.hh_delta.delta.forEach((d, i) => assert.ok(d < 0, `${DEZILE[i].label} zahlt nichts`));
+  assert.ok(r.hh_delta.delta[11] < r.hh_delta.delta[0], 'D10c trägt absolut mehr als D1');
+});
+
+// Mehrwertsteuer und Sozialbeiträge: Staat und Haushalte rechnen mit verschiedenen
+// Bemessungsgrundlagen (Konsumreaktion nur beim Staat, Lohnsumme gegen Dezillöhne).
+// Deshalb ±15 % statt auf den Euro — vorher lagen die Haushalte bei der Hälfte (Faktor 1,5–2,2).
+for (const [name, p, k] of [['MwSt', { mwst: 22 }, 'mwst'], ['RV', { rv: 20 }, 'rv'],
+                            ['KV', { kv: 19 }, 'kv'], ['AL/PV', { alpf: 7 }, 'al']]) {
+  test(`${name}: Haushalte tragen die Änderung, die der Staat einnimmt (±15 %)`, () => {
+    const r = berechne({ ...SQ, ...p });
+    const st = r.rev[k] - BASIS.rev[k], hh = -haushalte(r);
+    assert.ok(Math.abs(hh / st - 1) < 0.15, `Staat ${st.toFixed(1)}, Haushalte ${hh.toFixed(1)} Mrd. €`);
+  });
+}
+
+test('Bürgergeld 0 € streicht den Regelsatz, nicht Unterkunft und Mehrbedarfe', () => {
+  // Fand die Code-Prüfung vom 25.09.: 1 € → 0 € sparte 7,6 Mrd. und kostete D1 rund 1.670 €,
+  // weil „BGE ≥ Bürgergeld" auch bei 0 ≥ 0 galt.
+  const eins = berechne({ ...SQ, bg: 1 }), null_ = berechne({ ...SQ, bg: 0 });
+  assert.ok(Math.abs(null_.saldo - eins.saldo) < 0.1, `Saldo springt um ${(null_.saldo - eins.saldo).toFixed(1)} Mrd.`);
+  assert.ok(Math.abs(null_.hh_delta.delta[0] - eins.hh_delta.delta[0]) < 20);
+  // mit einem BGE, das das Bürgergeld ersetzt, entfallen sie
+  const bge = berechne({ ...SQ, bge: 1200 });
+  assert.ok(bge.ausgaben_total > 0);
+});

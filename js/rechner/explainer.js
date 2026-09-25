@@ -6,7 +6,7 @@
 // Rekonstruiert die dominanten ökonomischen Kausalketten hinter den
 // Simulationsergebnissen und formuliert prägnante didaktische Erklärungen.
 // Nennt explizit die wissenschaftlichen Mechanismen (Saez/Chetty, Lewbel/Pendakur,
-// HANK-Multiplikator, Domar r-g, Blanchard, DICE-Klimaschaden, SVR).
+// Konsum- und Investitionsmultiplikator, Domar r-g, Blanchard, SVR).
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { PRESETS } from '../data.js';
@@ -45,13 +45,13 @@ export function erzeugeKausalketten(params, result, zustand = null, refParams = 
   // ── 2. Schuldenbremse & Fiskalische Tragfähigkeit (Art. 109 GG / Domar) ─────
   const saldoPct = result?.saldo_bip_pct ?? ((result?.saldo ?? 0) / 4470 * 100);
 
-  if (saldoPct < -0.35) {
+  if (result && result.schuldenbremse_ok === false) {
     cards.push({
       topic: 'fiskus',
       tone: 'bad',
-      title: 'Schuldenbremse verfehlt (Art. 109 GG)',
-      mechanism: 'Strukturelles Defizitkriterium (−0,35 % BIP)',
-      text: `Das Finanzierungsdefizit liegt bei ${num(saldoPct, 2)} % des BIP (Grenze: −0,35 % bzw. Maastricht −3,0 %). Ohne Notlagenbeschluss nach Art. 109 Abs. 3 GG ist dieser Haushalt nicht verfassungskonform. Ein Defizit von ${num(Math.abs(result?.saldo ?? 0))} Mrd. € erfordert Gegenfinanzierung oder Ausgabenkürzungen.`,
+      title: 'Schuldenbremse verfehlt (Art. 109, 115 GG, Stand 2025)',
+      mechanism: 'Struktureller Saldo, Grenze −0,70 % BIP (Bund + Länder); Verteidigung über 1 % BIP und Sondervermögen ausgenommen',
+      text: `Das Finanzierungsdefizit liegt bei ${num(saldoPct, 2)} % des BIP, strukturell und ohne die Ausnahmen bei ${num(result.struktureller_saldo_pct, 2)} % (Grenze −0,70 %). Ohne Notlagenbeschluss nach Art. 109 Abs. 3 GG ist dieser Haushalt nicht verfassungskonform. Ein Defizit von ${num(Math.abs(result?.saldo ?? 0))} Mrd. € erfordert Gegenfinanzierung oder Ausgabenkürzungen.`,
       kpiBadge: `Saldo: ${signed(saldoPct, 2)} % BIP`,
     });
   } else if (saldoPct >= 0) {
@@ -149,7 +149,7 @@ export function erzeugeKausalketten(params, result, zustand = null, refParams = 
   if (Math.abs(deltaCo2) >= 10 || klimageldStatus !== refKlimageld) {
     const klimageldAktiv = Boolean(klimageldStatus);
     const co2Preis = params.co2 ?? 55;
-    const emissionen = result?.emissionen ?? 327;
+    const emissionen = result?.emissionen ?? 649;
 
     cards.push({
       topic: 'klima',
@@ -165,7 +165,7 @@ export function erzeugeKausalketten(params, result, zustand = null, refParams = 
     });
   }
 
-  // ── 7. Transfers & HANK-Multiplikator (Bürgergeld / BGE / Investitionsimpuls) 
+  // ── 7. Transfers & Multiplikatoren (Bürgergeld / BGE / Investitionsimpuls) 
   const bge = params.bge ?? 0;
   const deltaBg = (params.bg ?? 563) - (ref.bg ?? 563);
   const investImpuls = params.invest_impuls ?? 0;
@@ -185,11 +185,11 @@ export function erzeugeKausalketten(params, result, zustand = null, refParams = 
       topic: 'verteilung',
       tone: erhoehung ? 'good' : 'info',
       title: erhoehung
-        ? 'Bürgergeld: Armutsbekämpfung & HANK-Konsummultiplikator'
+        ? 'Bürgergeld: Armutsbekämpfung & Konsummultiplikator'
         : 'Bürgergeld-Kürzung: Fiskalische Einsparung',
-      mechanism: 'HANK-Multiplikator μ_G (Kaplan/Moll/Violante) · Grenzkonsumneigung',
+      mechanism: 'Konsummultiplikator · Grenzkonsumneigung (Gechert 2015 · Jappelli/Pistaferri 2014)',
       text: erhoehung
-        ? `Die Anhebung des Bürgergelds um ${signed(deltaBg, 0)} €/Monat senkt das Armutsrisiko auf ${num(result?.armutsrisiko ?? 14.8, 1)} %. Da Transferempfänger eine sehr hohe marginale Konsumquote (MPC ≈ 0,9) aufweisen, fließt das Geld fast vollständig in den Wirtschaftskreislauf zurück (starker Multiplikatoreffekt).`
+        ? `Die Anhebung des Bürgergelds um ${signed(deltaBg, 0)} €/Monat senkt das Armutsrisiko auf ${num(result?.armutsrisiko ?? 14.8, 1)} %. Haushalte im unteren Einkommensbereich geben zusätzliches Einkommen zu einem großen Teil aus (Grenzkonsumneigung ≈ 0,65 gegenüber ≈ 0,48 im Mittel); das stützt die Nachfrage in dieser Periode — nicht dauerhaft.`
         : `Die Absenkung des Bürgergelds spart Bundesmittel, erhöht jedoch das Armutsrisiko der betroffenen Haushalte.`,
       kpiBadge: `Bürgergeld: ${params.bg} €`,
     });
@@ -200,8 +200,8 @@ export function erzeugeKausalketten(params, result, zustand = null, refParams = 
       topic: 'investition',
       tone: 'good',
       title: 'Öffentlicher Investitionsimpuls: Modernisierung & Multiplikator',
-      mechanism: 'Keynesianischer / HANK-Multiplikator · Infrastruktur-Kapitalstock',
-      text: `Zusätzliche öffentliche Investitionen von ${investImpuls} Mrd. €/Jahr belasten zwar den laufenden Haushaltssaldo, stärken jedoch die Binnennachfrage und den gesamtwirtschaftlichen Kapitalstock (Verkehr, Bildung, Digitalisierung, Netze).`,
+      mechanism: 'Investitionsmultiplikator (kurzfristig) · öffentlicher Kapitalstock mit Abschreibung (Bom/Ligthart 2014)',
+      text: `Zusätzliche öffentliche Investitionen von ${investImpuls} Mrd. €/Jahr belasten zwar den laufenden Haushaltssaldo, stärken die Nachfrage, solange investiert wird, und bauen öffentliches Kapital auf (Verkehr, Bildung, Digitalisierung, Netze). Dauerhaft wirkt nur dieser Kapitalstock — mit einer Produktionselastizität von etwa 0,08 und Abschreibung, also deutlich schwächer als der kurzfristige Impuls.`,
       kpiBadge: `Investitionen: +${investImpuls} Mrd. €`,
     });
   }

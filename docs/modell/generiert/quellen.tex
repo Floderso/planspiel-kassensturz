@@ -1,0 +1,37 @@
+% Erzeugt von docs/modell/messung.js — nicht von Hand bearbeiten
+\begin{longtable}{p{3.2cm}p{11.6cm}}
+\toprule
+Quelle & Formel und Fundstelle \\
+\midrule
+\endhead
+\multicolumn{2}{l}{\textbf{\texttt{berechne.js}}} \\
+\texttt{arbeitsangebot} & {\formelschrift labor\_factor = 1 + ε × Δ(1 − GS) / (1 − GS\_SQ)}\newline Saez/Chetty/Gruber Konsens · ifo Schnelldienst 01/2025 · Piketty/Saez/Stantcheva (2014) AER \\
+\texttt{bge\_arbeitsangebot} & {\formelschrift lf = lf\_tax × (1 − BGE\_LABOR\_EFF[i] × min(1,67; BGE/1200))}\newline RWI (2024) bis −30 \% bei 1.500 \euro{} · DIW Pilot 2024 (n=107) · ZEW Heim et al. (extensiver Margin) · ifo Mikrosimulation 2021 \\
+\texttt{mwst\_konsumanteil} & {\formelschrift MwSt = Konsum × (0,70 × t\_reg/(1+t\_reg) + 0,30 × t\_erm/(1+t\_erm))}\newline Destatis VGR 2024 (ca. 70 \% Regelsatz-Konsum) · Lewbel/Pendakur (2009) JPubEc \\
+\texttt{co2\_emissionen} & {\formelschrift Emissionen = Pfad(Jahr) × [(1 − s) + s × max(0,4; min(1,1; 1 + ε\_CO₂ × (p − 55)/100))],  s = 327/649}\newline BEHG § 10 · EWI/DIW BEHG-Evaluation 2023 · Edenhofer/PIK 2024 · UBA Projektionsbericht 2025 (Pfad) · UBA Treibhausgas-Emissionen 2025 \\
+\texttt{erbschaft} & {\formelschrift Erb\_auf = Masse\_top × Satz\_eff + Masse\_unten × min(Satz,15\%)/2}\newline Bach/Sinclair/Bührle/Wichers DIW 2025 · §§ 10, 19 ErbStG · BRH 2016 \\
+\texttt{zucman} & {\formelschrift Zucman\_auf = Milliardärsvermögen × max(0; Satz − 0,3 \% ESt − VermSt-Satz) × (1 − 0,15 × min(1; Satz/2))}\newline Zucman (2024) A blueprint for a coordinated minimum effective taxation standard for ultra-high-net-worth individuals, G20-Bericht · EU Tax Observatory 2024 · Jakobsen/Kleven/Kolsrud NBER 2024 \\
+\texttt{sv\_beitraege} & {\formelschrift SV = Lohnsumme\_sv × Satz\%  (nur bis BBG)}\newline § 158 SGB VI · § 241 SGB V · § 341 SGB III · § 55 SGB XI · DRV Beitragssätze 2025 \\
+\texttt{rv\_ausgaben} & {\formelschrift ΔRente\_i = Brutto\_i × rente\_anteil\_i × renten\_faktor × (Rentenniveau/48 \% − 1);  ΔRV-Ausgaben = Σ Haushalte ΔRente\_i;  KV, AL, PV fest}\newline § 68 SGB VI (Rentenanpassung) · § 154 Abs. 3 SGB VI (Sicherungsniveau) · Rentenpaket 2025 (BMAS, Haltelinie 48 \% bis 2031) · § 158 SGB VI · BMAS Rentenversicherungsbericht 2025 \\
+\texttt{verwaltungskosten} & {\formelschrift Admin = ∑ Aufkommen\_i × Quote\_i  (ADMIN\_QUOTE je Steuer)}\newline BRH Jahresberichte · OECD Tax Administration 2024 · Normenkontrollrat Jahresbericht 2024 \\
+\texttt{deadweight\_loss} & {\formelschrift DWL = ∑ᵢ 0,5 × ε × GS\_i² / (1 − GS\_i) × Lohnsumme\_i  (Harberger-Dreieck je Dezil)}\newline Harberger (1964) · Saez (2001) JPubEc · Chetty (2009) AER P\&P \\
+\texttt{dynamisches\_scoring} & {\formelschrift Δ\_dyn = Δ\_KSt × (investment\_factor − 1) + Δ\_ESt × (avg\_labor − 1)}\newline CBO Dynamic Scoring Guidelines · ifo Schnelldienst 01/2025 · Saez/Chetty Konsens \\
+\texttt{inzidenz} & {\formelschrift Last\_i = ΔKSt+ΔGewSt × (½ Anteil Arbeitseinkommen\_i + ½ Anteil Kapitaleinkommen\_i) + ΔErbSt+ΔVermSt+ΔBodenSt × Anteil Vermögen\_i + ΔZucman × D10c}\newline Fuest/Peichl/Siegloch (2018) AER 108(2): Beschäftigte tragen rund 51 \% der Gewerbesteuer · Harberger (1962) · CBO (2012) Distribution of Corporate Tax · Mirrlees Review (2011) Tax by Design, Kap. 16 (Bodenwertsteuer) \\
+\midrule
+\multicolumn{2}{l}{\textbf{\texttt{einkommensteuer.js}}} \\
+\texttt{estTarif} & {\formelschrift ∫₀ˣ r(z) dz  (stückweise lineare Grenzsteuerrate, 5 Zonen)}\newline § 32a Abs. 1 EStG 2026 (Steuerfortentwicklungsgesetz, BGBl. 2024 I Nr. 449) · Formeltarif (kontinuierlich, keine Sprünge) \\
+\texttt{grenzsteuersatz} & {\formelschrift r(z) = r₀ + (rₘ − r₀) × z/g₂  [Zone 2], linear interpoliert je Zone}\newline § 32a Abs. 1 Nr. 2–5 EStG · BMF Steuerschätzung 2025 \\
+\texttt{effSteuersatz} & {\formelschrift T(z) / z}\newline § 2 Abs. 5 EStG \\
+\texttt{spitzenzone} & {\formelschrift Zuschlag\_D10c = (r5 − r4) × E[max(0, x − Grenze)],  x \textasciitilde{} Pareto(α = 1,5) mit dem zvE-Mittel des Dezils}\newline Atkinson/Piketty/Saez (2011) JEL 49(1), Top Incomes in the Long Run of History · Bartels/Jenderny (2015) DIW Discussion Paper 1508 \\
+\texttt{estHaushalt} & {\formelschrift T\_HH = s × T(brutto × q / s)  mit q = zvE-Quote, s = Splitting-Faktor}\newline §§ 26, 32a Abs. 5 EStG (Splitting) · Destatis ESt-Statistik (zvE vs. Bruttoeinkünfte) · Mikrozensus 2024 \\
+\midrule
+\multicolumn{2}{l}{\textbf{\texttt{verteilung.js}}} \\
+\texttt{aequivalenzEinkommen} & {\formelschrift y\_äq,i = Netto\_i / Bedarfsgewicht\_i  (neue OECD-Skala: 1,0 erste Person · 0,5 weitere ab 14 J. · 0,3 Kinder unter 14 J.)}\newline Eurostat EU-SILC Methodik (äquivalisiertes verfügbares Einkommen) · Destatis Glossar „Äquivalenzeinkommen" · OECD (2013) Framework for Statistics on the Distribution of Household Income \\
+\texttt{berechneGini} & {\formelschrift G = 1 − 2·∫Lorenz(x)dx  (Trapezregel, gewichtet nach Haushaltszahl)}\newline Sen (1973) On Economic Inequality · Cowell (2011) Measuring Inequality · Destatis Methodik Gini-Koeffizient \\
+\texttt{berechnePalma} & {\formelschrift Palma = Einkommensanteil(Top 10\%) / Einkommensanteil(Bottom 40\%)}\newline Palma (2011) Homogeneous Middles vs. Heterogeneous Tails · UNDP HDR 2013 \\
+\texttt{berechneMedianGewichtet} & {\formelschrift Gewichteter Median: kumulierte Haushaltsanteile bis 50 \%}\newline Destatis Mikrozensus 2024 · SOEP v40 \\
+\texttt{armutsrisiko} & {\formelschrift pov\_i = pov\_sq\_i × (y\_i/y\_sq\_i ÷ PL/PL\_sq)\textasciicircum{}(−1,5)}\newline Bourguignon (2003) · EU-SILC DE 2023 (14,8 \% Kalibrierung) · SOEP v40 · IAB Kurzbericht 2024 \\
+\texttt{berechneNettoSQ} & {\formelschrift Netto\_SQ = Brutto − ESt(SQ) − SV(SQ) − MwSt(SQ) − CO₂(SQ) + Klimageld(SQ) + Transfers(SQ)}\newline PRESETS.status\_quo (data.js) · § 32a EStG 2025 · § 158 SGB VI · § 241 SGB V \\
+\texttt{berechneDezilDelta} & {\formelschrift Δ\_i = Netto\_neu\_i − Netto\_SQ\_i}\newline SOEP v40 · Destatis Mikrozensus 2024 · BMF Steuerschätzung 2025 \\
+\bottomrule
+\end{longtable}

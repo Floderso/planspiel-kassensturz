@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: CC-BY-4.0
 // Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
-import { DEZILE, ELAST, BASIS_MAKRO, STAATSAUSGABEN, PRESETS, BASIS_AUFKOMMEN, ADMIN_QUOTE, AUSGABEN_TOTAL, BGE_LABOR_EFF, PERIOD_STATE_0, ZINS_EFFEKTIV } from '../data.js';
+import { DEZILE, ELAST, BASIS_MAKRO, STAATSAUSGABEN, PRESETS, BASIS_AUFKOMMEN, ADMIN_QUOTE, AUSGABEN_TOTAL, BGE_LABOR_EFF, PERIOD_STATE_0, ZINS_EFFEKTIV, emissionsBasis,
+         KINDER_JE_HH, BUERGERGELD_QUOTE, CO2_GEWICHT, MPC_DEZIL, MPC_MITTEL,
+         MULTIPLIKATOR_STEUER_TRANSFER, MULTIPLIKATOR_INVEST, NATO_QUOTE_2025, verteidigungQuote,
+         sondervermoegen, kstSenkung, rvAnstieg, SCHULDENBREMSE_STRUKTURELL, VERTEIDIGUNG_AUSNAHME_AB, BUDGET_SEMIELASTIZITAET } from '../data.js';
 import { estHaushalt, grenzsteuersatzHaushalt } from './einkommensteuer.js';
-import { berechneGini, berechneMedianGewichtet, berechnePalma, berechneDezilDelta, berechneNettoSQ } from './verteilung.js';
+import { aequivalenzEinkommen, berechneGini, berechneMedianGewichtet, berechnePalma, berechneDezilDelta, berechneNettoSQ } from './verteilung.js';
 
 // ═══════════════════════════════════════════════════════
 // KASSENSTURZ · Hauptsimulation
 // Abhängigkeiten (Ladereihenfolge beachten):
 //   data.js               → DEZILE, BASIS_AUFKOMMEN, ADMIN_QUOTE, ELAST, STAATSAUSGABEN
 //   rechner/einkommensteuer.js → estTarif, grenzsteuersatz
-//   rechner/verteilung.js → berechneDezilDelta, berechneGini, berechnePalma,
-//                           berechneMedianGewichtet, berechneNettoSQ
+//   rechner/verteilung.js → berechneDezilDelta, aequivalenzEinkommen, berechneGini,
+//                           berechnePalma, berechneMedianGewichtet, berechneNettoSQ
 // ═══════════════════════════════════════════════════════
 
 // Quellenmetadaten — zentrale Berechnungsannahmen
@@ -31,9 +34,9 @@ const FORMEL_QUELLEN_BERECHNE = {
     note:   '70/30-Split grob; feiner auflösbar mit EVS-Einzeldaten. VAT-Gap-Korrekturfaktor 0,963 (CASE 2024)'
   },
   co2_emissionen: {
-    formel: 'Emissionen = 500 × max(0,4; min(1,1; 1 + ε_CO₂ × (p − 55)/100))',
-    ref:    'BEHG § 10 · EWI/DIW BEHG-Evaluation 2023 · Edenhofer/PIK 2024',
-    note:   'Basis 500 Mio. t im Bepreisungsbereich; ε_CO₂ = −0,30 (kurzfristig konservativ)'
+    formel: 'Emissionen = Pfad(Jahr) × [(1 − s) + s × max(0,4; min(1,1; 1 + ε_CO₂ × (p − 55)/100))],  s = 327/649',
+    ref:    'BEHG § 10 · EWI/DIW BEHG-Evaluation 2023 · Edenhofer/PIK 2024 · UBA Projektionsbericht 2025 (Pfad) · UBA Treibhausgas-Emissionen 2025',
+    note:   'Pfad: alle Treibhausgase, 649 Mt 2025 → −63 % (2030) / −80 % (2040) ggü. 1990 ohne Zusatzpolitik. Der nationale Preis wirkt auf den bepreisten Anteil s (327 Mt 2025, kalibriert auf 18 Mrd. € Aufkommen bei 55 €/t); ε_CO₂ = −0,30 (kurzfristig konservativ)'
   },
   erbschaft: {
     formel: 'Erb_auf = Masse_top × Satz_eff + Masse_unten × min(Satz,15%)/2',
@@ -41,14 +44,19 @@ const FORMEL_QUELLEN_BERECHNE = {
     note:   'Erbschaftsmasse ~400 Mrd./Jahr; Top 60 % erben ~60 %. Betriebsvermögen-Ausnahme: eff. Satz × 0,3'
   },
   zucman: {
-    formel: 'Zucman_auf = 2.870 × Satz% × (1 − 0,15 × min(1; Satz/2))',
-    ref:    'Zucman G20 Report 2024 · EU Tax Observatory 2024 · Jakobsen/Kleven/Kolsrud NBER 2024',
-    note:   'Basis D10c: 0,41 Mio. HH × 7 Mio. € Median-Vermögen = ~2.870 Mrd. €; Avoidance 15 % bei 2 %'
+    formel: 'Zucman_auf = Milliardärsvermögen × max(0; Satz − 0,3 % ESt − VermSt-Satz) × (1 − 0,15 × min(1; Satz/2))',
+    ref:    'Zucman (2024) A blueprint for a coordinated minimum effective taxation standard for ultra-high-net-worth individuals, G20-Bericht · EU Tax Observatory 2024 · Jakobsen/Kleven/Kolsrud NBER 2024',
+    note:   'Mindeststeuer auf Milliardäre mit Anrechnung: gezahlte Einkommensteuer (~0,3 % des Vermögens) und eine gleichzeitige Vermögensteuer werden angerechnet. Basis ~600 Mrd. € (Näherung, Reichenlisten). Avoidance 15 % bei 2 %'
   },
   sv_beitraege: {
     formel: 'SV = Lohnsumme_sv × Satz%  (nur bis BBG)',
     ref:    '§ 158 SGB VI · § 241 SGB V · § 341 SGB III · § 55 SGB XI · DRV Beitragssätze 2025',
-    note:   'BBG-Lohnsummen-Faktor: +12 % je 90 k € BBG-Erhöhung (12 % der sozialversicherungspflichtigen Löhne)'
+    note:   'BBG-Lohnsummen-Faktor: +12 % je 90 k € BBG-Erhöhung (12 % der sozialversicherungspflichtigen Löhne). Der Satz wirkt nur auf die Einnahmen; die Ausgaben hängen am Leistungsniveau (rv_ausgaben). Der RV-Regler zeigt den Satz 2026; nach § 158 SGB VI steigt er zusätzlich mit den Ausgaben — 20,1 % (2030), 21,15 % (2039), BMAS Rentenversicherungsbericht 2025'
+  },
+  rv_ausgaben: {
+    formel: 'ΔRente_i = Brutto_i × rente_anteil_i × renten_faktor × (Rentenniveau/48 % − 1);  ΔRV-Ausgaben = Σ Haushalte ΔRente_i;  KV, AL, PV fest',
+    ref:    '§ 68 SGB VI (Rentenanpassung) · § 154 Abs. 3 SGB VI (Sicherungsniveau) · Rentenpaket 2025 (BMAS, Haltelinie 48 % bis 2031) · § 158 SGB VI · BMAS Rentenversicherungsbericht 2025',
+    note:   'Renten folgen dem Niveau, nicht dem Beitragssatz — in Wirklichkeit folgt der Satz den Ausgaben (§ 158). Ein Satz unter Bedarf erscheint als Lücke im Gesamtsaldo (wie der Bundeszuschuss). Eine Niveauänderung kommt brutto bei den Haushalten an, genau in der Höhe, die der Staat bucht (Rentenzahlungen ~362 Mrd. €); Steuer und KV-Beitrag auf die Änderung sind nicht abgebildet, ebenso der Nachhaltigkeitsfaktor. rente_anteil je Dezil ist eine Näherung (data.js)'
   },
   verwaltungskosten: {
     formel: 'Admin = ∑ Aufkommen_i × Quote_i  (ADMIN_QUOTE je Steuer)',
@@ -63,15 +71,81 @@ const FORMEL_QUELLEN_BERECHNE = {
   dynamisches_scoring: {
     formel: 'Δ_dyn = Δ_KSt × (investment_factor − 1) + Δ_ESt × (avg_labor − 1)',
     ref:    'CBO Dynamic Scoring Guidelines · ifo Schnelldienst 01/2025 · Saez/Chetty Konsens',
-    note:   'Verhaltensbedingte Aufkommensabweichung gegenüber mechanischer (statischer) Wirkung'
+    note:   'Verhaltensbedingte Aufkommensabweichung gegenüber mechanischer (statischer) Wirkung. Der KSt-Regler zeigt den Satz 2026; die beschlossene Senkung um 1 Pp. pro Jahr ab 2028 bis 10 % (2032) wirkt zusätzlich (§ 23 Abs. 1 KStG). KSt und GewSt je hälftig auf Arbeits- und Kapitaleinkommen (Inzidenz, siehe inzidenz)'
+  },
+  inzidenz: {
+    formel: 'Last_i = ΔKSt+ΔGewSt × (½ Anteil Arbeitseinkommen_i + ½ Anteil Kapitaleinkommen_i) + ΔErbSt+ΔVermSt+ΔBodenSt × Anteil Vermögen_i + ΔZucman × D10c',
+    ref:    'Fuest/Peichl/Siegloch (2018) AER 108(2): Beschäftigte tragen rund 51 % der Gewerbesteuer · Harberger (1962) · CBO (2012) Distribution of Corporate Tax · Mirrlees Review (2011) Tax by Design, Kap. 16 (Bodenwertsteuer)',
+    note:   'Änderung gegenüber dem Status quo, in Größen von 2025. Summe über alle Haushalte = Aufkommensänderung. Vorher trafen diese Steuern keinen Haushalt: KSt 40 % brachte 76 Mrd., und niemand zahlte (PRUEFUNG-2.md N1)'
   }
 };
 
+/**
+ * Unternehmens- und Vermögensteuern in Größen von 2025 (ohne BIP-Fortschreibung).
+ * Eine Funktion, damit Aufkommen und Inzidenz aus derselben Rechnung kommen.
+ */
+function kapitalUndVermoegensteuern(params) {
+  const investment_factor = 1 + ELAST.investment * ((params.kst + (params.gewst_aus ? 0 : params.gewst))/100 - 0.30);
+  const gewinn_faktor = Math.max(0.7, Math.min(1.2, investment_factor));
+  const kst   = BASIS_MAKRO.gewinn_kst * gewinn_faktor * params.kst / 100;
+  const gewst = params.gewst_aus ? 0 : BASIS_MAKRO.gewinn_gewst * gewinn_faktor * params.gewst / 100;
+  const erb_satz_eff = params.erb * (params.betriebs ? 0.3 : 0.9) / 100;
+  // erb_stpfl_quote: persönliche Freibeträge (§ 16 ErbStG) stellen den Großteil der Erbmasse steuerfrei
+  const erb = (BASIS_MAKRO.erb_masse * 0.6 * erb_satz_eff
+             + BASIS_MAKRO.erb_masse * 0.4 * Math.min(params.erb, 15) / 100 * 0.5)
+             * BASIS_MAKRO.erb_stpfl_quote;
+  // Vermögensteuer mit Ausweichreaktion: deklariertes Vermögen sinkt mit dem Satz
+  // (Brülhart et al. 2022, halbiert — ELAST_QUELLEN.verm_ausweichen). Vorher linear.
+  const verm = BASIS_MAKRO.verm_basis * Math.exp(-ELAST.verm_ausweichen * params.verm) * params.verm / 100;
+  // Zucman-Mindeststeuer wie vorgeschlagen: nur Milliardärsvermögen, mit Anrechnung der
+  // Einkommensteuer (~0,3 % des Vermögens) und einer gleichzeitigen Vermögensteuer.
+  // Vorher: Pauschalsteuer auf das gesamte Vermögen des obersten Prozents (2.870 Mrd.),
+  // ohne Anrechnung und zusätzlich zur Vermögensteuer (PRUEFUNG-2.md IV).
+  // Avoidance: ~15 % bei 2 % (Jakobsen/Kleven/Kolsrud 2024)
+  const zucman_satz = params.zucman ?? 0;
+  const zucman_avoidance = 1 - 0.15 * Math.min(1, zucman_satz / 2);
+  const zucman = BASIS_MAKRO.milliardaersvermoegen * zucman_avoidance
+               * Math.max(0, zucman_satz - BASIS_MAKRO.milliardaere_est_quote - params.verm) / 100;
+  return { investment_factor, kst, gewst, erb, verm, zucman };
+}
 
-function berechne(params, zustand = null) {
+// Verteilungsschlüssel je Haushalt (Σ anzahl × Anteil = 1) für die Inzidenz
+const anteilAn = f => {
+  const summe = DEZILE.reduce((a, d) => a + d.anzahl * f(d), 0);
+  return DEZILE.map(d => f(d) / summe);
+};
+const ANTEIL_ARBEIT   = anteilAn(d => d.brutto * (1 - d.kapital));
+const ANTEIL_KAPITAL  = anteilAn(d => d.brutto * d.kapital);
+const ANTEIL_VERMOEGEN = anteilAn(d => d.vermoegen);
+const ANTEIL_ZUCMAN   = anteilAn(d => (d.label === 'D10c' ? 1 : 0));
+
+// Erhebungskosten des Status quo (Größen von 2025), einmal gerechnet und gemerkt
+let _erhebungskostenSQ = null;
+function erhebungskostenStatusQuo() {
+  if (_erhebungskostenSQ === null) {
+    _erhebungskostenSQ = berechne(PRESETS.status_quo, null, { ohneNachfrage: true, adminReferenz: true }).admin_kosten;
+  }
+  return _erhebungskostenSQ;
+}
+
+// Beitragsbemessungsgrenze RV des Status quo — Bezug aller BBG-Rechnungen
+const BBG_SQ = PRESETS.status_quo.bbg;
+
+function berechne(params, zustand = null, optionen = {}) {
   // Periodenübergreifender Zustand für Multi-Perioden-Simulation
   const bip_faktor       = zustand ? zustand.bip / BASIS_MAKRO.bip : 1.0;
   const renten_faktor    = zustand ? (zustand.renten_faktor    ?? 1.0) : 1.0;
+  const trend_faktor     = zustand ? (zustand.trend_faktor     ?? bip_faktor) : 1.0;
+  // Jahre der Periode, für Rechtsstand-Pfade gemittelt. Ohne Periodenzustand gilt 2025 allein.
+  const jahre = zustand ? Array.from({ length: zustand.laenge ?? 4 }, (_, k) => (zustand.jahr ?? 2025) + k) : [2025];
+  const mittel = f => jahre.reduce((a, j) => a + f(j), 0) / jahre.length;
+  // Geltendes Recht, das sich über die Jahre ändert, wirkt zusätzlich zum Regler
+  // (docs/RECHTSSTAND.md): die beschlossene KSt-Senkung ab 2028 und der RV-Beitragssatz,
+  // der nach § 158 SGB VI den Ausgaben folgt. Die Regler zeigen die Werte von 2026.
+  const kst_senkung = mittel(kstSenkung);
+  const rv_anstieg  = mittel(rvAnstieg);
+  const gesetzlich = p => ({ ...p, kst: Math.max(0, p.kst - kst_senkung), rv: p.rv + rv_anstieg });
+  params = gesetzlich(params);
   const lohnbasis_faktor = zustand ? (zustand.lohnbasis_faktor ?? 1.0) : 1.0;
 
   // Dynamische Zinslast: im Multi-Perioden-Modus aus aktuellem Schuldenstand ableiten.
@@ -88,7 +162,7 @@ function berechne(params, zustand = null) {
   // Basisgrenzsteuersatz-Vergleich zum Status Quo — identische Parameterquelle wie
   // berechneNettoSQ (PRESETS.status_quo), damit bei SQ-Parametern labor_factor exakt 1 ist
   const SQ = PRESETS.status_quo;
-  const sqGrenze = dez => grenzsteuersatzHaushalt(dez.brutto*(1-dez.kapital), SQ.freibetrag, SQ.eingang, SQ.spitze, SQ.grenze);
+  const sqGrenze = dez => grenzsteuersatzHaushalt(dez.brutto*(1-dez.kapital), SQ.freibetrag, SQ.eingang, SQ.spitze, SQ.grenze, dez.pareto_alpha);
 
   // BGE-Arbeitsangebotseffekt (Substitutionseffekt: höherer Reservationslohn)
   // Quellen: RWI 2024 (bis −30 % bei 1.500 €), DIW Pilot 2024 (−2 % kurzfristig, n=107),
@@ -97,7 +171,7 @@ function berechne(params, zustand = null) {
   const bge_labor_scale = Math.min(1.67, (params.bge || 0) / 1200);
 
   const dezile = DEZILE.map((d, idx) => {
-    const gs_neu = grenzsteuersatzHaushalt(d.brutto * (1-d.kapital), params.freibetrag, params.eingang, params.spitze, params.grenze);
+    const gs_neu = grenzsteuersatzHaushalt(d.brutto * (1-d.kapital), params.freibetrag, params.eingang, params.spitze, params.grenze, d.pareto_alpha);
     const gs_sq = sqGrenze(d);
     const delta_nettolohn = (1 - gs_neu) - (1 - gs_sq);
 
@@ -130,11 +204,11 @@ function berechne(params, zustand = null) {
   for (const d of dezile) {
     const arbeit = d.brutto_adj * (1 - d.kapital);
     const kapital = d.brutto_adj * d.kapital;
-    const est_arbeit = estHaushalt(arbeit, params.freibetrag, params.eingang, params.spitze, params.grenze);
+    const est_arbeit = estHaushalt(arbeit, params.freibetrag, params.eingang, params.spitze, params.grenze, d.pareto_alpha);
     let est_kap;
     if (params.synthetisch) {
       // Alle Einkünfte zusammen besteuern
-      const total = estHaushalt(d.brutto_adj, params.freibetrag, params.eingang, params.spitze, params.grenze);
+      const total = estHaushalt(d.brutto_adj, params.freibetrag, params.eingang, params.spitze, params.grenze, d.pareto_alpha);
       const est_kap_sy = total - est_arbeit;
       est_kap = Math.max(0, est_kap_sy);
     } else {
@@ -146,10 +220,10 @@ function berechne(params, zustand = null) {
   }
 
   // ---------- 3. KÖRPERSCHAFTSTEUER + GEWERBE ----------
-  const investment_factor = 1 + ELAST.investment * ((params.kst + (params.gewst_aus ? 0 : params.gewst))/100 - 0.30);
-  const gewinn = BASIS_MAKRO.gewinn * bip_faktor * Math.max(0.7, Math.min(1.2, investment_factor));
-  const kst_auf = gewinn * params.kst / 100;
-  const gewst_auf = params.gewst_aus ? 0 : gewinn * params.gewst / 100;
+  const kvs = kapitalUndVermoegensteuern(params);
+  const investment_factor = kvs.investment_factor;
+  const kst_auf   = kvs.kst   * bip_faktor;
+  const gewst_auf = kvs.gewst * bip_faktor;
 
   // ---------- 4. MWST ----------
   // F3: Verhaltensreaktion Konsum auf BEIDE MwSt-Sätze getrennt (Lewbel/Pendakur 2009).
@@ -161,8 +235,8 @@ function berechne(params, zustand = null) {
     // Netto nach ESt und SV (SV-Basis = Arbeitseinkommen, K3-Vorkorrektur hier vereinfacht)
     const est_d = est_pro_dezil.find(x => x.d === d.d).est;
     const arbeit_mwst = d.brutto_adj * (1 - d.kapital);
-    const bbg_kv_mwst = params.kv_bbg_frei ? Infinity : Math.round((params.bbg ?? 90000) * (BASIS_MAKRO.kv_bbg_kv_sq / 90000));
-    const sv_d = Math.min(arbeit_mwst, params.bbg ?? 90000) * (params.rv + params.alpf * 0.42) / 100 * 0.5
+    const bbg_kv_mwst = params.kv_bbg_frei ? Infinity : Math.round((params.bbg ?? BBG_SQ) * (BASIS_MAKRO.kv_bbg_kv_sq / BBG_SQ));
+    const sv_d = Math.min(arbeit_mwst, params.bbg ?? BBG_SQ) * (params.rv + params.alpf * 0.42) / 100 * 0.5
                + Math.min(arbeit_mwst, bbg_kv_mwst) * (params.kv + params.alpf * 0.58) / 100 * 0.5;
     const netto = d.brutto_adj - est_d - sv_d;
     const konsum = netto * d.konsum;
@@ -177,39 +251,39 @@ function berechne(params, zustand = null) {
 
   // ---------- 5. CO2 ----------
   const co2_factor = 1 + ELAST.co2 * ((params.co2 - 55) / 100);
-  const emissionen = BASIS_MAKRO.emissions * Math.max(0.4, Math.min(1.1, co2_factor));
-  const co2_auf = emissionen * params.co2 / 1000;
+  // Gesamtemissionen folgen dem Basispfad (data.js, Projektionsbericht 2025). Der nationale
+  // CO₂-Preis wirkt auf den bepreisten Teil (327 von 649 Mt im Jahr 2025), der Rest folgt dem
+  // Pfad. Vorher speiste dieselbe 327-Mt-Zahl Aufkommen UND Budget — das Budget wurde halb so
+  // schnell verbraucht wie in Wirklichkeit (PRUEFUNG.md C2).
+  const emissionen_basis = emissionsBasis(zustand?.jahr ?? 2025);
+  const anteil_bepreist  = BASIS_MAKRO.emissions / emissionsBasis(2025);
+  const bepreist   = emissionen_basis * anteil_bepreist * Math.max(0.4, Math.min(1.1, co2_factor));
+  const emissionen = emissionen_basis * (1 - anteil_bepreist) + bepreist;
+  const co2_auf = bepreist * params.co2 / 1000;
   const klimageld_auszahlung = params.klimageld ? co2_auf * 0.7 : 0; // 70% zurück als Klimageld
 
   // ---------- 6. VERMÖGEN / ERBSCHAFT / BODEN ----------
-  const erb_satz_eff = params.erb * (params.betriebs ? 0.3 : 0.9) / 100;
-  // erb_stpfl_quote: persönliche Freibeträge (§ 16 ErbStG) stellen den Großteil der Erbmasse steuerfrei
-  const erb_auf = (BASIS_MAKRO.erb_masse * 0.6 * erb_satz_eff
-                + BASIS_MAKRO.erb_masse * 0.4 * Math.min(params.erb, 15) / 100 * 0.5)
-                * BASIS_MAKRO.erb_stpfl_quote;
+  const erb_auf   = kvs.erb;
   const boden_auf = BASIS_MAKRO.boden_wert * params.boden / 100;
-  const verm_auf  = BASIS_MAKRO.verm_basis  * params.verm  / 100;
+  const verm_auf  = kvs.verm;
 
   // ---------- 7. SV-BEITRÄGE ----------
-  const bbg = params.bbg ?? 90000;
-  // BBG-Erhöhung: ~12% der sozialversicherungspflichtigen Löhne liegt zwischen 90k und 160k
-  const bbg_lohnsumme_factor = 1 + Math.max(0, (bbg - 90000) / 90000) * 0.12;
+  const bbg = params.bbg ?? BBG_SQ;
+  // BBG-Erhöhung über den Status quo: ~12 % der sv-pflichtigen Löhne liegen zwischen BBG und
+  // knapp dem Doppelten. Bezug ist die BBG des Status quo — die Lohnsumme ist auf das Ist-
+  // Aufkommen kalibriert, eine Anhebung auf den Wert von 2026 bringt kein Extra-Aufkommen.
+  const bbg_lohnsumme_factor = 1 + Math.max(0, (bbg - BBG_SQ) / BBG_SQ) * 0.12;
   const lohnsumme_sv = BASIS_MAKRO.lohnsumme_sv * lohnbasis_faktor * bbg_lohnsumme_factor;
   const buerger_boost = params.buergerv ? 1.15 : 1.0;
   const rv_auf = lohnsumme_sv * params.rv / 100;
   // kv_bbg_frei/kv_kapital: Aufkommensschätzung skaliert mit aktuellem KV-Satz (ifo 159/2025, DIW)
-  const kv_bbg_frei_bonus = params.kv_bbg_frei ? BASIS_MAKRO.kv_bbg_frei_bonus * (params.kv / 16.3) : 0;
-  const kv_kapital_bonus  = params.kv_kapital  ? BASIS_MAKRO.kv_kapital_bonus  * (params.kv / 16.3) : 0;
+  const kv_bbg_frei_bonus = params.kv_bbg_frei ? BASIS_MAKRO.kv_bbg_frei_bonus * (params.kv / PRESETS.status_quo.kv) : 0;
+  const kv_kapital_bonus  = params.kv_kapital  ? BASIS_MAKRO.kv_kapital_bonus  * (params.kv / PRESETS.status_quo.kv) : 0;
   const kv_auf = lohnsumme_sv * params.kv / 100 * buerger_boost + kv_bbg_frei_bonus + kv_kapital_bonus;
   const al_auf = lohnsumme_sv * params.alpf / 100;
 
   // ---------- 7b. ZUCMAN-MINDESTSTEUER ----------
-  // 2%-Mindeststeuer auf Nettovermögen ultra-Reicher (Zucman G20 2024)
-  // Basis D10c: 0,41 Mio. HH × 7 Mio. € Median-Vermögen = ~2.870 Mrd. €
-  // Avoidance: ~15% bei 2% Satz (Jakobsen/Kleven/Kolsrud 2024)
-  const zucman_basis = 2870;
-  const zucman_avoidance = 1 - 0.15 * Math.min(1, (params.zucman ?? 0) / 2);
-  const zucman_auf = zucman_basis * (params.zucman ?? 0) / 100 * zucman_avoidance;
+  const zucman_auf = kvs.zucman;   // Formel in kapitalUndVermoegensteuern()
 
   // ---------- 8. KLEINE VERBRAUCHSTEUERN ----------
   const klein_auf = params.kleine_st ?
@@ -220,11 +294,15 @@ function berechne(params, zustand = null) {
 
   // BGE + Rentenreform: Einsparung weil BGE als Sockel die Rentenzahlung reduziert
   // Quelle: Rentenbericht 2024 — RV-Gesamtausgaben inkl. Bundeszuschuss SQ ~430 Mrd. €/J.
-  // M3: Ausgabenbasis skaliert mit rv-Regler (Umlagesystem: niedrigere Beiträge = niedrigeres Leistungsniveau).
-  // Damit wird verhindert, dass rv_einsparung gegen eine feste Basis gerechnet wird, die der rv-Slider
-  // schon implizit abgesenkt hat (Doppelkorrektur-Vermeidung).
+  // Ausgabenbasis mit demselben Leistungsniveau wie Abschnitt 12, damit rv_einsparung
+  // gegen die tatsächlich gezahlten Renten gerechnet wird (keine Doppelkorrektur).
   // renten_faktor: demografisch bedingte Mehrkosten (Baby-Boomer-Rentenwelle, Destatis 2021)
-  const rv_ausgaben_basis = BASIS_MAKRO.rv_ausgaben_sq * (params.rv / 18.6) * renten_faktor;
+  // Die Basis folgt dem Rentenniveau, nicht mehr dem Beitragssatz (PRUEFUNG-2.md I.1).
+  const niveau_faktor = (params.rentenniveau ?? BASIS_MAKRO.rentenniveau_sq) / BASIS_MAKRO.rentenniveau_sq;
+  const rv_ausgaben_basis = BASIS_MAKRO.rv_ausgaben_sq * niveau_faktor * renten_faktor;
+  // Rentenänderung je Haushalt (€/Jahr): der Rentenanteil des Dezils, mit dem Niveau
+  // skaliert. Mehr Rentner (renten_faktor) machen jede Niveauänderung teurer.
+  const renten_delta = dezile.map(d => d.brutto * d.rente_anteil * renten_faktor * (niveau_faktor - 1));
   let rv_einsparung = 0;
   if (bge > 0) {
     const rl = params.rente_grenze || 35000;              // €/Jahr Einkommensgrenze
@@ -242,9 +320,11 @@ function berechne(params, zustand = null) {
 
   // Bürgergeld: wenn BGE >= BG-Niveau, vollständig durch BGE ersetzt (RWI 2024)
   const bg_effektiv = bge >= params.bg ? 0 : params.bg;
-  const bg_auszahlung = 5.5 * bg_effektiv * 12 / 1000; // Mrd.
-  // Kindergeld: ca. 17 Mio Kinder
-  const kg_auszahlung = 17 * params.kg * 12 / 1000;
+  // Der Staat bucht, was bei den Haushalten ankommt (PRUEFUNG-2.md I.4). Vorher:
+  // Bürgergeld 5,5 Mio. Personen × voller Regelsatz = 37,2 Mrd., Haushalte 26,3 Mrd.;
+  // Kindergeld 17 Mio. Kinder beim Staat, 36,5 Mio. bei den Haushalten.
+  const bg_auszahlung = DEZILE.reduce((a, d, i) => a + d.anzahl * bg_effektiv * 12 * BUERGERGELD_QUOTE[i], 0) / 1000; // Mrd.
+  const kg_auszahlung = DEZILE.reduce((a, d, i) => a + d.anzahl * params.kg * 12 * KINDER_JE_HH[i], 0) / 1000;
   // Negative ESt falls aktiviert
   let neg_est_auszahlung = 0;
   if (params.neg_est) neg_est_auszahlung = 30;
@@ -269,6 +349,52 @@ function berechne(params, zustand = null) {
     al: al_auf,
     klein: klein_auf
   };
+  // Inzidenz der Unternehmens- und Vermögensteuern: Änderung gegenüber dem Status quo,
+  // in Größen von 2025, verteilt nach Arbeits-, Kapitaleinkommen und Vermögen (N1)
+  const kvs_sq = kapitalUndVermoegensteuern(gesetzlich(PRESETS.status_quo));
+  const d_unt  = (kvs.kst + kvs.gewst) - (kvs_sq.kst + kvs_sq.gewst);
+  // Bodenwertsteuer: nicht überwälzbar, sie tragen die Eigentümer (Mirrlees Review 2011, Kap. 16)
+  const d_boden = BASIS_MAKRO.boden_wert * (params.boden - PRESETS.status_quo.boden) / 100;
+  const d_verm = (kvs.erb + kvs.verm) - (kvs_sq.erb + kvs_sq.verm) + d_boden;
+  const d_zuc  = kvs.zucman - kvs_sq.zucman;
+  const inzidenz = DEZILE.map((d, i) => 1000 * (
+      d_unt  * (0.5 * ANTEIL_ARBEIT[i] + 0.5 * ANTEIL_KAPITAL[i])
+    + d_verm * ANTEIL_VERMOEGEN[i]
+    + d_zuc  * ANTEIL_ZUCMAN[i]));
+  const hh_delta = berechneDezilDelta(dezile, params, est_pro_dezil, klimageld_auszahlung, bg_auszahlung, kg_auszahlung,
+                                      { renten: renten_delta, co2_brutto: co2_auf, inzidenz });
+
+  // ---------- 10a. NACHFRAGE (PRUEFUNG-2.md I.3) ----------
+  // Die Einkommensänderung der Haushalte gegenüber dem Status quo DERSELBEN Periode wirkt
+  // mit ihrer Grenzkonsumneigung auf die Nachfrage, öffentliche Investitionen mit dem
+  // Investitionsmultiplikator — nur in dieser Periode, symmetrisch: Konsolidierung kostet
+  // Wachstum, Entlastung bringt welches. Die Lücke wirkt auf BIP und Einnahmen der Periode
+  // und wird nicht fortgeschrieben. Dauerhaft wirkt nur der öffentliche Kapitalstock
+  // (transition.js). Werte in Größen von 2025.
+  const invest_impuls = params.invest_impuls || 0;
+  let nachfrage_luecke = 0, konsum_impuls = 0;
+  if (!optionen.ohneNachfrage) {
+    const sq = berechne(PRESETS.status_quo, zustand, { ohneNachfrage: true });   // passt sich selbst an
+    konsum_impuls = DEZILE.reduce((a, d, i) =>
+      a + d.anzahl * (hh_delta.delta[i] - sq.hh_delta.delta[i]) * MPC_DEZIL[i], 0) / 1000;   // Mrd.
+    const impuls = konsum_impuls * MULTIPLIKATOR_STEUER_TRANSFER / MPC_MITTEL
+                 + MULTIPLIKATOR_INVEST * (invest_impuls - (PRESETS.status_quo.invest_impuls || 0));
+    nachfrage_luecke = impuls / BASIS_MAKRO.bip;
+  }
+  const nachfrage_faktor = 1 + nachfrage_luecke;
+
+  // ---------- 10b. NOMINALE FORTSCHREIBUNG ----------
+  // Alles oben ist in Größen von 2025 gerechnet. Bis 24.09.2026 blieb es dabei:
+  // ESt, MwSt, Beiträge und Ausgaben standen 20 Jahre auf dem Stand von 2025,
+  // während das BIP von 4.470 auf 6.380 Mrd. wuchs — die Einnahmenquote schmolz
+  // von 37 auf 26 % (PRUEFUNG-2.md I.2). Jetzt: Aufkommenselastizität 1 zum
+  // tatsächlichen BIP der Periode (so wirken Rezessionen auch auf die Einnahmen),
+  // der Tarif gilt als indexiert (keine kalte Progression). KSt und GewSt tragen
+  // bip_faktor schon über den Gewinn; der CO₂-Preis ist ein Preis und folgt dem
+  // Preisniveau. Die Werte je Haushalt bleiben in Preisen von 2025.
+  // Die Nachfragelücke der Periode wirkt auf alle BIP-gebundenen Einnahmen (automatischer Stabilisator).
+  const EINNAHMEN_FAKTOR = { kst: nachfrage_faktor, gewst: nachfrage_faktor, co2: trend_faktor };
+  for (const k of Object.keys(rev)) rev[k] *= EINNAHMEN_FAKTOR[k] ?? bip_faktor * nachfrage_faktor;
   const einnahmen_total = Object.values(rev).reduce((a,b)=>a+b,0);
 
   // ---------- 11. VERWALTUNGSKOSTEN ----------
@@ -276,8 +402,8 @@ function berechne(params, zustand = null) {
     est_aufkommen * ADMIN_QUOTE.est +
     (est_aufkommen * (params.synthetisch ? 0.3 : 0.2)) * (ADMIN_QUOTE.kapital - ADMIN_QUOTE.est) +
     mwst_auf * ADMIN_QUOTE.mwst +
-    kst_auf * ADMIN_QUOTE.kst +
-    gewst_auf * ADMIN_QUOTE.gewst +
+    kvs.kst * ADMIN_QUOTE.kst +      // in Größen von 2025 wie die übrigen Posten
+    kvs.gewst * ADMIN_QUOTE.gewst +
     co2_auf * ADMIN_QUOTE.co2 +
     erb_auf * ADMIN_QUOTE.erbschaft +
     boden_auf * ADMIN_QUOTE.grundst +
@@ -289,19 +415,41 @@ function berechne(params, zustand = null) {
     bge_brutto * 0.008; // BGE: 0,8% Verwaltungskosten — kein Bedürftigkeitstest (RWI 2024)
 
   // ---------- 12. AUSGABEN inkl. Transfers ----------
-  // F1: SV-Ausgabenseite koppeln — Umlagesystem: Beitragssatz ↓ → Leistungen ↓ (§ 213 SGB VI).
   // Sozial=850 enthält grob: RV ~390, GKV ~290, AL+PV ~90, Bürgergeld etc. ~80 Mrd.
-  // Bürgergeld wird separat über bg_auszahlung geführt; die SV-Anteile skalieren mit den Reglern.
+  // Die Ausgaben folgen dem Leistungsniveau, nicht dem Beitragssatz. Vorher skalierten
+  // sie mit dem Satz: RV 10 % strich 180 Mrd. Renten, die bei keinem Haushalt fehlten,
+  // Saldo und alle Dezile gewannen — eine dominante Strategie (PRUEFUNG-2.md I.1).
+  // KV, AL und PV bleiben auf Status quo; einen Leistungsregler gibt es erst, wenn
+  // Leistungen bei Haushalten ankommen (Stufe 2).
+  // Eine Niveauänderung ändert die Rentenzahlungen — genau die Summe, die bei den
+  // Haushalten ankommt (renten_delta, Abschnitt 15). Staat und Haushalte buchen dasselbe.
   const SV_AUSG = { rv: 390, kv: 290, alpf: 90 };
-  const sv_ausgaben_delta =
-    SV_AUSG.rv   * (params.rv   / 18.6 - 1) +
-    SV_AUSG.kv   * (params.kv   / 16.3 - 1) +
-    SV_AUSG.alpf * (params.alpf /  6.2 - 1);
+  const sv_ausgaben_delta = dezile.reduce((a, d, i) => a + d.anzahl * renten_delta[i], 0) / 1000;
   // Demografieaufschlag: steigende RV-Ausgaben durch Alterung (RV-Anteil ~390 Mrd.)
-  const demografie_aufschlag = 390 * (renten_faktor - 1.0);
-  // invest_impuls: zusätzliche öffentliche Investitionen (Mrd./Jahr, reduziert Saldo)
-  const invest_impuls = params.invest_impuls || 0;
-  const ausgaben_total = AUSGABEN_TOTAL + bg_auszahlung + kg_auszahlung + neg_est_auszahlung + bge_brutto + admin_kosten - STAATSAUSGABEN.verwaltung - STAATSAUSGABEN.zinsen + zinsen_dyn - rv_einsparung + sv_ausgaben_delta + demografie_aufschlag + invest_impuls;
+  const demografie_aufschlag = SV_AUSG.rv * (renten_faktor - 1.0);
+  // invest_impuls: zusätzliche öffentliche Investitionen (Mrd./Jahr, reduziert Saldo) — Abschnitt 10a
+  // Alle Ausgaben außer den Zinsen wachsen mit dem nominalen Trend (Preise und
+  // Löhne), nicht mit dem BIP: eine Rezession senkt sie nicht. Die Zinsen sind
+  // schon nominal, sie kommen aus dem Schuldenstand (PRUEFUNG-2.md I.2).
+  // Ersetzt ein BGE das Bürgergeld, entfallen auch Unterkunft und Mehrbedarfe (bei den
+  // Haushalten ebenso, verteilung.js)
+  // Nur ein BGE ersetzt die Grundsicherung; ein Regelsatz von 0 € streicht nicht die Unterkunft
+  const grundsicherung_entfaellt = (bge > 0 && bge >= params.bg) ? STAATSAUSGABEN.grundsicherung_fix : 0;
+  // Der Klimafonds gibt aus, was der CO₂-Preis des Status quo auf dem Emissionspfad einbringt —
+  // er schrumpft mit den Emissionen. Mehraufkommen aus einem höheren Preis bleibt im Saldo.
+  const klimafonds_weniger = STAATSAUSGABEN.klimafonds * (1 - emissionen_basis / emissionsBasis(2025));
+  // Die allgemeine Verwaltung (140 Mrd.) bleibt; in den Saldo geht nur die ÄNDERUNG der
+  // Erhebungskosten gegenüber dem Status quo. Vorher ersetzten die errechneten
+  // Erhebungskosten (59 Mrd.) die gesamte Verwaltung (PRUEFUNG-2.md II, C3).
+  const admin_referenz = optionen.adminReferenz ? admin_kosten : erhebungskostenStatusQuo();
+  const ausgaben_real = AUSGABEN_TOTAL - grundsicherung_entfaellt - klimafonds_weniger + bg_auszahlung + kg_auszahlung + neg_est_auszahlung + bge_brutto + (admin_kosten - admin_referenz) - STAATSAUSGABEN.zinsen - rv_einsparung + sv_ausgaben_delta + demografie_aufschlag + invest_impuls;
+  // Rechtsstand 2026: Anstieg der Verteidigungsausgaben über 2025 (NATO-Plan) und das
+  // Sondervermögen Infrastruktur, gemittelt über die Jahre der Periode (docs/RECHTSSTAND.md)
+  const verteidigung_quote = mittel(verteidigungQuote);                                  // % BIP
+  const verteidigung_zusatz = (verteidigung_quote - NATO_QUOTE_2025) / 100 * BASIS_MAKRO.bip;   // Größen 2025
+  const sondervermoegen_nominal = mittel(sondervermoegen);
+  const sondervermoegen_real = sondervermoegen_nominal / trend_faktor;
+  const ausgaben_total = (ausgaben_real + verteidigung_zusatz) * trend_faktor + sondervermoegen_nominal + zinsen_dyn;
 
   // ---------- 13. SALDO ----------
   const saldo = einnahmen_total - ausgaben_total;
@@ -323,11 +471,13 @@ function berechne(params, zustand = null) {
   if (klein_auf > 0) nst += 7;
 
   // ---------- 15. HAUSHALTSBELASTUNG pro Dezil (vs. Status Quo) ----------
-  const hh_delta = berechneDezilDelta(dezile, params, est_pro_dezil, klimageld_auszahlung, bg_auszahlung, kg_auszahlung);
 
   // ---------- 16. GINI ----------
-  const gini = berechneGini(hh_delta.netto, dezile);
-  const palma = berechnePalma(hh_delta.netto);
+  // Beide Ungleichheitsmaße auf Äquivalenzeinkommen wie EU-SILC, damit sie mit
+  // den amtlichen Werten vergleichbar sind (PRUEFUNG.md B3).
+  const netto_aeq = aequivalenzEinkommen(hh_delta.netto, dezile);
+  const gini = berechneGini(netto_aeq, dezile);
+  const palma = berechnePalma(netto_aeq);
 
   // ---------- 17. VERHALTENSINDIZES ----------
   const avg_labor = dezile.reduce((a,d) => a + d.labor_factor * d.anzahl, 0) / dezile.reduce((a,d) => a + d.anzahl, 0);
@@ -360,7 +510,7 @@ function berechne(params, zustand = null) {
   }, 0) / total_hh_all * 100;
 
   // ---------- 19. SCHULDENQUOTE Δ ----------
-  const bip_aktuell = BASIS_MAKRO.bip * bip_faktor;
+  const bip_aktuell = BASIS_MAKRO.bip * bip_faktor * nachfrage_faktor;
   const schuldenquote_delta = -(saldo / bip_aktuell) * 100;
 
   // ---------- 20. METR (Marginal Effective Tax Rate) je Dezil ----------
@@ -368,11 +518,11 @@ function berechne(params, zustand = null) {
   const metr = dezile.map((d, i) => {
     const brutto = d.brutto_adj;
     const arbeit = brutto * (1 - d.kapital);
-    const gs_est = grenzsteuersatzHaushalt(arbeit, params.freibetrag, params.eingang, params.spitze, params.grenze);
+    const gs_est = grenzsteuersatzHaushalt(arbeit, params.freibetrag, params.eingang, params.spitze, params.grenze, d.pareto_alpha);
     // K3: Separate BBG für KV/PV (62.100 €) und RV/AL (params.bbg).
     // RV+AL Grenzbelastung fällt weg sobald Arbeitseinkommen ≥ RV-BBG
-    const bbg_rv_m = params.bbg ?? 90000;
-    const bbg_kv_m = Math.round(bbg_rv_m * (BASIS_MAKRO.kv_bbg_kv_sq / 90000));
+    const bbg_rv_m = params.bbg ?? BBG_SQ;
+    const bbg_kv_m = Math.round(bbg_rv_m * (BASIS_MAKRO.kv_bbg_kv_sq / BBG_SQ));
     const sv_grenz_rv = arbeit < bbg_rv_m ? (params.rv + params.alpf * 0.42) / 100 * 0.5 : 0;
     // kv_bbg_frei: kein Deckel → Grenzbelastung gilt bei jedem Einkommensniveau
     const sv_grenz_kv = (params.kv_bbg_frei || arbeit < bbg_kv_m) ? (params.kv + params.alpf * 0.58) / 100 * 0.5 : 0;
@@ -390,7 +540,7 @@ function berechne(params, zustand = null) {
   // Korrekt: ∑ 0.5 × ε × gs_i² / (1−gs_i) × Lohnsumme_i  (Harberger-Dreieck je Dezil)
   const dwl = dezile.reduce((a, d) => {
     const arbeit_dwl = d.brutto_adj * (1 - d.kapital);
-    const gs = grenzsteuersatzHaushalt(arbeit_dwl, params.freibetrag, params.eingang, params.spitze, params.grenze);
+    const gs = grenzsteuersatzHaushalt(arbeit_dwl, params.freibetrag, params.eingang, params.spitze, params.grenze, d.pareto_alpha);
     const lohnsumme_d = arbeit_dwl * d.anzahl / 1000; // Mrd.
     return a + 0.5 * ELAST.labor_supply * (gs * gs) / Math.max(0.01, 1 - gs) * lohnsumme_d;
   }, 0);
@@ -398,12 +548,21 @@ function berechne(params, zustand = null) {
   // ---------- 19b. SCHULDENBREMSE (Art. 109 GG) ----------
   // Vereinfacht: struktureller Saldo ≈ Gesamtsaldo / BIP (keine Konjunkturbereinigung im Modell)
   const saldo_bip_pct = saldo / bip_aktuell * 100;
-  const schuldenbremse_ok = saldo_bip_pct >= -0.35;
+  // Schuldenbremse 2025: struktureller Saldo = Saldo ohne Konjunkturkomponente und ohne die
+  // Ausnahmen (Verteidigung über 1 % BIP, Sondervermögen), Grenze 0,70 % BIP (Bund + Länder).
+  // Vereinfacht: Gesamtstaat statt Bund und Länder. Vorher: Ist-Saldo ≥ −0,35 %, ohne
+  // Konjunktur und ohne die Ausnahmen von 2025 (PRUEFUNG-2.md III).
+  const konjunktur_pct = BUDGET_SEMIELASTIZITAET * nachfrage_luecke * 100;
+  const ausnahmen_pct = Math.max(0, verteidigung_quote - VERTEIDIGUNG_AUSNAHME_AB)
+                      + sondervermoegen_nominal / bip_aktuell * 100;
+  const struktureller_saldo_pct = saldo_bip_pct - konjunktur_pct + ausnahmen_pct;
+  const schuldenbremse_ok = struktureller_saldo_pct >= -SCHULDENBREMSE_STRUKTURELL;
+  const schuldenbremse_luecke = Math.max(0, -(struktureller_saldo_pct + SCHULDENBREMSE_STRUKTURELL)) / 100 * bip_aktuell;
 
   // ---------- 19c. DYNAMISCHES SCORING ----------
   // Verhaltensbedingte Aufkommensänderung gegenüber mechanischer (statischer) Wirkung
   // KSt: investment_factor-Abweichung von 1 = Investitionsreaktion auf KSt-Änderung
-  const dynamisch_kst = BASIS_MAKRO.gewinn * bip_faktor * params.kst / 100 * (investment_factor - 1);
+  const dynamisch_kst = BASIS_MAKRO.gewinn_kst * bip_faktor * params.kst / 100 * (investment_factor - 1);
   // ESt: labor_factor-Abweichung → Arbeitsangebotsreaktion (Saez/Chetty-Konsens ε = 0,20)
   const dynamisch_est = est_aufkommen * (avg_labor - 1);
   const dynamisch_delta = dynamisch_kst + dynamisch_est;
@@ -415,13 +574,14 @@ function berechne(params, zustand = null) {
     armutsrisiko, schuldenquote_delta, metr, dwl, poverty_line,
     rv_einsparung, bge_brutto,
     // Research-basierte Erweiterungen (QUELLENRECHERCHE.md)
-    saldo_bip_pct, schuldenbremse_ok,
+    saldo_bip_pct, schuldenbremse_ok, struktureller_saldo_pct, schuldenbremse_luecke,
+    verteidigung_quote, sondervermoegen_real, kst_senkung, rv_anstieg,
     dynamisch_kst, dynamisch_est, dynamisch_delta,
     investment_factor, avg_labor,
     // GKV-Reform-Boni (für GKV-Panel-Darstellung)
     kv_bbg_frei_bonus, kv_kapital_bonus,
     // Multi-Perioden-Felder
-    emissionen, bip_aktuell, invest_impuls, demografie_aufschlag, sv_ausgaben_delta, zinsen_dyn,
+    emissionen, emissionen_basis, bip_aktuell, invest_impuls, nachfrage_luecke, konsum_impuls, demografie_aufschlag, sv_ausgaben_delta, zinsen_dyn,
   };
 }
 

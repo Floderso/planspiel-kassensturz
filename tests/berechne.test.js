@@ -123,14 +123,15 @@ test('BGE 1.200 € reduziert Arbeitsangebot und ersetzt Bürgergeld (RWI 2024)'
   assert.ok(r.bge_brutto > 900 && r.bge_brutto < 1100, `BGE-Bruttokosten ${r.bge_brutto} Mrd. (soll ~1.008)`);
 });
 
-test('Schuldenbremse-Indikator konsistent zum Saldo (Art. 109 GG, −0,35 % BIP)', () => {
+test('Schuldenbremse-Indikator folgt der Regel 2025 (strukturell −0,70 % BIP)', () => {
   const r = berechne(SQ);
-  assert.equal(r.schuldenbremse_ok, r.saldo_bip_pct >= -0.35);
+  assert.equal(r.schuldenbremse_ok, r.struktureller_saldo_pct >= -0.70);
 });
 
 test('Klimageld: Auszahlung ist 70 % des CO₂-Aufkommens, Abschalten erhöht Netto-Aufkommen', () => {
-  const mit = berechne(SQ);
-  const ohne = berechne({ ...SQ, klimageld: false });
+  // Seit 25.09.2026 ohne Klimageld im Status quo (nie eingeführt, PRUEFUNG.md B5)
+  const mit = berechne({ ...SQ, klimageld: true });
+  const ohne = berechne(SQ);
   assert.ok(Math.abs(mit.klimageld_auszahlung - (mit.rev.co2 + mit.klimageld_auszahlung) * 0.7) < 1e-9);
   assert.equal(ohne.klimageld_auszahlung, 0);
   assert.ok(ohne.rev.co2 > mit.rev.co2);

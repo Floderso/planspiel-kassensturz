@@ -15,8 +15,15 @@
 > (`tests/dimensionen.test.js`) sichern die Korrekturen ab.
 >
 > **Offen bleiben** die didaktisch wichtigen Punkte B1, B2 (Regler mit
-> falschem Etikett), B3 (Gini-Skala gegen Feedback-Schwellen), A2
-> (Klimasensitivität) sowie C1 bis C5.
+> falschem Etikett), A2 (Klimasensitivität) sowie C1 bis C5.
+>
+> **Nachtrag vom 24.09.2026: B3 ist repariert.** Gini und Palma rechnen auf
+> Äquivalenzeinkommen (Netto / Bedarfsgewicht, wie EU-SILC). Der Gini im
+> Status quo fällt von **0,377 auf 0,303** (amtlich 0,295), der Palma von
+> 1,72 auf **1,25** (Lehrbuchwert ~1,2). Die Feedback-Texte beschreiben jetzt
+> ein Niveau statt einer Veränderung; der unveränderte Status quo heißt
+> „Ungleichheit etwa wie heute". Tests gegen EU-SILC und gegen das Feedback
+> (`tests/kalibrierung.test.js`, `tests/feedback.test.js`) sichern das ab.
 
 ---
 
@@ -309,6 +316,8 @@ Einzelposition unüberprüfbar.
 
 ### C4 · MPC und Konsumquote sind nicht dasselbe
 
+> ✔ **Erledigt 25.09.2026:** eigenes MPC-Profil (`MPC_DEZIL`), siehe PRUEFUNG-2.md VI.3.
+
 Der HANK-Multiplikator gewichtet mit `DEZILE[i].konsum` — das ist die
 *durchschnittliche* Konsumquote (1,00 bis 0,40), verglichen wird sie
 mit einem *marginalen* Benchmark (0,45). Dadurch kann der Multiplikator
@@ -431,15 +440,15 @@ Steuerprogression lehren soll.
 |---|---|---|---|
 | 1 | **A1** Zinslast-Einheit in `abgeleitet.js` | eine Zeile | ✔ **erledigt** |
 | 2 | **A4** einen Zinssatz für beide Module | wenige Zeilen | ✔ **erledigt** |
-| 3 | **B3** Äquivalenzgewicht im Gini nutzen **oder** Feedback-Schwellen anpassen | überschaubar | offen — **wichtigster verbleibender Punkt** |
+| 3 | **B3** Äquivalenzgewicht im Gini nutzen **oder** Feedback-Schwellen anpassen | überschaubar | ✔ **erledigt** 24.09. (Äquivalenzgewicht, Gini 0,303) |
 | 4 | **A3** Palma auf die Anteilsdefinition umstellen (Test mit) | eine Zeile + Test | ✔ **erledigt** |
 | 5 | **F1** nominales Wachstum auf 2,5–3 % | eine Konstante | ✔ **erledigt** (2,5 %) |
-| 6 | **B1/B2** Tarifzonen entkoppeln | mittel | offen — echte Modellarbeit |
-| 7 | **A2** Klimasensitivität korrigieren, Schadensfunktion neu justieren | mittel | offen — echte Modellarbeit |
+| 6 | **B1/B2** Tarifzonen entkoppeln | mittel | ✔ **erledigt** 25.09.: Spitzensatz nur ab der Grenze, Grenze verschiebt nur Zone 5, Zonen 2026 fest; D10c mit Pareto-Rand (α = 1,5). Spitze 55 %: +3,5 statt +36,7 Mrd., D5 unberührt |
+| 7 | **A2** Klimasensitivität korrigieren, Schadensfunktion neu justieren | mittel | ✔ **erledigt** 24.09.: nationaler Klimaschaden entfernt (PRUEFUNG-2.md I.5); C2 mit erledigt |
 | 8 | **A5** Zinsdoppelzählung | wenige Zeilen | ✔ **erledigt** |
 | 9 | **B4** GGI-Referenz auf den Spielbereich strecken | eine Zeile | ✔ **erledigt** (60–150 %) |
-| 10 | **B5/B6** Referenzjahr vereinheitlichen, Klimageld aus dem Status quo | Fleißarbeit | offen |
-| 11 | **C3** Ausgabenstruktur entzerren, Ausgleichsposten abschaffen | mittel | offen — **hat sich verschärft**, siehe unten |
+| 10 | **B5/B6** Referenzjahr vereinheitlichen, Klimageld aus dem Status quo | Fleißarbeit | ✔ **erledigt** 25.09.: Referenzjahr 2026, `docs/RECHTSSTAND.md` |
+| 11 | **C3** Ausgabenstruktur entzerren, Ausgleichsposten abschaffen | mittel | **teilweise** 25.09.: Verwaltung zählt wieder voll, Posten jetzt −221,4 Mrd. — nahe seiner Bedeutung (~290 Mrd. sonstige Einnahmen VGR); gegen die GKV-Doppelzählung spricht, dass er sonst über 500 Mrd. läge. Offen: Abgleich Posten für Posten mit der VGR (Primärdaten gesperrt). C1 erledigt (getrennte KSt-/GewSt-Basen, ErbSt-Ist 12), C5 als „nicht verwendet" markiert |
 | 12 | **D** Dimensionstests ergänzen | klein | ✔ **erledigt** (8 Tests) |
 
 ### Was die Reparatur bewirkt hat
@@ -452,6 +461,8 @@ Steuerprogression lehren soll.
 | r − g | +1,00 % | **−0,50 %** | entspricht der Lage seit 2010 |
 | Schuldenquote nach 20 J. | 130,4 % | **84,9 %** | |
 | Palma | 6,87 | **1,72** | Lehrbuchwert DE ~1,2 |
+| Palma (24.09., Äquivalenzeinkommen) | 1,72 | **1,25** | Lehrbuchwert DE ~1,2 |
+| Gini (24.09., Äquivalenzeinkommen) | 0,377 | **0,303** | EU-SILC DE 0,295 |
 | Status-quo-Saldo | −115,9 | **−118,6** | Ziel −118,8 (näher als vorher) |
 | Spreizung der Politiken | ~0 | **35 Prozentpunkte** | Schuldenquote nach 20 Jahren |
 

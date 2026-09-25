@@ -305,7 +305,8 @@ Kindergeld (17 Mio. Kinder × Satz), ggf. negative Einkommensteuer (30 Mrd. €)
 BGE-Bruttokosten (70 Mio. Erwachsene × Höhe × 12), Verwaltungskosten,
 dynamische Zinslast (Effektivzins × aktueller Schuldenstand), Kopplung der
 Sozialversicherungsausgaben an die Beitragssätze (Umlagesystem: RV 390 Mrd.,
-KV 290 Mrd., ALV/Pflege 90 Mrd. skalieren proportional), demografischer
+KV 290 Mrd., ALV/Pflege 90 Mrd. skalieren proportional — *seit 24.09.2026
+entfernt: die Ausgaben folgen dem Rentenniveau, siehe PRUEFUNG-2.md I.1*), demografischer
 Aufschlag auf die Rentenausgaben (390 Mrd. × Rentenfaktor − 1) sowie der
 öffentliche Investitionsimpuls. Bei aktivem BGE wird die Renteneinsparung aus
 Ziel-Rentenniveaus und Aufstockungsbedarf berechnet.

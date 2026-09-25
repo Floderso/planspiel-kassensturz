@@ -69,8 +69,11 @@ export function berechneWaehlerstimmung(params, result, zustand = null, refParam
   if (params.klimageld) kl += 4.0;
   else if (co2 > 80) kl -= 6.0; // Hoher CO2-Preis ohne Ausgleich erzeugt Unmut
 
-  if (result?.emissionen && result.emissionen < 300) {
-    kl += (300 - result.emissionen) * 0.2;
+  // Gemessen am Basispfad, nicht an einer festen Zahl: der Pfad sinkt ohnehin, und
+  // früher lagen 300 Mt auf der alten 327-Mt-Skala (8,3 % darunter).
+  const unter_pfad = result?.emissionen_basis ? 1 - result.emissionen / result.emissionen_basis : 0;
+  if (unter_pfad > 0.083) {
+    kl += (unter_pfad - 0.083) * 65.4;
   }
 
   // Begrenzungen der Sub-Indizes auf [10, 90]
@@ -82,9 +85,11 @@ export function berechneWaehlerstimmung(params, result, zustand = null, refParam
   let gesamt = an * 0.40 + wi * 0.25 + kl * 0.15 + 48.0 * 0.20;
 
   // Abzug bei Verletzung der Schuldenbremse
+  // Schuldenbremse 2025: struktureller Saldo gegen −0,70 % BIP (berechne.js)
   const saldoPct = result?.saldo_bip_pct ?? ((result?.saldo ?? -118.8) / 4470 * 100);
-  if (saldoPct < -0.35) {
-    const malus = Math.min(12, Math.abs(saldoPct - (-0.35)) * 3.5);
+  const struktPct = result?.struktureller_saldo_pct ?? saldoPct;
+  if (struktPct < -0.70) {
+    const malus = Math.min(12, Math.abs(struktPct - (-0.70)) * 3.5);
     gesamt -= malus;
   } else if (saldoPct >= 0) {
     gesamt += 3.5; // Überschuss-Bonus
@@ -126,8 +131,8 @@ export function ermittleEreignisse(params, result, zustand = null, refParams = n
 
   // 2. Haushaltslage (Schuldenbremse)
   const saldoPct = result?.saldo_bip_pct ?? ((result?.saldo ?? 0) / 4470 * 100);
-  if (saldoPct < -0.35) {
-    push('fiskus', 'bad', 50 + Math.min(30, Math.abs(saldoPct) * 10));
+  if (result ? result.schuldenbremse_ok === false : saldoPct < -0.70) {
+    push('fiskus', 'bad', 50 + Math.min(30, Math.abs(result?.struktureller_saldo_pct ?? saldoPct) * 10));
   } else if (saldoPct >= 0) {
     push('fiskus', 'good', 40 + (result?.saldo ?? 0));
   }
@@ -156,7 +161,7 @@ export function ermittleEreignisse(params, result, zustand = null, refParams = n
   const co2 = params.co2 ?? 55;
   if (co2 >= 80 && params.klimageld) push('klima', 'klimageld', 42);
   else if (co2 >= 80 && !params.klimageld) push('klima', 'co2_high_noklima', 46);
-  else if (result?.emissionen && result.emissionen < 290) push('klima', 'ziel_gut', 34);
+  else if (result?.emissionen_basis && result.emissionen < result.emissionen_basis * 0.887) push('klima', 'ziel_gut', 34);
 
   // 7. Soziales
   if (params.bge > 0) push('soziales', 'bge', 48);

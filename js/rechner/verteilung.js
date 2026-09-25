@@ -1,6 +1,13 @@
 // SPDX-License-Identifier: CC-BY-4.0
 // Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
-import { DEZILE, PRESETS, ELAST, BASIS_MAKRO } from '../data.js';
+import { DEZILE, PRESETS, ELAST, BASIS_MAKRO, STAATSAUSGABEN, KINDER_JE_HH, BUERGERGELD_QUOTE, CO2_GEWICHT } from '../data.js';
+
+// Grundsicherung außerhalb des Reglers (Unterkunft, Mehrbedarfe) je Haushalt, nach dem
+// Bürgergeldprofil — der Staat bucht sie fest, also kommt sie auch fest an (PRUEFUNG-2.md I.4)
+const GRUNDSICHERUNG_FIX_HH = (() => {
+  const summe = DEZILE.reduce((a, d, i) => a + d.anzahl * BUERGERGELD_QUOTE[i], 0);
+  return BUERGERGELD_QUOTE.map(q => STAATSAUSGABEN.grundsicherung_fix * 1000 * q / summe);
+})();
 import { estHaushalt } from './einkommensteuer.js';
 
 // ═══════════════════════════════════════════════════════
@@ -10,15 +17,20 @@ import { estHaushalt } from './einkommensteuer.js';
 
 // Quellenmetadaten — parallel zu den Berechnungsfunktionen
 const FORMEL_QUELLEN_VERT = {
+  aequivalenzEinkommen: {
+    formel: 'y_äq,i = Netto_i / Bedarfsgewicht_i  (neue OECD-Skala: 1,0 erste Person · 0,5 weitere ab 14 J. · 0,3 Kinder unter 14 J.)',
+    ref:    'Eurostat EU-SILC Methodik (äquivalisiertes verfügbares Einkommen) · Destatis Glossar „Äquivalenzeinkommen" · OECD (2013) Framework for Statistics on the Distribution of Household Income',
+    note:   'Bedarfsgewicht = DEZILE[i].gewicht (1,3–2,0, Haushaltsdurchschnitt je Dezil). Gezählt wird über Haushalte, nicht Personen — Personenzahlen je Dezil fehlen im Datensatz. Status quo: Gini 0,310 gegen 0,295 amtlich (EU-SILC); ohne Bedarfsgewichtung deutlich höher (vor dem Abgleich Haushalt/Staat 0,377)'
+  },
   berechneGini: {
     formel: 'G = 1 − 2·∫Lorenz(x)dx  (Trapezregel, gewichtet nach Haushaltszahl)',
     ref:    'Sen (1973) On Economic Inequality · Cowell (2011) Measuring Inequality · Destatis Methodik Gini-Koeffizient',
-    note:   'Gewichtet nach DEZILE[i].anzahl; D10a/b/c (2,05 / 1,64 / 0,41 Mio. HH) werden korrekt gewichtet'
+    note:   'Gewichtet nach DEZILE[i].anzahl; D10a/b/c (2,05 / 1,64 / 0,41 Mio. HH) werden korrekt gewichtet. berechne() übergibt Äquivalenzeinkommen wie EU-SILC, nicht Haushaltsnetto'
   },
   berechnePalma: {
     formel: 'Palma = Einkommensanteil(Top 10%) / Einkommensanteil(Bottom 40%)',
     ref:    'Palma (2011) Homogeneous Middles vs. Heterogeneous Tails · UNDP HDR 2013',
-    note:   'Robuster gegenüber Mittelstand-Verzerrung als Gini; international gut vergleichbar'
+    note:   'Robuster gegenüber Mittelstand-Verzerrung als Gini; international gut vergleichbar. Auf Äquivalenzeinkommen wie der Gini: Status quo 1,25 (Lehrbuchwert DE ~1,2)'
   },
   berechneMedianGewichtet: {
     formel: 'Gewichteter Median: kumulierte Haushaltsanteile bis 50 %',
@@ -27,8 +39,8 @@ const FORMEL_QUELLEN_VERT = {
   },
   armutsrisiko: {
     formel: 'pov_i = pov_sq_i × (y_i/y_sq_i ÷ PL/PL_sq)^(−1,5)',
-    ref:    'Bourguignon (2003) JPubEc · EU-SILC DE 2023 (14,8 % Kalibrierung) · SOEP v40 · IAB Kurzbericht 2024',
-    note:   'Elastizität −1,5: +1 % Einkommen → −1,5 % Armutsanteil. Intra-Dezil: D1 90 %, D2 62 %, D3 5 % (SOEP)'
+    ref:    'Bourguignon (2003) · EU-SILC DE 2023 (14,8 % Kalibrierung) · SOEP v40 · IAB Kurzbericht 2024',
+    note:   'Elastizität −1,5: +1 % Einkommen → −1,5 % Armutsanteil. Intra-Dezil: D1 90 %, D2 62 %, D3 5 % (SOEP). Übertragene Elastizität: Bourguignon schätzt sie für absolute Armut in Entwicklungsländern; für eine relative Armutsquote ist sie eine Näherung (PRUEFUNG-2.md IV)'
   },
   berechneNettoSQ: {
     formel: 'Netto_SQ = Brutto − ESt(SQ) − SV(SQ) − MwSt(SQ) − CO₂(SQ) + Klimageld(SQ) + Transfers(SQ)',
@@ -38,10 +50,18 @@ const FORMEL_QUELLEN_VERT = {
   berechneDezilDelta: {
     formel: 'Δ_i = Netto_neu_i − Netto_SQ_i',
     ref:    'SOEP v40 · Destatis Mikrozensus 2024 · BMF Steuerschätzung 2025',
-    note:   'Dezil-Gewichte: bg_quote [0,60..0], kg_quote [0,80..0,20] aus Mikrozensus 2024'
+    note:   'Profile aus data.js (BUERGERGELD_QUOTE, KINDER_JE_HH auf 17 Mio. Kinder, CO2_GEWICHT auf das Aufkommen normiert) — dieselben Zahlen, die der Staat bucht'
   }
 };
 
+
+// Ein Haushalt mit vier Personen braucht mehr als einer mit einer. Ohne diese
+// Bedarfsgewichtung stehen die großen Haushalte oben, die kleinen unten, und die
+// Ungleichheit fällt zu hoch aus: 0,377 statt ~0,29 — so hoch, dass jede Politik
+// im Spiel „stark zunehmende Ungleichheit" hieß (PRUEFUNG.md B3).
+function aequivalenzEinkommen(netto, dez) {
+  return netto.map((v, i) => v / dez[i].gewicht);
+}
 
 function berechneGini(werte, dez) {
   const pairs = werte.map((v, i) => ({ v, n: dez[i].anzahl })).sort((a, b) => a.v - b.v);
@@ -88,7 +108,10 @@ function berechnePalma(werte) {
   return (bot_sum > 0 && top_n > 0) ? top_sum / bot_sum : 0;
 }
 
-function berechneDezilDelta(dezile, params, est_dez, klima, bg, kg) {
+// zusatz: { renten, co2_brutto, inzidenz } aus berechne.js — Werte, die der Staat bucht und
+// die hier je Haushalt ankommen (PRUEFUNG-2.md I.4). co2_brutto in Mrd. €, sonst €/Haushalt.
+function berechneDezilDelta(dezile, params, est_dez, klima, bg, kg, zusatz = {}) {
+  const { renten = null, co2_brutto = BASIS_MAKRO.emissions * params.co2 / 1000, inzidenz = null } = zusatz;
   // Netto-Einkommen pro Dezil NEU
   const netto = [];
   const delta = [];
@@ -99,45 +122,58 @@ function berechneDezilDelta(dezile, params, est_dez, klima, bg, kg) {
     const brutto = d.brutto_adj;
     // K3: SV nur auf Arbeitseinkommen (nicht Kapital); KV-BBG (62.100 €) < RV/AL-BBG
     const arbeit_dez = brutto * (1 - d.kapital);
-    const bbg_rv_dez = params.bbg ?? 90000;
+    const bbg_rv_dez = params.bbg ?? PRESETS.status_quo.bbg;
     // kv_bbg_frei: kein KV-Beitragsdeckel → gesamtes Arbeitseinkommen KV-pflichtig
-    const bbg_kv_dez = params.kv_bbg_frei ? Infinity : Math.round(bbg_rv_dez * (BASIS_MAKRO.kv_bbg_kv_sq / 90000));
+    const bbg_kv_dez = params.kv_bbg_frei ? Infinity : Math.round(bbg_rv_dez * (BASIS_MAKRO.kv_bbg_kv_sq / PRESETS.status_quo.bbg));
     const sv_lohn = Math.min(arbeit_dez, bbg_rv_dez) * (params.rv + params.alpf * 0.42) / 100 * 0.5
                   + Math.min(arbeit_dez, bbg_kv_dez) * (params.kv + params.alpf * 0.58) / 100 * 0.5;
     // kv_kapital: Kapitalerträge von GKV-Mitgliedern werden KV-pflichtig (Mieteinnahmen, Zinsen, Dividenden)
     // GKV-Quote sinkt in den oberen Dezilen (mehr PKV)
     const GKV_QUOTE = [0.95, 0.95, 0.95, 0.93, 0.90, 0.85, 0.80, 0.75, 0.70, 0.55, 0.30, 0.08];
     const sv_kapital = params.kv_kapital ? brutto * d.kapital * params.kv / 100 * 0.5 * GKV_QUOTE[i] : 0;
-    const sv = sv_lohn + sv_kapital;
+    // Arbeitgeberanteil einer Beitragsänderung: langfristig über die Löhne überwiegend von den
+    // Beschäftigten getragen (Melguizo/González-Páramo 2013, Int. Tax and Public Finance 20:
+    // Meta-Analyse). Nur die Änderung gegenüber dem Status quo — das Niveau bleibt beim
+    // Arbeitnehmeranteil. Vorher spürten Haushalte nur die Hälfte dessen, was der Staat bucht.
+    const sq = PRESETS.status_quo;
+    const sv_ag_delta = Math.min(arbeit_dez, bbg_rv_dez) * ((params.rv + params.alpf * 0.42) - (sq.rv + sq.alpf * 0.42)) / 100 * 0.5
+                      + Math.min(arbeit_dez, bbg_kv_dez) * ((params.kv + params.alpf * 0.58) - (sq.kv + sq.alpf * 0.58)) / 100 * 0.5;
+    const sv = sv_lohn + sv_kapital + sv_ag_delta;
     // MwSt auf Konsum
-    const vornetto = brutto - est - sv;
+    const vornetto = brutto - est - sv_lohn - sv_kapital;
     const konsum = vornetto * d.konsum;
-    const mwst = konsum * (0.7 * params.mwst / (100 + params.mwst) + 0.3 * params.mwst_erm / (100 + params.mwst_erm));
-    // CO2-Last (untere Dezile höherer Anteil am Einkommen)
-    // CO₂-Last: Dezil-Anteil am Einkommen × CO₂-Preis × Emissionsreaktion
-    // D10a/b/c: sinkender CO2-Anteil am Einkommen, aber absolut höher
-    const co2_share = [0.040, 0.038, 0.036, 0.034, 0.032, 0.030, 0.028, 0.025, 0.022, 0.018, 0.015, 0.010];
-    const co2_factor_dez = Math.max(0.4, Math.min(1.1, 1 + ELAST.co2 * (params.co2 - 55) / 100));
-    const co2_last = brutto * co2_share[i] * (params.co2 / 55) * co2_factor_dez;
+    const satz = (m, e) => 0.7 * m / (100 + m) + 0.3 * e / (100 + e);
+    // Die Änderung gegenüber den Sätzen des Status quo wirkt auf die volle Bemessungsgrundlage,
+    // wie beim Staat (Basisfaktor und VAT-Gap aus berechne.js); das Niveau bleibt beim Konsum
+    // der Haushalte. Vorher spürten Haushalte zwei Drittel dessen, was der Staat bucht.
+    const MWST_FAKTOR = 0.963 * BASIS_MAKRO.mwst_basis_faktor;
+    const mwst = konsum * (satz(params.mwst, params.mwst_erm)
+                 + (MWST_FAKTOR - 1) * (satz(params.mwst, params.mwst_erm) - satz(sq.mwst, sq.mwst_erm)));
+    // CO₂-Last: das Bruttoaufkommen, vollständig überwälzt, nach dem regressiven Profil
+    // (CO2_GEWICHT). Vorher summierte sich die Last auf 60,8 Mrd. bei 18 Mrd. Aufkommen.
+    const co2_last = co2_brutto * 1000 * CO2_GEWICHT[i];
     // Klimageld zurück (gleichverteilt pro Kopf)
     const total_hh = DEZILE.reduce((a,d)=>a+d.anzahl,0);
     const klimageld_per_hh = klima * 1000 / total_hh;
     // Transfers erhalten
-    // Bürgergeld: D1–D3/D4, D10a/b/c = 0
-    const bg_quote = [0.60, 0.25, 0.08, 0.02, 0, 0, 0, 0, 0, 0, 0, 0];
-    // Kindergeld: Mikrozensus 2024; D10a/b/c: 0,45/0,35/0,20 Kinder im Schnitt
-    const kg_quote = [0.80, 1.10, 1.20, 1.15, 1.05, 0.95, 0.85, 0.75, 0.65, 0.50, 0.35, 0.20];
     const bge_p = params.bge || 0;
     // Bürgergeld effektiv: 0 wenn BGE >= BG-Niveau (BGE ersetzt es, RWI 2024)
     const bg_effektiv_hh = bge_p >= params.bg ? 0 : params.bg;
     let transfers = 0;
-    transfers += bg_effektiv_hh * 12 * bg_quote[i];
-    transfers += params.kg * 12 * kg_quote[i];
+    transfers += bg_effektiv_hh * 12 * BUERGERGELD_QUOTE[i];
+    transfers += params.kg * 12 * KINDER_JE_HH[i];
+    // Unterkunft und Mehrbedarfe entfallen mit dem Bürgergeld, wenn ein BGE es ersetzt
+    transfers += (bge_p > 0 && bge_p >= params.bg) ? 0 : GRUNDSICHERUNG_FIX_HH[i];
     const ERWACHSENE_PRO_HH = 1.71; // Destatis Mikrozensus 2024: 70 Mio. Erwachsene / 41 Mio. Haushalte
     transfers += bge_p * 12 * ERWACHSENE_PRO_HH;
     if (params.neg_est && i < 3) transfers += 3000;
 
-    const netto_final = brutto - est - sv - mwst - co2_last + klimageld_per_hh + transfers;
+    // Rentenänderung aus dem Rentenniveau (berechne.js), brutto wie vom Staat gebucht
+    const rente = renten ? renten[i] : 0;
+    // Unternehmens- und Vermögensteuern, soweit sie vom Status quo abweichen (berechne.js)
+    const inz = inzidenz ? inzidenz[i] : 0;
+
+    const netto_final = brutto - est - sv - mwst - co2_last + klimageld_per_hh + transfers + rente - inz;
 
     // STATUS-QUO-Vergleich (hart codiert auf Basisparameter gerechnet)
     const netto_sq = berechneNettoSQ(d);
@@ -153,29 +189,27 @@ function berechneNettoSQ(d) {
   const brutto = d.brutto;
   const arbeit_sq = brutto * (1 - d.kapital);
   const kapital_sq = brutto * d.kapital;
-  const est = estHaushalt(arbeit_sq, sq.freibetrag, sq.eingang, sq.spitze, sq.grenze)
+  const est = estHaushalt(arbeit_sq, sq.freibetrag, sq.eingang, sq.spitze, sq.grenze, d.pareto_alpha)
             + kapital_sq * sq.abgeltung / 100;
   // SV exakt wie berechneDezilDelta bei SQ-Parametern — die SQ-Referenz muss
   // dasselbe Modell mit denselben BBG-Konventionen sein, sonst sind die
   // Δ-Werte schon bei unveränderten Parametern ungleich null.
-  const bbg_rv_sq = sq.bbg ?? 90000;
-  const bbg_kv_sq = Math.round(bbg_rv_sq * (BASIS_MAKRO.kv_bbg_kv_sq / 90000));
+  const bbg_rv_sq = sq.bbg;
+  const bbg_kv_sq = BASIS_MAKRO.kv_bbg_kv_sq;
   const sv = Math.min(arbeit_sq, bbg_rv_sq) * (sq.rv + sq.alpf * 0.42) / 100 * 0.5
            + Math.min(arbeit_sq, bbg_kv_sq) * (sq.kv + sq.alpf * 0.58) / 100 * 0.5;
   const vornetto = brutto - est - sv;
   const konsum = vornetto * d.konsum;
   const mwst = konsum * (0.7 * sq.mwst / (100 + sq.mwst) + 0.3 * sq.mwst_erm / (100 + sq.mwst_erm));
-  const co2_share = [0.040, 0.038, 0.036, 0.034, 0.032, 0.030, 0.028, 0.025, 0.022, 0.018, 0.015, 0.010];
-  const co2_last = brutto * co2_share[d.idx];
   const sq_co2_auf = BASIS_MAKRO.emissions * sq.co2 / 1000;
+  const co2_last = sq_co2_auf * 1000 * CO2_GEWICHT[d.idx];
   const total_hh_sq = DEZILE.reduce((a,x)=>a+x.anzahl,0);
-  const klimageld_per_hh = sq_co2_auf * 0.7 * 1000 / total_hh_sq;
+  const klimageld_per_hh = sq.klimageld ? sq_co2_auf * 0.7 * 1000 / total_hh_sq : 0;
   let transfers = 0;
-  const bg_quote_sq = [0.60, 0.25, 0.08, 0.02, 0, 0, 0, 0, 0, 0, 0, 0];
-  const kg_quote_sq = [0.80, 1.10, 1.20, 1.15, 1.05, 0.95, 0.85, 0.75, 0.65, 0.50, 0.35, 0.20];
-  transfers += sq.bg * 12 * bg_quote_sq[d.idx];
-  transfers += sq.kg * 12 * kg_quote_sq[d.idx];
+  transfers += sq.bg * 12 * BUERGERGELD_QUOTE[d.idx];
+  transfers += sq.kg * 12 * KINDER_JE_HH[d.idx];
+  transfers += GRUNDSICHERUNG_FIX_HH[d.idx];
   return brutto - est - sv - mwst - co2_last + klimageld_per_hh + transfers;
 }
 
-export { FORMEL_QUELLEN_VERT, berechneGini, berechneMedianGewichtet, berechnePalma, berechneDezilDelta, berechneNettoSQ };
+export { FORMEL_QUELLEN_VERT, aequivalenzEinkommen, berechneGini, berechneMedianGewichtet, berechnePalma, berechneDezilDelta, berechneNettoSQ };
