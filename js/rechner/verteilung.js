@@ -131,11 +131,24 @@ function berechneDezilDelta(dezile, params, est_dez, klima, bg, kg, zusatz = {})
     // GKV-Quote sinkt in den oberen Dezilen (mehr PKV)
     const GKV_QUOTE = [0.95, 0.95, 0.95, 0.93, 0.90, 0.85, 0.80, 0.75, 0.70, 0.55, 0.30, 0.08];
     const sv_kapital = params.kv_kapital ? brutto * d.kapital * params.kv / 100 * 0.5 * GKV_QUOTE[i] : 0;
-    const sv = sv_lohn + sv_kapital;
+    // Arbeitgeberanteil einer Beitragsänderung: langfristig über die Löhne überwiegend von den
+    // Beschäftigten getragen (Melguizo/González-Páramo 2013, Int. Tax and Public Finance 20:
+    // Meta-Analyse). Nur die Änderung gegenüber dem Status quo — das Niveau bleibt beim
+    // Arbeitnehmeranteil. Vorher spürten Haushalte nur die Hälfte dessen, was der Staat bucht.
+    const sq = PRESETS.status_quo;
+    const sv_ag_delta = Math.min(arbeit_dez, bbg_rv_dez) * ((params.rv + params.alpf * 0.42) - (sq.rv + sq.alpf * 0.42)) / 100 * 0.5
+                      + Math.min(arbeit_dez, bbg_kv_dez) * ((params.kv + params.alpf * 0.58) - (sq.kv + sq.alpf * 0.58)) / 100 * 0.5;
+    const sv = sv_lohn + sv_kapital + sv_ag_delta;
     // MwSt auf Konsum
-    const vornetto = brutto - est - sv;
+    const vornetto = brutto - est - sv_lohn - sv_kapital;
     const konsum = vornetto * d.konsum;
-    const mwst = konsum * (0.7 * params.mwst / (100 + params.mwst) + 0.3 * params.mwst_erm / (100 + params.mwst_erm));
+    const satz = (m, e) => 0.7 * m / (100 + m) + 0.3 * e / (100 + e);
+    // Die Änderung gegenüber den Sätzen des Status quo wirkt auf die volle Bemessungsgrundlage,
+    // wie beim Staat (Basisfaktor und VAT-Gap aus berechne.js); das Niveau bleibt beim Konsum
+    // der Haushalte. Vorher spürten Haushalte zwei Drittel dessen, was der Staat bucht.
+    const MWST_FAKTOR = 0.963 * BASIS_MAKRO.mwst_basis_faktor;
+    const mwst = konsum * (satz(params.mwst, params.mwst_erm)
+                 + (MWST_FAKTOR - 1) * (satz(params.mwst, params.mwst_erm) - satz(sq.mwst, sq.mwst_erm)));
     // CO₂-Last: das Bruttoaufkommen, vollständig überwälzt, nach dem regressiven Profil
     // (CO2_GEWICHT). Vorher summierte sich die Last auf 60,8 Mrd. bei 18 Mrd. Aufkommen.
     const co2_last = co2_brutto * 1000 * CO2_GEWICHT[i];

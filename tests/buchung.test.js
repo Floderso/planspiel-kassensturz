@@ -62,3 +62,15 @@ test('Eine höhere Körperschaftsteuer trifft Beschäftigte und Kapitaleigner', 
   r.hh_delta.delta.forEach((d, i) => assert.ok(d < 0, `${DEZILE[i].label} zahlt nichts`));
   assert.ok(r.hh_delta.delta[11] < r.hh_delta.delta[0], 'D10c trägt absolut mehr als D1');
 });
+
+// Mehrwertsteuer und Sozialbeiträge: Staat und Haushalte rechnen mit verschiedenen
+// Bemessungsgrundlagen (Konsumreaktion nur beim Staat, Lohnsumme gegen Dezillöhne).
+// Deshalb ±15 % statt auf den Euro — vorher lagen die Haushalte bei der Hälfte (Faktor 1,5–2,2).
+for (const [name, p, k] of [['MwSt', { mwst: 22 }, 'mwst'], ['RV', { rv: 20 }, 'rv'],
+                            ['KV', { kv: 19 }, 'kv'], ['AL/PV', { alpf: 7 }, 'al']]) {
+  test(`${name}: Haushalte tragen die Änderung, die der Staat einnimmt (±15 %)`, () => {
+    const r = berechne({ ...SQ, ...p });
+    const st = r.rev[k] - BASIS.rev[k], hh = -haushalte(r);
+    assert.ok(Math.abs(hh / st - 1) < 0.15, `Staat ${st.toFixed(1)}, Haushalte ${hh.toFixed(1)} Mrd. €`);
+  });
+}
