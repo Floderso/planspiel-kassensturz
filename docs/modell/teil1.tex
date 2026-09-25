@@ -20,12 +20,14 @@ unverändert; zwischen den Perioden wird der Zustand fortgeschrieben.
 Drei Eigenschaften bestimmen, wie die Ergebnisse zu lesen sind:
 
 \begin{enumerate}
-\item \textbf{Alles ist ein Vergleich.} Die Engine sagt nicht, wie hoch das Nettoeinkommen
-  eines Haushalts 2030 sein \emph{wird}, sondern wie es sich gegenüber dem Status quo
-  \emph{derselben} Periode unterscheidet. Die Absolutwerte sind kalibriert, aber die Aussagen
-  des Planspiels liegen in den Differenzen.
+\item \textbf{Alles ist ein Vergleich.} Die Absolutwerte sind kalibriert, aber die Aussagen
+  des Planspiels liegen in den Differenzen. Die Wirkungen in diesem Dokument sind gegen den
+  Status-quo-Pfad \emph{derselben} Periode gemessen. Die Engine selbst weist die Änderung des
+  Nettoeinkommens je Haushalt gegen den Status quo von 2025 aus; darin stecken auch die
+  Änderungen, die ohne jeden Beschluss kommen (steigender Rentenbeitrag nach geltendem Recht,
+  fallende \COz-Last auf dem Emissionspfad).
 \item \textbf{Verhalten ist berücksichtigt, aber einfach.} Haushalte arbeiten etwas weniger,
-  wenn ihnen von einem zusätzlichen Euro weniger bleibt; sie konsumieren weniger, wenn die
+  wenn ihnen von einem zusätzlichen Euro weniger bleibt; der besteuerte Konsum sinkt, wenn die
   Umsatzsteuer steigt; Unternehmen investieren weniger bei höheren Gewinnsteuern; Emissionen
   sinken mit dem \COz-Preis. Jede dieser Reaktionen ist eine einzige Elastizität aus der
   Literatur, keine geschätzte Nutzenfunktion. Es gibt keine Erwartungen, keine Optimierung
@@ -121,7 +123,7 @@ Bruttoeinkommen, zu 45\,\% aus Kapital, und 7~Mio.\,\euro{} Vermögen.
 Zu jedem Haushaltstyp gibt es außerdem \emph{Profile}, die Haushalte und Staat gemeinsam
 benutzen: Kinder mit Kindergeldanspruch (zusammen 17~Mio.), Bürgergeldbezug (zusammen
 3,9~Mio. Regelsatz-Jahresäquivalente, nur D1 bis D4), die Last aus dem \COz-Preis
-(regressiv: 4\,\% des Einkommens in D1, 1\,\% in D10c) und die Grenzkonsumneigung. Dass
+(regressiv: bei 55\,\euro/t rund 1,2\,\% des Einkommens in D1, 0,3\,\% in D10c) und die Grenzkonsumneigung. Dass
 beide Seiten dieselben Zahlen benutzen, ist nicht selbstverständlich: Bis September 2026
 zählten die Haushalte 36,5~Mio. Kinder, der Staat 17~Mio. Seitdem prüft
 \datei{tests/buchung.test.js}, dass die Summe über die Haushalte der Buchung des Staates
@@ -174,7 +176,9 @@ oberhalb eines Grenzsteuersatzes von 45\,\% kommt Steuervermeidung hinzu, oberha
 Wegzug. Alle Reaktionen sind nach unten und oben begrenzt.
 
 \textbf{Konsum.} Eine um einen Punkt höhere Umsatzsteuer senkt den besteuerten Konsum um
-0,35\,\%, getrennt für den Regel- und den ermäßigten Satz.
+0,35\,\%, getrennt für den Regel- und den ermäßigten Satz. Diese Reaktion wirkt nur auf das
+Aufkommen des Staates; die Umsatzsteuerlast der Haushalte rechnet ohne sie
+(\datei{tests/buchung.test.js}).
 
 \textbf{Investitionen.} Liegt die Summe aus Körperschaft- und Gewerbesteuersatz um zehn Punkte
 über 30\,\%, sinken Gewinne und Investitionen um 4\,\% (Elastizität $-0{,}40$, Meta-Analyse
@@ -278,18 +282,22 @@ Gewerbesteuer. Die Engine verteilt eine Änderung von Körperschaft- und Gewerbe
 Hälfte nach Arbeits- und Kapitaleinkommen, Erbschaft-, Vermögen- und Bodensteuer nach dem
 Vermögen, die Milliardärssteuer auf D10c.
 
-Aus den zwölf Nettoeinkommen entstehen die Verteilungsmaße. Wie in der amtlichen Statistik
-(EU-SILC) werden sie auf das \emph{Äquivalenzeinkommen} bezogen: Ein Haushalt mit vier
-Personen braucht mehr als einer mit einer, also wird durch das Bedarfsgewicht geteilt.
-Der \emph{Gini-Koeffizient} misst die Fläche zwischen Lorenzkurve und Gleichverteilung (0 =
+Aus den zwölf Nettoeinkommen entstehen die Verteilungsmaße. Gini und Palma werden wie in der
+amtlichen Statistik (EU-SILC) auf das \emph{Äquivalenzeinkommen} bezogen: Ein Haushalt mit
+vier Personen braucht mehr als einer mit einer, also wird durch das Bedarfsgewicht geteilt.
+Anders als EU-SILC gewichtet das Modell nach Haushalten, nicht nach Personen, weil die
+Personenzahl je Dezil im Datensatz fehlt. Der \emph{Gini-Koeffizient} ist die Fläche zwischen
+Lorenzkurve und Gleichverteilungsgerade im Verhältnis zur ganzen Dreiecksfläche darunter (0 =
 alle gleich, 1 = einer hat alles), die \emph{Palma-Ratio} teilt das Einkommen der oberen
 10\,\% durch das der unteren 40\,\%. Die \emph{Armutsrisikoquote} zählt, wer weniger als 60\,\%
-des mittleren Einkommens hat; weil ein Durchschnitt je Dezil dafür zu grob ist, wird der
-Anteil innerhalb der unteren drei Dezile aus dem Status quo fortgeschrieben.
+des mittleren Haushaltsnettos hat (hier ohne Bedarfsgewichtung); weil ein Durchschnitt je
+Dezil dafür zu grob ist, wird der Anteil innerhalb der unteren drei Dezile aus dem Status quo
+fortgeschrieben.
 
 \begin{merksatz}
-Jede Steuer und jede Leistung landet bei einem Haushaltstyp. Verteilungsmaße werden wie in
-der amtlichen Statistik auf Äquivalenzeinkommen gerechnet.
+Jede Steuer und jede Leistung landet bei einem Haushaltstyp. Gini und Palma werden wie in
+der amtlichen Statistik auf Äquivalenzeinkommen gerechnet, die Armutsquote auf das
+Haushaltsnetto.
 \end{merksatz}
 
 \section{Nachfrage}
@@ -317,7 +325,9 @@ Kapital bleibt.
 \textbf{Wirtschaftsleistung.} Das nominale BIP wächst im Trend um 2,5\,\% im Jahr (2\,\%
 Inflation, 0,5\,\% real). Dazu kommen drei Niveaueffekte der Angebotsseite:
 \begin{itemize}
-\item \emph{Arbeit}: Mehr Arbeitsangebot hebt das BIP sofort, mit dem Arbeitsanteil 0,65.
+\item \emph{Arbeit}: Mehr Arbeitsangebot hebt das BIP ab der Folgeperiode, mit dem
+  Arbeitsanteil 0,65 und ohne Anpassungsverzögerung. In der laufenden Periode bewegt nur die
+  Nachfrage das BIP.
 \item \emph{Privates Kapital}: Höhere Gewinnsteuern senken das Kapital langfristig (mit dem
   Kapitalanteil 0,35), aber langsam: Der Kapitalstock passt sich um 7\,\% im Jahr an.
 \item \emph{Öffentliches Kapital}: Zusätzliche öffentliche Investitionen, auch das
@@ -394,7 +404,9 @@ erklärt:
   waren: Rentenanteile je Dezil, Profil der Grenzkonsumneigung, öffentlicher Kapitalstock,
   Milliardärsvermögen, Pareto-Exponent. Sie sind im Code als solche markiert.
 \item \textbf{Restabweichung Haushalt gegen Staat.} Bei Umsatzsteuer und Beiträgen weicht die
-  Summe über die Haushalte noch um bis zu 9\,\% von der Buchung des Staates ab.
+  Summe über die Haushalte noch von der Buchung des Staates ab: ohne Nachfrage um bis zu rund
+  10\,\%, mit Nachfrage um bis zu rund 15\,\% (die Toleranz in \datei{tests/buchung.test.js}).
+  Ein Grund: Die Konsumreaktion auf die Umsatzsteuer kennt nur der Staat.
 \item \textbf{Nicht gerechnete Schockwirkungen.} Zwei der fünf Schockeffekte
   (Investitionsrückgang, Emissionsminderung) stehen in der Bibliothek, wirken aber nicht; die
   Oberfläche kennzeichnet sie.
@@ -409,8 +421,9 @@ Die Messung für Teil~III hat drei weitere Eigenschaften sichtbar gemacht:
   verbessert den Saldo der ersten Periode um rund 6\,\Mrd, eine Senkung um denselben Betrag
   \emph{verbessert} ihn ebenfalls, um rund 3,5\,\Mrd. Grund: Beim Staat sind Mehreinnahmen
   aus der Grenze nach unten bei null abgeschnitten, bei den Haushalten sinken die Beiträge.
-  Die entlasteten Haushalte fragen mehr nach, und der Stabilisator hebt den Saldo. Das ist
-  ein Buchungsfehler; er ist zur Behebung vorgemerkt.
+  Etwa die Hälfte der Verbesserung ist mechanisch: Das höhere Vornetto erhöht den Konsum und
+  damit die Umsatzsteuer. Die andere Hälfte kommt über die Nachfrage. Das ist ein
+  Buchungsfehler; er ist zur Behebung vorgemerkt.
 \item \textbf{Der Spitzensteuersatz bringt wenig:} rund \wert{zerl}{spitze}{gesamt}\,\Mrd{} je
   Prozentpunkt in der ersten Periode, weniger als übliche Schätzungen (etwa 1 bis 2\,\Mrd).
   Die Zerlegung in Abschnitt~\ref{sec:zerlegung} zeigt, dass das fast ganz an der Rechnung

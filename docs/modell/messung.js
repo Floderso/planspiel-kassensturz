@@ -19,7 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { simulierePfad } from '../../js/rechner/transition.js';
-import { PRESETS, DEZILE, KAPITALANTEIL, PRIVAT_ANPASSUNG, KURS_KONFIG_DEFAULT, PERIOD_STATE_0,
+import { PRESETS, DEZILE, KAPITALANTEIL, PRIVAT_ANPASSUNG, KURS_KONFIG_DEFAULT, PERIOD_STATE_0, ZINS_EFFEKTIV, BIP_WACHSTUM_NOMINAL_JAHR,
          ELAST, ELAST_QUELLEN, BASIS_MAKRO, MPC_DEZIL, KINDER_JE_HH, BUERGERGELD_QUOTE, CO2_GEWICHT } from '../../js/data.js';
 import { berechne, FORMEL_QUELLEN_BERECHNE } from '../../js/rechner/berechne.js';
 import { FORMEL_QUELLEN_EST } from '../../js/rechner/einkommensteuer.js';
@@ -93,7 +93,9 @@ export const KENNZAHLEN = [
 
 export const PFAD = [
   { id: 'schuld',  bez: 'Schuldenquote 2041',   einheit: 'Pp.',     f: (p) => p.at(-1).zustand.schuldenquote },
-  { id: 'bip',     bez: 'BIP 2041',             einheit: 'Mrd. €',  f: (p) => p.at(-1).result.bip_aktuell },
+  // Niveau zu Beginn der letzten Periode, ohne deren Nachfrage: das, was dauerhaft bleibt,
+  // und der Nenner der Schuldenquote 2041
+  { id: 'bip',     bez: 'BIP-Niveau 2041',      einheit: 'Mrd. €',  f: (p) => p.at(-1).zustand.bip },
   { id: 'co2kum',  bez: 'CO₂ 2025–2040',        einheit: 'Mt',      f: (p) => p.at(-1).zustand.co2_kumulat },
   { id: 'saldo',   bez: 'Saldo 2041–44',        einheit: 'Mrd. €/a', f: (p) => p.at(-1).result.saldo },
   { id: 'gini',    bez: 'Gini 2041–44',         einheit: 'Gini-Pkt.', f: (p) => p.at(-1).result.gini * 100 },
@@ -157,17 +159,19 @@ export function messe() {
   // Strukturelle Gewichte: wie ein Kanal auf eine Kennzahl weiterwirkt. Nicht
   // gemessen, sondern aus den Gleichungen der Engine bei Status-quo-Werten
   const r1 = b1.result, n = KURS_KONFIG_DEFAULT.perioden_laenge_jahre;
+  const Y1 = r1.bip_aktuell * Math.pow(1 + BIP_WACHSTUM_NOMINAL_JAHR, n);
   const struktur = {
     // ∂Saldo/∂Nachfrage: alle Einnahmen außer CO₂ skalieren mit dem Nachfragefaktor
     stabilisator: (r1.einnahmen_total - r1.rev.co2) / r1.bip_aktuell,
-    // BIP-Niveau je 1 % Arbeitsangebot (ab der Folgeperiode), Mrd. €
-    arbeit_bip:   (1 - KAPITALANTEIL) * r1.bip_aktuell / 100,
+    // Gewichte auf das BIP der Folgeperiode Y_{t+1} = Y_t (1+g)^n (transition.js)
+    // BIP-Niveau je 1 % Arbeitsangebot, Mrd. €
+    arbeit_bip:   (1 - KAPITALANTEIL) * Y1 / 100,
     // BIP-Niveau je 1 % Investitionsfaktor: langfristig und nach einer Periode, Mrd. €
-    invest_bip_lang: KAPITALANTEIL * r1.bip_aktuell / 100,
-    invest_bip_n:    KAPITALANTEIL * r1.bip_aktuell / 100 * (1 - Math.pow(1 - PRIVAT_ANPASSUNG, n)),
+    invest_bip_lang: KAPITALANTEIL * Y1 / 100,
+    invest_bip_n:    KAPITALANTEIL * Y1 / 100 * (1 - Math.pow(1 - PRIVAT_ANPASSUNG, n)),
     anpassung_n:  1 - Math.pow(1 - PRIVAT_ANPASSUNG, n),
-    // Schuldenquote je 1 Mrd. € Saldo über eine Periode, Pp. (ohne Zinseszins)
-    saldo_schuld: -n / r1.bip_aktuell * 100,
+    // Schuldenquote der Folgeperiode je 1 Mrd. € Primärsaldo über n Jahre, mit Zinseszins, Pp.
+    saldo_schuld: -((Math.pow(1 + ZINS_EFFEKTIV, n) - 1) / ZINS_EFFEKTIV) / Y1 * 100,
     jahre: n,
   };
   const statusQuo = {

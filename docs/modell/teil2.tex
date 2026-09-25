@@ -15,8 +15,12 @@ $N_i$ ist die Zahl der Haushalte in Millionen. Für eine Größe $x_i$ in \euro{
   \mathcal{S}[x] \;=\; \frac{1}{1000}\sum_{i=1}^{12} N_i\,x_i \qquad\text{in Mrd.\,\euro{}.}
 \end{equation}
 $\operatorname{clip}(x,a,b)=\min(b,\max(a,x))$, $[x]^+=\max(0,x)$, $\mathbf{1}[\cdot]$ ist die
-Indikatorfunktion. Größen mit Hochstellung SQ sind im Status quo gerechnet (Politik
-$\theta^{SQ}$, dieselbe Periode).
+Indikatorfunktion. Größen mit Hochstellung SQ sind im Status quo derselben Periode
+gerechnet (Politik $\theta^{SQ}$ samt geltendem Recht, Zustand der Periode); Hochstellung
+$SQ_0$ heißt: Politik $\theta^{SQ}$ von 2025, ohne Rechtspfad, ohne Verhalten, Größen von 2025.
+Einige Buchstaben sind abschnittsweise lokal belegt ($\alpha$ als Pareto-Exponent und als
+Kapitalanteil, $s$ als Tarifeinheiten und als Saldoquote, $q$ als zvE-Quote und $q_i$ als
+Bürgergeldquote, $\mu$, $\beta$); die Bedeutung ergibt sich aus dem Abschnitt.
 
 \textbf{Haushaltsdaten} (Tabelle~\ref{tab:dezile}): Bruttoeinkommen $B_i$, Kapitalanteil
 $\kappa_i$, durchschnittliche Konsumquote $c_i$, Bedarfsgewicht $w_i$, Vermögen $V_i$,
@@ -57,13 +61,13 @@ T_i &= T^{HH}_i\bigl(\lambda_iB_i(1-\kappa_i)\bigr) + \tfrac{t_A}{100}\lambda_iB
   \tag{3--8}\\
 Y^H_i &= \lambda_iB_i - T_i - SV_i - U_i - L^{\text{CO}_2}_i + \mathit{Tr}_i + \Delta P_i - Z_i,
   \qquad \Delta_i = Y^H_i - Y^{H,SQ_0}_i
-  \tag{15}\\
+  \tag{10}\\
 J &= \tfrac{0{,}6}{0{,}48}\,\mathcal{S}\bigl[m\,(\Delta-\Delta^{SQ,t})\bigr] + 1{,}0\,(I-I^{SQ}),\qquad
   \eta = 1+J/Y_0
   \tag{10a}\\
 \mathcal{R} &= \textstyle\sum_{k\in\mathcal K} \phi_k\,R^0_k,\qquad \phi_k\in\{y\eta,\;P\}
   \tag{10b}\\
-\mathcal{A} &= \bigl(A^{\text{real}}+V^{\text{zus}}\bigr)P + \bar S^{\text{SV}} + \tfrac{r}{100}\,b\,Y
+\mathcal{A} &= \bigl(A^{\text{real}}+V^{\text{zus}}\bigr)P + \bar S^{\text{SV}} + \tfrac{r\,b}{100}\,Y
   \tag{12}\\
 S &= \mathcal{R}-\mathcal{A},\qquad s = 100\,S/(Y\eta)
   \tag{13}\\
@@ -73,14 +77,15 @@ s^{\text{str}} &= s - 50(\eta-1) + [\bar v-1]^+ + 100\,\bar S^{\text{SV}}/(Y\eta
 Dabei ist $\mathcal K$ die Menge der Einnahmearten (Einkommen-, Körperschaft-, Gewerbe-,
 Umsatz-, Erbschaft-, Boden-, Vermögen-, Zucman-Steuer, \COz, Renten-, Kranken-,
 Arbeitslosen- und Pflegebeiträge, übrige Verbrauchsteuern). Die Marken rechts sind die
-Abschnittsnummern in \datei{berechne.js}: (R) geltendes Recht, (1) Arbeitsangebot,
-(2) Einkommensteuer, (3--8) übrige Einnahmen, (15) Nettoeinkommen, (10a) Nachfrage,
+Abschnittsnummern in \datei{berechne.js}; (R) steht für das geltende Recht am Anfang von \datei{berechne()}, (1) Arbeitsangebot,
+(2) Einkommensteuer, (3--8) übrige Einnahmen, (10) Nettoeinkommen über
+\datei{berechneDezilDelta()} in \datei{verteilung.js}, (10a) Nachfrage,
 (10b) Fortschreibung, (12) Ausgaben, (13) Saldo, (19b) Schuldenbremse.
 
 Übergang zur Periode $t+1$ (\datei{transition.js}), mit $g=2{,}5\,\%$, $r=2{,}0\,\%$:
 \begin{align}
 Y_{t+1} &= Y_t\,(1+g)^{n}\;\frac{k_{t+1}}{k_t}\;\frac{a_{t+1}}{a_t}\;\frac{\Phi(K^g_{t+1})}{\Phi(K^g_t)}\\
-D_{j+1} &= D_j(1+r) - (S+Z^{\text{dyn}}),\quad D_0=b_tY_t/100,\quad b_{t+1}=100\,D_n/Y_{t+1}\\
+D_{j+1} &= D_j(1+r+\Delta r) - (S+Z^{\text{dyn}}),\quad D_0=b_tY_t/100,\quad b_{t+1}=\bigl[100\,D_n/Y_{t+1}\bigr]^+\\
 C_{t+1} &= C_t + \sum_{j=0}^{n-1} E^B(\tau+j)\,\frac{E}{E^B(\tau)}
 \end{align}
 
@@ -219,9 +224,11 @@ R_Z&=600\,\bigl(1-0{,}15\min(1,t_Z/2)\bigr)\,\frac{[t_Z-0{,}3-t_V]^+}{100}.
 \textbf{Sozialbeiträge} (7). Lohnsumme mit Lohnbasisindex und BBG-Aufschlag,
 \begin{equation}
 L^{SV}=1.750\;\ell_t\Bigl(1+0{,}12\,\Bigl[\frac{\bar B-\bar B^{SQ}}{\bar B^{SQ}}\Bigr]^+\Bigr),\qquad
-R_{RV}=L^{SV}\frac{\beta_R}{100},\ R_{KV}=L^{SV}\frac{\beta_K}{100},\ R_{AL}=L^{SV}\frac{\beta_A}{100}.
+R_{RV}=L^{SV}\frac{\beta_R}{100},\ R_{KV}=L^{SV}\frac{\beta_K}{100},\ R_{AL}=L^{SV}\frac{\beta_A}{100}
 \end{equation}
-Die positive Klammer ist die Ursache der Asymmetrie aus Abschnitt~\ref{sec:grenzen}: Auf der
+(die Schalter der klassischen Fläche, Bürgerversicherung $\times1{,}15$ und die Zuschläge für
+aufgehobene KV-Grenze und KV-Pflicht auf Kapitaleinkommen, sind hier weggelassen; ebenso die
+Rundung von $\bar B_K$). Die positive Klammer ist die Ursache der Asymmetrie aus Abschnitt~\ref{sec:grenzen}: Auf der
 Haushaltsseite wirkt $\bar B$ in $SV^{AN}_i$ in beide Richtungen.
 
 \textbf{Übrige Verbrauchsteuern} (8): $R_{kl}=109$\,\Mrd{} (Energie, Tabak, Kfz, Sonstige,
@@ -244,9 +251,12 @@ Staat und Haushalte buchen dieselbe Summe (\datei{tests/rentenniveau.test.js}).
 \textbf{Erhebungskosten} (11), Quoten $a_k$ aus \datei{ADMIN\_QUOTE} (BRH, OECD Tax
 Administration 2024):
 \begin{equation}
-\mathit{Adm}=\sum_k a_k R^0_k + 0{,}2\,R^0_{\text{ESt}}(a_{\text{Kap}}-a_{\text{ESt}})
- + a_{\text{Tr}}(BG+KG),\qquad \Delta\mathit{Adm}=\mathit{Adm}-\mathit{Adm}^{SQ_0}.
+\mathit{Adm}=\sum_k a_k R^0_k + \omega\,R^0_{\text{ESt}}(a_{\text{Kap}}-a_{\text{ESt}})
+ + a_{\text{Tr}}(BG+KG),\qquad \Delta\mathit{Adm}=\mathit{Adm}-\mathit{Adm}^{SQ_0},
 \end{equation}
+mit $\omega=0{,}2$ ($0{,}3$ bei synthetischer Besteuerung). Für \COz{} geht das
+Bruttoaufkommen $R^{\text{brutto}}_{\text{CO}_2}$ ein, die Zucman-Steuer trägt die Quote der
+Vermögensteuer.
 
 \section{Haushalte und Verteilung}
 \label{sec:haushalte}
@@ -268,7 +278,9 @@ Arbeitgeberänderung (Melguizo\slash{}González-Páramo 2013),
 SV_i=SV^{AN}_i+\tfrac12\Bigl[\min(W_i,\bar B)\,\frac{\Delta(\beta_R+0{,}42\beta_A)}{100}\\
 +\min(W_i,\bar B_K)\,\frac{\Delta(\beta_K+0{,}58\beta_A)}{100}\Bigr],
 \end{multline}
-$\Delta$ jeweils gegenüber dem Status quo. Umsatzsteuer mit dem Satzindex
+$\Delta$ jeweils gegenüber $\theta^{SQ_0}$, also ohne den gesetzlichen Anstieg
+$\bar\sigma_R$. Der gesetzliche Anstieg des Rentenbeitrags kommt deshalb auch im Status quo
+späterer Perioden als Arbeitgeberanteil voll bei den Haushalten an. Umsatzsteuer mit dem Satzindex
 $\sigma(v)=0{,}7\frac{v_R}{100+v_R}+0{,}3\frac{v_E}{100+v_E}$:
 \begin{equation}
 U_i=c_i\,N^v_i\Bigl[\sigma(v)+(\Phi_U-1)\bigl(\sigma(v)-\sigma(v^{SQ})\bigr)\Bigr].
@@ -285,10 +297,11 @@ $GS_i$ verteilt die festen 10,8\,\Mrd{} für Unterkunft und Mehrbedarfe nach $q_
 $Y^{H,SQ_0}_i$ ist das Nettoeinkommen bei Status-quo-Politik ohne Verhaltensreaktion
 (\datei{berechneNettoSQ}).
 
-\textbf{Ungleichheit} (16). Äquivalenzeinkommen $\hat y_i=Y^H_i/w_i$, aufsteigend sortiert,
-Bevölkerungsanteile $p_j$ und Einkommensanteile $\ell_j$ kumuliert zu $P_j$, $L_j$:
+\textbf{Ungleichheit} (16). Äquivalenzeinkommen $\hat y_i=Y^H_i/w_i$, aufsteigend sortiert;
+$H_j$ sind die kumulierten Haushaltsanteile (gewichtet nach $N_j$, nicht nach Personen),
+$Q_j$ die kumulierten Anteile am Äquivalenzeinkommen:
 \begin{equation}
-\text{Gini}=1-\sum_j (P_j-P_{j-1})(L_j+L_{j-1}),\qquad
+\text{Gini}=1-\sum_j (H_j-H_{j-1})(Q_j+Q_{j-1}),\qquad
 \text{Palma}=\frac{\sum_{j\in\text{oben }10\,\%}N_j\hat y_j}{\sum_{j\in\text{unten }40\,\%}N_j\hat y_j},
 \end{equation}
 wobei in die Palma-Summen nur ganze Haushaltstypen eingehen, die vollständig im jeweiligen
@@ -347,7 +360,7 @@ s^{\text{str}}=s-0{,}5\cdot100(\eta-1)+[\bar v-1{,}0]^++\frac{100\,\bar S^{\text
 Aus Zustand $s_t$ (nach einem etwaigen Schock) und Ergebnis der Periode (\datei{berechneTransition()}):
 
 \textbf{Angebot.} Privates Kapital nähert sich seinem Zielniveau mit der Anpassungsrate
-$\delta_p=0{,}07$, Arbeit wirkt sofort, Kapitalanteil $\alpha=0{,}35$ (Cobb-Douglas, Lohnquote
+$\delta_p=0{,}07$, Arbeit wirkt ab der Folgeperiode ohne Anpassungsverzögerung, Kapitalanteil $\alpha=0{,}35$ (Cobb-Douglas, Lohnquote
 0,65):
 \begin{equation}
 k^*=1+\alpha(I_f-1),\qquad k_{t+1}=k_t+\bigl(1-(1-\delta_p)^n\bigr)(k^*-k_t),\qquad
@@ -396,9 +409,11 @@ von 525\,Gt für 1,7\,°C (Forster u.\,a. 2026).
 \label{sec:eigenschaften}
 
 \begin{enumerate}[label=(E\arabic*)]
-\item \textbf{Normierung.} Für $\theta=\theta^{SQ}$ ist $\lambda_i=1$ (bis auf den
-  Rundungseinfluss des Klammerwerts $M^{SQ}$), $\Delta_i=\Delta^{SQ,t}_i$, $J=0$, $\eta=1$ und
-  $Z_i=0$. Jede Wirkung ist damit eine Differenz zum Status quo derselben Periode.
+\item \textbf{Normierung.} Für $\theta=\theta^{SQ}$ ist $\lambda_i=1$ exakt,
+  $\Delta_i=\Delta^{SQ,t}_i$, $J=0$, $\eta=1$ und $Z_i=0$. Die Kennzahlen des Staates und die
+  Nachfrage sind damit Differenzen zum Status quo derselben Periode. $\Delta_i$ selbst ist
+  gegen $SQ_0$ gerechnet und im Status quo späterer Perioden nicht null (steigender
+  Rentenbeitrag, fallende \COz-Last).
 \item \textbf{Buchungsidentität.} $\mathcal S[\Delta P]=\Delta\mathit{RV}$,
   $\mathcal S[12g_Kk]=KG$, $\mathcal S[L^{\text{CO}_2}]=R^{\text{brutto}}_{\text{CO}_2}$ und
   $\mathcal S[Z]=\delta_U+\delta_W+\delta_Z$ gelten exakt (\datei{tests/buchung.test.js}); bei
@@ -406,13 +421,15 @@ von 525\,Gt für 1,7\,°C (Forster u.\,a. 2026).
 \item \textbf{Stückweise Glattheit.} Das System ist stetig, aber nicht überall
   differenzierbar: Knicke liegen an den Tarifgrenzen, an $M_{12}=0{,}45$ und $0{,}60$, an den
   Klammern von $\lambda_i$, $\pi$, $f_R$, $f_E$, $\varphi$, bei $\bar B=\bar B^{SQ}$ und bei
-  $t_Z=0{,}3+t_V$. Die Messwerte in Teil~III sind deshalb endliche Differenzen für genau den
+  $t_Z=0{,}3+t_V$ und $t_Z=2$, sowie dort, wo die Grenze $G$ unter das Ende von Zone~3 oder~2
+  fällt ($G'=e_3$, $G'=e_2$). Die Messwerte in Teil~III sind deshalb endliche Differenzen für genau den
   angegebenen Schritt; Tabelle~\ref{tab:symmetrie} zeigt, wo $+\Delta$ und $-\Delta$
   voneinander abweichen.
 \item \textbf{Linearität der Nachfrage.} $J$ ist linear in $\Delta_i$; Entlastung und
   Belastung wirken betragsgleich mit umgekehrtem Vorzeichen.
-\item \textbf{Keine dominante Strategie.} Keine einzelne Stellgröße und kein Paar an den
-  Rändern verbessert über fünf Perioden Saldo und jedes Dezil, ohne Gini, Emissionen oder
+\item \textbf{Keine dominante Strategie.} Keine einzelne Stellgröße (geprüft an elf Werten
+  über ihren Bereich) und kein Paar an den Rändern verbessert in der letzten von fünf
+  Perioden gegenüber dem Status-quo-Pfad Saldo und jedes Dezil, ohne Gini, Emissionen oder
   BIP zu verschlechtern (\datei{tests/dominanz.test.js}).
 \end{enumerate}
 
@@ -461,7 +478,7 @@ Was die Zerlegung zeigt:
 \item \textbf{Unternehmenssteuern verlieren über die Bemessungsgrundlage.} Bei der
   Körperschaftsteuer kostet die Investitionsreaktion \wert{zerl}{kst}{verhalten}\,\Mrd{} von
   \wert{zerl}{kst}{mechanisch}\,\Mrd{} mechanisch. Der größere Preis zeigt sich erst im Pfad:
-  das niedrigere private Kapital senkt das BIP 2041 um \wert{pfad}{kst}{bip}\,\Mrd.
+  das niedrigere private Kapital senkt das BIP-Niveau 2041 um \wert{pfad}{kst}{bip}\,\Mrd.
 \item \textbf{Der \COz-Preis untergräbt seine eigene Basis}, wie beabsichtigt: Die
   Emissionsminderung kostet \wert{zerl}{co2}{verhalten}\,\Mrd{} der mechanischen
   \wert{zerl}{co2}{mechanisch}\,\Mrd.

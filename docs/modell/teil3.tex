@@ -39,9 +39,11 @@ Die Gewichte stammen aus zwei Quellen, und der Unterschied ist wichtig:
 \end{itemize}
 
 Die Summe über alle Pfade von einer Stellgröße zu einer Kennzahl ergibt deren
-Gesamtwirkung. Wegen der Rückkopplung über die Nachfrage ist der Graph nicht kreisfrei; die
-Engine löst den Kreis, indem sie die Nachfrage einmal gegen den Status quo derselben Periode
-rechnet (keine Iteration bis zum Fixpunkt).
+Gesamtwirkung. \emph{Innerhalb} einer Periode ist der Graph kreisfrei: Die Nachfrage wirkt
+auf BIP und Einnahmen, aber nicht zurück auf Nettoeinkommen, Arbeitsangebot oder
+Bemessungsgrundlagen; eine Iteration bis zu einem Fixpunkt gibt es nicht. Kreise entstehen
+erst über die Periodengrenze: Schulden erzeugen Zinsen, die den Saldo der nächsten Periode
+belasten, und das BIP-Niveau skaliert die Einnahmen der nächsten Periode.
 
 \begin{table}[!htb]
 \centering\small
@@ -109,7 +111,11 @@ Ressortgraphen einhängen.
 \draw[pf] (bipl.east) -- node[gl, pos=0.5]{Nenner} (sq.south);
 \draw[pf] (arb.east) -- node[gl, pos=0.5]{$+\Warbeit$ {\tiny Mrd. je \%}} (bipl.west);
 \draw[pf] (inv.east) -- node[gl, pos=0.5]{$+\Winvestn$ / $\Winvestlang$ {\tiny Mrd. je \%, 1 Per. / lang}} (bipl.south west);
-\draw[pf] (emi.east) -- node[gl]{$\times\,n$ Jahre} (cob.west);
+\draw[pf] (emi.east) -- node[gl]{$\frac{E}{E^B(\tau)}\sum_j E^B(\tau+j)$ {\tiny entlang des Pfads}} (cob.west);
+\draw[pf] (arb.north east) -- node[gl, pos=0.55]{$\tilde B_i=\lambda_iB_i$} (hh.south west);
+\draw[rk] (sq.north) |- node[gl, pos=0.3, text=grau]{{\tiny Zinsen $rbY$}\\{\tiny nächste Periode}} ($(sal.east)+(0,0.3)$);
+\node[font=\scriptsize, text=grau, align=center] (ynote) at (8.6,-8.25) {$\times y$: alle Einnahmen\\der nächsten Periode};
+\draw[rk] (bipl.south) -- (ynote.north);
 % Rückwirkungen (gestrichelt)
 \draw[rk] (bipl.north) -- node[gl, text=grau]{{\tiny Ausgangsniveau}\\{\tiny nächste Periode}} (bip.south);
 \draw[rk] (arb.west) to[out=160,in=200,looseness=1.0] node[gl, pos=0.5, text=grau]{Basis} (ein.west);
@@ -158,7 +164,10 @@ damit man sie vergleichen kann.
 Beispiel aus Abbildung~\ref{fig:soziales}: Ein Punkt Rentenbeitrag bringt
 \wert{kanal}{rv}{sv}\,\Mrd{} Beiträge (dicke blaue Kante), senkt aber das Aufkommen aus
 Umsatzsteuer um \wert{kanal}{rv}{mwst}\,\Mrd{} und aus Einkommensteuer um
-\wert{kanal}{rv}{est}\,\Mrd, weil die Haushalte weniger Netto haben und weniger konsumieren.
+\wert{kanal}{rv}{est}\,\Mrd. Die Umsatzsteuer sinkt, weil das Vornetto und damit der
+besteuerte Konsum sinkt und weil die Nachfrage nachlässt; die Einkommensteuer sinkt allein
+über die Nachfrage, denn Beiträge mindern im Modell nicht die Bemessungsgrundlage der
+Einkommensteuer.
 Der Nachfrageimpuls sinkt um \wert{kanal}{rv}{nachfr}\,\Mrd. Unter dem Strich bleiben
 \wert{p1}{rv}{saldo}\,\Mrd.
 
@@ -178,15 +187,18 @@ erste Periode, je Schritt.}{fig:finanzen}
 zusätzlich über das private Kapital auf das BIP der Folgeperioden
 (Abbildung~\ref{fig:struktur}).}{fig:wirtschaft}
 \ressortgraph{Soziales}{Ressort Arbeit und Soziales. Beiträge wirken nur auf die Einnahmen,
-das Rentenniveau nur auf die Ausgaben.}{fig:soziales}
+das Rentenniveau unmittelbar nur auf die Ausgaben; alle übrigen Kanten laufen über die
+Nachfrage.}{fig:soziales}
 \ressortgraph{Umwelt}{Ressort Umwelt und Klima. Das Klimageld verschiebt das
-\COz-Aufkommen vollständig zu den Transfers.}{fig:umwelt}
+\COz-Aufkommen zu 70\,\% zu den Transfers.}{fig:umwelt}
 
 \paragraph{Was die Ressortgraphen zeigen.}
 \begin{itemize}
 \item \textbf{Jede Steuer bewegt mehr als ihren eigenen Kanal.} Eine höhere Umsatzsteuer
-  senkt auch Einkommensteuer und Beiträge, weil sie das Vornetto nicht ändert, wohl aber das
-  Konsumvolumen; eine höhere Beitragsrate senkt Einkommen- und Umsatzsteuer.
+  senkt auch Einkommensteuer und Beiträge, und zwar allein über die Nachfrage: Die
+  Haushalte haben weniger Kaufkraft, das BIP der Periode sinkt, und mit ihm alle
+  BIP-gebundenen Einnahmen. Eine höhere Beitragsrate senkt die Umsatzsteuer zusätzlich
+  unmittelbar, weil das Vornetto und damit der besteuerte Konsum sinkt.
 \item \textbf{Der Nachfrageimpuls ist fast immer die zweitgrößte Kante.} Er ist der Grund,
   warum keine Konsolidierung umsonst ist.
 \item \textbf{Nur zwei Stellgrößen am Tisch bewegen das Arbeitsangebot} messbar:
@@ -228,8 +240,11 @@ gewinnt nichts, die Mitte gewinnt, das mittlere Einkommen steigt, und mit ihm di
 Armutsgrenze.
 
 Lesen Sie eine \emph{Spalte}: Sie zeigt, welche Hebel eine Kennzahl überhaupt bewegen. Die
-Emissionen bewegt allein der \COz-Preis; das BIP 2041 bewegen am stärksten Freibetrag,
-Beiträge und Rentenniveau, über Nachfrage, Arbeitsangebot und Schulden.
+Emissionen bewegt allein der \COz-Preis. Das BIP-\emph{Niveau} 2041, also was dauerhaft
+bleibt, bewegen nur vier Stellgrößen am Tisch: Grundfreibetrag und Eingangssatz über das
+Arbeitsangebot, Körperschaft- und Gewerbesteuer über das private Kapital. Alle anderen wirken
+auf das BIP nur über die Nachfrage der jeweiligen Periode, und die verschwindet mit der
+Politik.
 
 \section{Verteilung über die Dezile}
 
@@ -326,7 +341,7 @@ Arbeitsangebot im Niveau und vor allem der Zinseszins auf die Schulden.
 \input{generiert/pfad.tex}
 \caption{Wirkung nach fünf Perioden (Ende des Pfads) gegenüber dem Status-quo-Pfad, je
 Schritt, Politik über alle Perioden unverändert. Status quo: Schuldenquote \SQschuldEnde\,\%,
-BIP \SQbipEnde\,\Mrd, \COz{} kumuliert \SQcoEnde\,Mt.}
+BIP-Niveau \SQbipEnde\,\Mrd, \COz{} kumuliert \SQcoEnde\,Mt.}
 \label{tab:pfad}
 \end{table}
 
@@ -338,9 +353,9 @@ das Verhältnis ab, ist ein weiterer Kanal im Spiel, der das BIP im Nenner beweg
 \begin{itemize}
 \item Der \textbf{Grundfreibetrag} kostet \wert{p1}{freibetrag}{saldo}\,\Mrd{} im Jahr, erhöht
   die Quote 2041 aber nur um \wert{pfad}{freibetrag}{schuld}\,\Pp: Das zusätzliche
-  Arbeitsangebot hebt das BIP 2041 um \wert{pfad}{freibetrag}{bip}\,\Mrd.
+  Arbeitsangebot hebt das BIP-Niveau 2041 um \wert{pfad}{freibetrag}{bip}\,\Mrd.
 \item Die \textbf{Körperschaftsteuer} bringt \wert{p1}{kst}{saldo}\,\Mrd, senkt die Quote aber
-  nur um \wert{pfad}{kst}{schuld}\,\Pp: Das private Kapital schrumpft, das BIP 2041 sinkt um
+  nur um \wert{pfad}{kst}{schuld}\,\Pp: Das private Kapital schrumpft, das BIP-Niveau 2041 sinkt um
   \wert{pfad}{kst}{bip}\,\Mrd.
 \end{itemize}
 
