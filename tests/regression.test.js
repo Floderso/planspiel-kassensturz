@@ -35,6 +35,12 @@
 // entlang des UBA-Pfads (649 → 238 Mt) statt konstant 327 Mt. Schuldenquote 2041:
 // 98,5 % → 91,7 %. Der Gini steigt leicht (0,3034 → 0,3054), weil das Klimageld mit den
 // bepreisten Emissionen sinkt.
+//
+// Erneuert am 2026-09-25, Haushalt = Staat (PRUEFUNG-2.md I.4, N1): Kindergeld auf
+// 17 Mio. Kinder, CO₂-Last = Aufkommen, Bürgergeld-Regelbedarf über die Haushalte
+// gebucht, Unterkunft/Mehrbedarfe (10,8 Mrd.) fest und bei den Haushalten. Gini
+// 0,3034 → 0,3101: das überzeichnete Kindergeld hatte ihn gedrückt. Saldo 2025
+// −118,6 → −118,1 (keine Erhebungskosten auf den festen Grundsicherungsposten).
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -42,11 +48,11 @@ import { simulierePfad } from '../js/rechner/transition.js';
 import { PRESETS } from '../js/data.js';
 
 const REFERENZ = [
-  { label: '2025–2028', saldo: -118.6396, schuldenquote: 63.5,    gini: 0.3034, emissionen: 649,     bip: 4470 },
-  { label: '2029–2032', saldo: -161.4619, schuldenquote: 67.3979, gini: 0.3041, emissionen: 500.392, bip: 4937.004 },
-  { label: '2033–2036', saldo: -223.13,   schuldenquote: 73.227,  gini: 0.3046, emissionen: 399.388, bip: 5452.7984 },
-  { label: '2037–2040', saldo: -288.3273, schuldenquote: 81.5706, gini: 0.3050, emissionen: 314.252, bip: 6022.4805 },
-  { label: '2041–2044', saldo: -361.2844, schuldenquote: 91.7204, gini: 0.3054, emissionen: 237.88,  bip: 6651.6802 },
+  { label: '2025–2028', saldo: -118.0541, schuldenquote: 63.5,    gini: 0.3101, emissionen: 649,     bip: 4470 },
+  { label: '2029–2032', saldo: -160.7673, schuldenquote: 67.349,  gini: 0.3106, emissionen: 500.392, bip: 4937.004 },
+  { label: '2033–2036', saldo: -222.311,  schuldenquote: 73.1302, gini: 0.3108, emissionen: 399.388, bip: 5452.7984 },
+  { label: '2037–2040', saldo: -287.3667, schuldenquote: 81.4269, gini: 0.3111, emissionen: 314.252, bip: 6022.4805 },
+  { label: '2041–2044', saldo: -360.1629, schuldenquote: 91.5308, gini: 0.3113, emissionen: 237.88,  bip: 6651.6802 },
 ];
 
 test('Status-quo-Pfad (5 Perioden) reproduziert die Referenzwerte', () => {

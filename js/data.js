@@ -24,6 +24,35 @@ const DEZILE = [
 ];
 // D10c = Top 1% (0,41 Mio. Haushalte). Brutto 700k ist Durchschnitt — echte Spitze deutlich höher.
 // Kapitalanteil D10c: ~45% des Einkommens aus Kapital (DINA-DE, Bach/Buggeln 2024).
+
+// ── HAUSHALTSPROFILE — eine Quelle für Haushalte UND Staat (PRUEFUNG-2.md I.4) ──
+// Bis 24.09.2026 rechneten beide Seiten mit verschiedenen Zahlen: 36,5 Mio. Kinder bei den
+// Haushalten gegen 17 Mio. beim Staat, 60,8 Mrd. € CO₂-Last gegen 18 Mrd. € Aufkommen,
+// 26,3 gegen 37,2 Mrd. € Bürgergeld. Jetzt bucht der Staat die Summe über die Haushalte.
+
+// Kindergeldkinder je Haushalt. Profil (mehr Kinder in der Mitte) aus Mikrozensus 2024
+// (vorher 0,80 · 1,10 · 1,20 · 1,15 · 1,05 · 0,95 · 0,85 · 0,75 · 0,65 · 0,50 · 0,35 · 0,20),
+// auf rund 17 Mio. Kinder mit Kindergeldanspruch skaliert (Familienkasse / BA).
+const KINDERGELD_KINDER = 17; // Mio.
+const KINDER_JE_HH = (() => {
+  const profil = [0.80, 1.10, 1.20, 1.15, 1.05, 0.95, 0.85, 0.75, 0.65, 0.50, 0.35, 0.20];
+  const summe = profil.reduce((a, q, i) => a + q * DEZILE[i].anzahl, 0);
+  return profil.map(q => q * KINDERGELD_KINDER / summe);
+})();
+
+// Bürgergeld: Regelsatz-Jahresäquivalente je Haushalt (D1 0,60 … D4 0,02), zusammen 3,9 Mio.
+// Der Regler wirkt nur auf den Regelbedarf; Unterkunft, Mehrbedarfe und übrige Leistungen
+// stehen fest in STAATSAUSGABEN.grundsicherung_fix.
+const BUERGERGELD_QUOTE = [0.60, 0.25, 0.08, 0.02, 0, 0, 0, 0, 0, 0, 0, 0];
+
+// CO₂-Last: Profil als Anteil am Bruttoeinkommen (regressiv, 4,0 % in D1 bis 1,0 % in D10c),
+// normiert zu einem Gewicht je Haushalt mit Σ anzahl × Gewicht = 1. Das Bruttoaufkommen wird
+// vollständig auf die Haushalte überwälzt; D10c trägt bei 55 €/t rund 2.100 € statt 7.000 €.
+const CO2_GEWICHT = (() => {
+  const profil = [0.040, 0.038, 0.036, 0.034, 0.032, 0.030, 0.028, 0.025, 0.022, 0.018, 0.015, 0.010];
+  const summe = DEZILE.reduce((a, d, i) => a + d.anzahl * d.brutto * profil[i], 0);
+  return DEZILE.map((d, i) => d.brutto * profil[i] / summe);
+})();
 // rente_anteil: Anteil der gesetzlichen Rente am Bruttoeinkommen des Dezils. NÄHERUNG, keine
 // Tabellenwerte — Primärquellen (Destatis, DRV) waren beim Anlegen nicht erreichbar (24.09.2026).
 // Herleitung: Anteil Rentnerhaushalte je Dezil h = 0,50 · 0,55 · 0,50 · 0,42 · 0,34 · 0,26 · 0,18 ·
@@ -47,6 +76,11 @@ const STAATSAUSGABEN = {
                        // Modell den Gesamtstaat abbildet (PRUEFUNG.md A4).
                        // Entspricht ZINS_EFFEKTIV × Schuldenstand (2,0 % × 2.688).
   sonstiges:     140,
+  // Grundsicherung außerhalb des Regelsatz-Reglers: Kosten der Unterkunft, Mehrbedarfe,
+  // einmalige Leistungen. Die bisherige Buchung (5,5 Mio. Personen × 563 € = 37,2 Mrd.) minus
+  // dem Regelbedarf, der jetzt über die Haushalte gebucht wird (26,3 Mrd.). Hält den
+  // Status-quo-Saldo, ohne den Ausgleichsposten zu vergrößern (PRUEFUNG-2.md I.4)
+  grundsicherung_fix: 10.8,
   // Gegenposten: staatliche Einnahmen, die das Modell nicht als Steuer/SV abbildet
   // (Gebühren, Verkäufe, Vermögenseinkommen, Bundesbankgewinn; Destatis VGR 2024:
   // ~290 Mrd. € sonstige Einnahmen, hier anteilig für den modellierten Sektor).
@@ -909,4 +943,5 @@ const ZUKUNFTS_SZENARIEN = [
 
 export { ZINS_EFFEKTIV, BIP_WACHSTUM_NOMINAL_JAHR, EMISSIONEN_1990, EMISSIONS_ANKER, emissionsBasis };
 
+export { KINDER_JE_HH, KINDERGELD_KINDER, BUERGERGELD_QUOTE, CO2_GEWICHT };
 export { DEZILE, ELAST, ELAST_QUELLEN, BASIS_AUFKOMMEN, ADMIN_QUOTE, BASIS_MAKRO, STAATSAUSGABEN, PRESETS, MOD_DEFS, AUSGABEN_TOTAL, CHALLENGES, CHALLENGE_CTX, TOOLTIPS, REFORM_TOURS, KPI_BENCH, BGE_LABOR_EFF, DEMOGRAFIE_KURVE, PERIOD_STATE_0, ZUKUNFTS_SZENARIEN, KURS_KONFIG_DEFAULT, SCHOCK_BIBLIOTHEK };

@@ -98,7 +98,7 @@ Legislaturlogik und Quorum. Teamvergleich und Debriefing.
 - Der Periodenabschluss ist unbestaetigt und unumkehrbar.
 - **Erledigt am 24.09.2026:** Die Gini-Schwelle (0,285) passte nicht zur
   Modellbasislinie 0,3766. Gini und Palma rechnen jetzt auf
-  Aequivalenzeinkommen wie EU-SILC; die Basislinie liegt bei 0,303 (amtlich
+  Aequivalenzeinkommen wie EU-SILC; die Basislinie liegt bei 0,310 (amtlich
   0,295). Mit den Reglern des Tischs reicht die Spanne von etwa 0,17 bis
   0,33 — die Schwelle ist erreichbar, aber nicht geschenkt
   (`entwurf/PRUEFUNG.md` B3).

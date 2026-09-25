@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: CC-BY-4.0
 // Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
-import { DEZILE, ELAST, BASIS_MAKRO, STAATSAUSGABEN, PRESETS, BASIS_AUFKOMMEN, ADMIN_QUOTE, AUSGABEN_TOTAL, BGE_LABOR_EFF, PERIOD_STATE_0, ZINS_EFFEKTIV, emissionsBasis } from '../data.js';
+import { DEZILE, ELAST, BASIS_MAKRO, STAATSAUSGABEN, PRESETS, BASIS_AUFKOMMEN, ADMIN_QUOTE, AUSGABEN_TOTAL, BGE_LABOR_EFF, PERIOD_STATE_0, ZINS_EFFEKTIV, emissionsBasis,
+         KINDER_JE_HH, BUERGERGELD_QUOTE, CO2_GEWICHT } from '../data.js';
 import { estHaushalt, grenzsteuersatzHaushalt } from './einkommensteuer.js';
 import { aequivalenzEinkommen, berechneGini, berechneMedianGewichtet, berechnePalma, berechneDezilDelta, berechneNettoSQ } from './verteilung.js';
 
@@ -69,9 +70,47 @@ const FORMEL_QUELLEN_BERECHNE = {
     formel: 'Δ_dyn = Δ_KSt × (investment_factor − 1) + Δ_ESt × (avg_labor − 1)',
     ref:    'CBO Dynamic Scoring Guidelines · ifo Schnelldienst 01/2025 · Saez/Chetty Konsens',
     note:   'Verhaltensbedingte Aufkommensabweichung gegenüber mechanischer (statischer) Wirkung'
+  },
+  inzidenz: {
+    formel: 'Last_i = ΔKSt+ΔGewSt × (½ Anteil Arbeitseinkommen_i + ½ Anteil Kapitaleinkommen_i) + ΔErbSt+ΔVermSt × Anteil Vermögen_i + ΔZucman × D10c',
+    ref:    'Fuest/Peichl/Siegloch (2018) AER 108(2): Beschäftigte tragen rund 51 % der Gewerbesteuer · Harberger (1962) · CBO (2012) Distribution of Corporate Tax',
+    note:   'Änderung gegenüber dem Status quo, in Größen von 2025. Summe über alle Haushalte = Aufkommensänderung. Vorher trafen diese Steuern keinen Haushalt: KSt 40 % brachte 76 Mrd., und niemand zahlte (PRUEFUNG-2.md N1)'
   }
 };
 
+/**
+ * Unternehmens- und Vermögensteuern in Größen von 2025 (ohne BIP-Fortschreibung).
+ * Eine Funktion, damit Aufkommen und Inzidenz aus derselben Rechnung kommen.
+ */
+function kapitalUndVermoegensteuern(params) {
+  const investment_factor = 1 + ELAST.investment * ((params.kst + (params.gewst_aus ? 0 : params.gewst))/100 - 0.30);
+  const gewinn = BASIS_MAKRO.gewinn * Math.max(0.7, Math.min(1.2, investment_factor));
+  const kst   = gewinn * params.kst / 100;
+  const gewst = params.gewst_aus ? 0 : gewinn * params.gewst / 100;
+  const erb_satz_eff = params.erb * (params.betriebs ? 0.3 : 0.9) / 100;
+  // erb_stpfl_quote: persönliche Freibeträge (§ 16 ErbStG) stellen den Großteil der Erbmasse steuerfrei
+  const erb = (BASIS_MAKRO.erb_masse * 0.6 * erb_satz_eff
+             + BASIS_MAKRO.erb_masse * 0.4 * Math.min(params.erb, 15) / 100 * 0.5)
+             * BASIS_MAKRO.erb_stpfl_quote;
+  const verm = BASIS_MAKRO.verm_basis * params.verm / 100;
+  // 2%-Mindeststeuer auf Nettovermögen ultra-Reicher (Zucman G20 2024)
+  // Basis D10c: 0,41 Mio. HH × 7 Mio. € Median-Vermögen = ~2.870 Mrd. €
+  // Avoidance: ~15% bei 2% Satz (Jakobsen/Kleven/Kolsrud 2024)
+  const zucman_basis = 2870;
+  const zucman_avoidance = 1 - 0.15 * Math.min(1, (params.zucman ?? 0) / 2);
+  const zucman = zucman_basis * (params.zucman ?? 0) / 100 * zucman_avoidance;
+  return { investment_factor, gewinn, kst, gewst, erb, verm, zucman };
+}
+
+// Verteilungsschlüssel je Haushalt (Σ anzahl × Anteil = 1) für die Inzidenz
+const anteilAn = f => {
+  const summe = DEZILE.reduce((a, d) => a + d.anzahl * f(d), 0);
+  return DEZILE.map(d => f(d) / summe);
+};
+const ANTEIL_ARBEIT   = anteilAn(d => d.brutto * (1 - d.kapital));
+const ANTEIL_KAPITAL  = anteilAn(d => d.brutto * d.kapital);
+const ANTEIL_VERMOEGEN = anteilAn(d => d.vermoegen);
+const ANTEIL_ZUCMAN   = anteilAn(d => (d.label === 'D10c' ? 1 : 0));
 
 function berechne(params, zustand = null) {
   // Periodenübergreifender Zustand für Multi-Perioden-Simulation
@@ -152,10 +191,10 @@ function berechne(params, zustand = null) {
   }
 
   // ---------- 3. KÖRPERSCHAFTSTEUER + GEWERBE ----------
-  const investment_factor = 1 + ELAST.investment * ((params.kst + (params.gewst_aus ? 0 : params.gewst))/100 - 0.30);
-  const gewinn = BASIS_MAKRO.gewinn * bip_faktor * Math.max(0.7, Math.min(1.2, investment_factor));
-  const kst_auf = gewinn * params.kst / 100;
-  const gewst_auf = params.gewst_aus ? 0 : gewinn * params.gewst / 100;
+  const kvs = kapitalUndVermoegensteuern(params);
+  const investment_factor = kvs.investment_factor;
+  const kst_auf   = kvs.kst   * bip_faktor;
+  const gewst_auf = kvs.gewst * bip_faktor;
 
   // ---------- 4. MWST ----------
   // F3: Verhaltensreaktion Konsum auf BEIDE MwSt-Sätze getrennt (Lewbel/Pendakur 2009).
@@ -195,13 +234,9 @@ function berechne(params, zustand = null) {
   const klimageld_auszahlung = params.klimageld ? co2_auf * 0.7 : 0; // 70% zurück als Klimageld
 
   // ---------- 6. VERMÖGEN / ERBSCHAFT / BODEN ----------
-  const erb_satz_eff = params.erb * (params.betriebs ? 0.3 : 0.9) / 100;
-  // erb_stpfl_quote: persönliche Freibeträge (§ 16 ErbStG) stellen den Großteil der Erbmasse steuerfrei
-  const erb_auf = (BASIS_MAKRO.erb_masse * 0.6 * erb_satz_eff
-                + BASIS_MAKRO.erb_masse * 0.4 * Math.min(params.erb, 15) / 100 * 0.5)
-                * BASIS_MAKRO.erb_stpfl_quote;
+  const erb_auf   = kvs.erb;
   const boden_auf = BASIS_MAKRO.boden_wert * params.boden / 100;
-  const verm_auf  = BASIS_MAKRO.verm_basis  * params.verm  / 100;
+  const verm_auf  = kvs.verm;
 
   // ---------- 7. SV-BEITRÄGE ----------
   const bbg = params.bbg ?? 90000;
@@ -217,12 +252,7 @@ function berechne(params, zustand = null) {
   const al_auf = lohnsumme_sv * params.alpf / 100;
 
   // ---------- 7b. ZUCMAN-MINDESTSTEUER ----------
-  // 2%-Mindeststeuer auf Nettovermögen ultra-Reicher (Zucman G20 2024)
-  // Basis D10c: 0,41 Mio. HH × 7 Mio. € Median-Vermögen = ~2.870 Mrd. €
-  // Avoidance: ~15% bei 2% Satz (Jakobsen/Kleven/Kolsrud 2024)
-  const zucman_basis = 2870;
-  const zucman_avoidance = 1 - 0.15 * Math.min(1, (params.zucman ?? 0) / 2);
-  const zucman_auf = zucman_basis * (params.zucman ?? 0) / 100 * zucman_avoidance;
+  const zucman_auf = kvs.zucman;   // Formel in kapitalUndVermoegensteuern()
 
   // ---------- 8. KLEINE VERBRAUCHSTEUERN ----------
   const klein_auf = params.kleine_st ?
@@ -259,9 +289,11 @@ function berechne(params, zustand = null) {
 
   // Bürgergeld: wenn BGE >= BG-Niveau, vollständig durch BGE ersetzt (RWI 2024)
   const bg_effektiv = bge >= params.bg ? 0 : params.bg;
-  const bg_auszahlung = 5.5 * bg_effektiv * 12 / 1000; // Mrd.
-  // Kindergeld: ca. 17 Mio Kinder
-  const kg_auszahlung = 17 * params.kg * 12 / 1000;
+  // Der Staat bucht, was bei den Haushalten ankommt (PRUEFUNG-2.md I.4). Vorher:
+  // Bürgergeld 5,5 Mio. Personen × voller Regelsatz = 37,2 Mrd., Haushalte 26,3 Mrd.;
+  // Kindergeld 17 Mio. Kinder beim Staat, 36,5 Mio. bei den Haushalten.
+  const bg_auszahlung = DEZILE.reduce((a, d, i) => a + d.anzahl * bg_effektiv * 12 * BUERGERGELD_QUOTE[i], 0) / 1000; // Mrd.
+  const kg_auszahlung = DEZILE.reduce((a, d, i) => a + d.anzahl * params.kg * 12 * KINDER_JE_HH[i], 0) / 1000;
   // Negative ESt falls aktiviert
   let neg_est_auszahlung = 0;
   if (params.neg_est) neg_est_auszahlung = 30;
@@ -334,7 +366,10 @@ function berechne(params, zustand = null) {
   // Alle Ausgaben außer den Zinsen wachsen mit dem nominalen Trend (Preise und
   // Löhne), nicht mit dem BIP: eine Rezession senkt sie nicht. Die Zinsen sind
   // schon nominal, sie kommen aus dem Schuldenstand (PRUEFUNG-2.md I.2).
-  const ausgaben_real = AUSGABEN_TOTAL + bg_auszahlung + kg_auszahlung + neg_est_auszahlung + bge_brutto + admin_kosten - STAATSAUSGABEN.verwaltung - STAATSAUSGABEN.zinsen - rv_einsparung + sv_ausgaben_delta + demografie_aufschlag + invest_impuls;
+  // Ersetzt ein BGE das Bürgergeld, entfallen auch Unterkunft und Mehrbedarfe (bei den
+  // Haushalten ebenso, verteilung.js)
+  const grundsicherung_entfaellt = bg_effektiv > 0 ? 0 : STAATSAUSGABEN.grundsicherung_fix;
+  const ausgaben_real = AUSGABEN_TOTAL - grundsicherung_entfaellt + bg_auszahlung + kg_auszahlung + neg_est_auszahlung + bge_brutto + admin_kosten - STAATSAUSGABEN.verwaltung - STAATSAUSGABEN.zinsen - rv_einsparung + sv_ausgaben_delta + demografie_aufschlag + invest_impuls;
   const ausgaben_total = ausgaben_real * trend_faktor + zinsen_dyn;
 
   // ---------- 13. SALDO ----------
@@ -357,7 +392,18 @@ function berechne(params, zustand = null) {
   if (klein_auf > 0) nst += 7;
 
   // ---------- 15. HAUSHALTSBELASTUNG pro Dezil (vs. Status Quo) ----------
-  const hh_delta = berechneDezilDelta(dezile, params, est_pro_dezil, klimageld_auszahlung, bg_auszahlung, kg_auszahlung, renten_delta);
+  // Inzidenz der Unternehmens- und Vermögensteuern: Änderung gegenüber dem Status quo,
+  // in Größen von 2025, verteilt nach Arbeits-, Kapitaleinkommen und Vermögen (N1)
+  const kvs_sq = kapitalUndVermoegensteuern(PRESETS.status_quo);
+  const d_unt  = (kvs.kst + kvs.gewst) - (kvs_sq.kst + kvs_sq.gewst);
+  const d_verm = (kvs.erb + kvs.verm) - (kvs_sq.erb + kvs_sq.verm);
+  const d_zuc  = kvs.zucman - kvs_sq.zucman;
+  const inzidenz = DEZILE.map((d, i) => 1000 * (
+      d_unt  * (0.5 * ANTEIL_ARBEIT[i] + 0.5 * ANTEIL_KAPITAL[i])
+    + d_verm * ANTEIL_VERMOEGEN[i]
+    + d_zuc  * ANTEIL_ZUCMAN[i]));
+  const hh_delta = berechneDezilDelta(dezile, params, est_pro_dezil, klimageld_auszahlung, bg_auszahlung, kg_auszahlung,
+                                      { renten: renten_delta, co2_brutto: co2_auf, inzidenz });
 
   // ---------- 16. GINI ----------
   // Beide Ungleichheitsmaße auf Äquivalenzeinkommen wie EU-SILC, damit sie mit

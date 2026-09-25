@@ -3,7 +3,12 @@
 // Kassensturz · Planspiel — Regelbasiertes Feedback je Team
 
 import { CO2_BUDGET_DE } from './rechner/abgeleitet.js';
+import { berechne } from './rechner/berechne.js';
+import { PRESETS } from './data.js';
 import { erzeugeKausalketten } from './rechner/explainer.js';
+
+// Gini des Status quo im Modell — Bezugspunkt für das Urteil zur Ungleichheit
+const GINI_SQ = berechne(PRESETS.status_quo).gini;
 
 export { erzeugeKausalketten };
 
@@ -26,13 +31,15 @@ export function generiereTeamFeedback(lastEntry) {
   else if (z.schuldenquote < 80)      parts.push('Schuldenquote erhöht');
   else                                 parts.push('kritische Schuldendynamik');
 
-  // Schwellen an Realwerten verankert (KPI_BENCH.gini: DE 0,295 · DK 0,281 ·
-  // SE 0,273). Die Texte beschreiben ein Niveau, keine Veränderung — der
-  // unveränderte Status quo (Modell 0,303) ist „etwa wie heute", nicht
-  // „steigende Ungleichheit" (PRUEFUNG.md B3).
-  if (r.gini < 0.265)                 parts.push('sehr geringe Ungleichheit');
-  else if (r.gini < 0.285)            parts.push('weniger Ungleichheit als heute');
-  else if (r.gini < 0.31)             parts.push('Ungleichheit etwa wie heute');
+  // Gemessen am Status quo des Modells, nicht an festen Zahlen: „heute" ist der
+  // Status quo (0,310; amtlich 0,295). Feste Schwellen kippten bei jeder
+  // Kalibrierung — zuletzt als der Abgleich von Haushalts- und Staatsseite den
+  // Gini von 0,303 auf 0,310 hob (PRUEFUNG.md B3, PRUEFUNG-2.md I.4). Die
+  // Abstände entsprechen denen der früheren Schwellen um DE 0,295.
+  const dg = r.gini - GINI_SQ;
+  if (dg < -0.035)                    parts.push('sehr geringe Ungleichheit');
+  else if (dg < -0.015)               parts.push('weniger Ungleichheit als heute');
+  else if (dg <= 0.01)                parts.push('Ungleichheit etwa wie heute');
   else                                 parts.push('deutlich mehr Ungleichheit als heute');
 
   const restPct = (CO2_BUDGET_DE - z.co2_kumulat) / CO2_BUDGET_DE;

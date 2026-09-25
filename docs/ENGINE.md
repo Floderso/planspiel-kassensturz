@@ -99,7 +99,7 @@ Haushaltsfunktionen.
 `berechne()` übergibt Gini und Palma das **Äquivalenzeinkommen**, nicht das
 Haushaltsnetto — wie EU-SILC. Ohne Bedarfsgewichtung stehen große Haushalte
 oben und kleine unten, und der Gini fiel mit 0,377 zu hoch aus. Mit ihr liegt
-der Status quo bei 0,303 (amtlich 0,295), der Palma bei 1,25 (Lehrbuchwert
+der Status quo bei 0,310 (amtlich 0,295), der Palma bei 1,30 (Lehrbuchwert
 ~1,2). Median und Armutsquote rechnen weiter auf dem Haushaltsnetto.
 | `berechneMedianGewichtet(nettoDezile)` | Medianeinkommen in € | Kumulierte Haushaltsgewichte bis 50 % |
 | `berechneDezilDelta(params, periodeZustand)` | `{delta[], netto[]}` | Δ je Dezil vs. Status quo |
@@ -190,6 +190,12 @@ Iteriert alle Perioden der Simulation. Gibt ein Array zurück (ein Eintrag je Pe
   bleiben in Preisen von 2025. Bis 24.09.2026 blieben ESt, MwSt, Beiträge und Ausgaben 20 Jahre
   nominal eingefroren (`entwurf/PRUEFUNG-2.md` I.2)
 - **Schuldenentwicklung:** `D_{t+1} = D_t − Saldo/BIP` (Domar-Mechanismus)
+- **Haushalte = Staat:** Kindergeld (17 Mio. Kinder, `KINDER_JE_HH`), Bürgergeld-Regelbedarf
+  (`BUERGERGELD_QUOTE`) und CO₂-Last (`CO2_GEWICHT`, Summe = Bruttoaufkommen) kommen aus einer Quelle
+  in `data.js`; der Staat bucht die Summe über die Haushalte. Unterkunft und Mehrbedarfe
+  (`grundsicherung_fix`, 10,8 Mrd.) fest, ebenfalls bei den Haushalten. KSt/GewSt treffen
+  Haushalte je zur Hälfte nach Arbeits- und Kapitaleinkommen, ErbSt/VermSt nach Vermögen,
+  Zucman D10c (`kapitalUndVermoegensteuern()`, Quelle `inzidenz`). `tests/buchung.test.js`
 - **Emissionen:** Basispfad `emissionsBasis(jahr)` in `data.js` (alle Treibhausgase, 649 Mt 2025,
   −63 % 2030 / −80 % 2040 ggü. 1990 nach UBA-Projektionsbericht 2025). Der nationale CO₂-Preis wirkt
   auf den bepreisten Anteil (327 von 649 Mt). `co2_kumulat` summiert Jahr für Jahr entlang des Pfads;
