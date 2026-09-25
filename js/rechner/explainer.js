@@ -45,13 +45,13 @@ export function erzeugeKausalketten(params, result, zustand = null, refParams = 
   // ── 2. Schuldenbremse & Fiskalische Tragfähigkeit (Art. 109 GG / Domar) ─────
   const saldoPct = result?.saldo_bip_pct ?? ((result?.saldo ?? 0) / 4470 * 100);
 
-  if (saldoPct < -0.35) {
+  if (result && result.schuldenbremse_ok === false) {
     cards.push({
       topic: 'fiskus',
       tone: 'bad',
-      title: 'Schuldenbremse verfehlt (Art. 109 GG)',
-      mechanism: 'Strukturelles Defizitkriterium (−0,35 % BIP)',
-      text: `Das Finanzierungsdefizit liegt bei ${num(saldoPct, 2)} % des BIP (Grenze: −0,35 % bzw. Maastricht −3,0 %). Ohne Notlagenbeschluss nach Art. 109 Abs. 3 GG ist dieser Haushalt nicht verfassungskonform. Ein Defizit von ${num(Math.abs(result?.saldo ?? 0))} Mrd. € erfordert Gegenfinanzierung oder Ausgabenkürzungen.`,
+      title: 'Schuldenbremse verfehlt (Art. 109, 115 GG, Stand 2025)',
+      mechanism: 'Struktureller Saldo, Grenze −0,70 % BIP (Bund + Länder); Verteidigung über 1 % BIP und Sondervermögen ausgenommen',
+      text: `Das Finanzierungsdefizit liegt bei ${num(saldoPct, 2)} % des BIP, strukturell und ohne die Ausnahmen bei ${num(result.struktureller_saldo_pct, 2)} % (Grenze −0,70 %). Ohne Notlagenbeschluss nach Art. 109 Abs. 3 GG ist dieser Haushalt nicht verfassungskonform. Ein Defizit von ${num(Math.abs(result?.saldo ?? 0))} Mrd. € erfordert Gegenfinanzierung oder Ausgabenkürzungen.`,
       kpiBadge: `Saldo: ${signed(saldoPct, 2)} % BIP`,
     });
   } else if (saldoPct >= 0) {

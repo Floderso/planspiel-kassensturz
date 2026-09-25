@@ -87,7 +87,9 @@ function berechneTransition(prevState, prevResult, nextStartJahr, n) {
   // der abschreibt; er wirkt über die Produktionselastizität dauerhaft auf das Potenzial.
   // Vorher: 1 + I·n·μ/BIP als bleibender, kumulierender Niveaueffekt ohne Abschreibung —
   // 600 Mrd. über 12 Jahre ergaben +15 % BIP (PRUEFUNG-2.md I.3).
-  const zusatz = (prevResult.invest_impuls ?? 0) - (PRESETS.status_quo.invest_impuls || 0);
+  // Sondervermögen Infrastruktur zählt mit: es ist öffentliche Investition (Rechtsstand 2026)
+  const zusatz = (prevResult.invest_impuls ?? 0) - (PRESETS.status_quo.invest_impuls || 0)
+               + (prevResult.sondervermoegen_real ?? 0);
   let kapital_next = prevState.oeff_kapital ?? 0;
   for (let j = 0; j < n; j++) kapital_next = kapital_next * (1 - OEFF_ABSCHREIBUNG) + zusatz;
   const kapital_bonus = kapitalFaktor(kapital_next) / kapitalFaktor(prevState.oeff_kapital ?? 0);
@@ -150,6 +152,7 @@ function simulierePfad(perioden_params, kursKonfig = KURS_KONFIG_DEFAULT) {
     const n = laengen[i] ?? 4;
     zustand.renten_faktor = getDemoForYear(startJahr).renten_faktor;
     zustand.jahr = startJahr;
+    zustand.laenge = n;
 
     // Schock für diese Periode anwenden (falls vorhanden)
     const schock_i    = schocks.find(s => s.periode === i) ?? null;

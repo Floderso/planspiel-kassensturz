@@ -1019,7 +1019,7 @@ function zeichneMitte() {
   }).join('');
   $('#bilanz-legende').innerHTML = VERLAUF_LEGENDE;
 
-  const fehlend = Math.max(0, Math.round(Math.abs(e.saldo) - Math.abs(e.bip_aktuell * 0.0035)));
+  const fehlend = Math.round(e.schuldenbremse_luecke ?? 0);
   const o = offeneRessorts(), teile = [];
   const abgelehnt = o.filter(r => tisch[r.id].vorlage?.stand === 'abgelehnt');
   if (o.length === 0) {
@@ -1032,9 +1032,9 @@ function zeichneMitte() {
       <b>${o.map(r => r.kurz).join(', ')}</b>.`);
   }
   teile.push(e.schuldenbremse_ok
-    ? `Die Schuldenbremse ist eingehalten (${zahl(Math.abs(e.saldo_bip_pct), 2)} % des BIP).`
-    : `Die Schuldenbremse ist gerissen: ${zahl(Math.abs(e.saldo_bip_pct), 2)} % des BIP statt
-       0,35 %. Zum Schließen der Lücke fehlen rund <b>${zahl(fehlend)} Milliarden</b>.
+    ? `Die Schuldenbremse ist eingehalten (strukturell ${zahl(e.struktureller_saldo_pct, 2)} % des BIP).`
+    : `Die Schuldenbremse ist gerissen: strukturell ${zahl(e.struktureller_saldo_pct, 2)} % des BIP statt
+       höchstens −0,70 % (Verteidigung über 1 % und Sondervermögen ausgenommen). Zum Schließen der Lücke fehlen rund <b>${zahl(fehlend)} Milliarden</b>.
        Die Sitzung kann trotzdem geschlossen werden — der Fehlbetrag wandert dann weiter.`);
   $('#streit').innerHTML = teile.join(' ');
   $('#streit').dataset.ok = String(kannSchliessen());

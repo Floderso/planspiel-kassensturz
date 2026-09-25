@@ -34,7 +34,7 @@ test('Status quo erzeugt Ausgangsgleichgewicht oder Defizit-Meldung', () => {
   const karten = erzeugeKausalketten(SQ, res, PERIOD_STATE_0);
   pruefeKartenInvarianten(karten);
   // Status quo hat strukturelles Defizit (-2,7 % BIP) -> Schuldenbremse wird thematisiert
-  const schuldenbremse = karten.find(k => k.mechanism.includes('Strukturelles Defizitkriterium'));
+  const schuldenbremse = karten.find(k => k.mechanism.includes('Struktureller Saldo'));
   assert.ok(schuldenbremse, 'Schuldenbremse sollte im Status quo thematisiert werden');
 });
 

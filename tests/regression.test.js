@@ -58,6 +58,11 @@
 // 20 % Erhebungskosten; KSt/GewSt mit getrennten Basen; Ausgleichsposten −144 → −221,4
 // (hält den Status-quo-Saldo). Spätere Perioden verschieben sich leicht (Erhebungskosten
 // jetzt in Größen von 2025).
+//
+// Erneuert am 2026-09-25, Rechtsstand Teil 2: Verteidigung nach NATO-Plan (2,4 → 3,5 % BIP
+// bis 2029, Anstieg zusätzlich gebucht), Sondervermögen Infrastruktur (500 Mrd. 2026–2036,
+// als öffentliche Investition mit Kapitalstock). Schuldenquote 2041: 92,3 → 108,0 %. Das
+// BIP liegt durch das Sondervermögen über dem vorigen Pfad (6.755 statt 6.652).
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -65,11 +70,11 @@ import { simulierePfad } from '../js/rechner/transition.js';
 import { PRESETS } from '../js/data.js';
 
 const REFERENZ = [
-  { label: '2025–2028', saldo: -121.232,  schuldenquote: 63.5,    gini: 0.3115, emissionen: 649,     bip: 4470 },
-  { label: '2029–2032', saldo: -163.9176, schuldenquote: 67.6143, gini: 0.3112, emissionen: 500.392, bip: 4937.004 },
-  { label: '2033–2036', saldo: -225.2687, schuldenquote: 73.6085, gini: 0.311,  emissionen: 399.388, bip: 5452.7984 },
-  { label: '2037–2040', saldo: -289.9065, schuldenquote: 82.0624, gini: 0.3108, emissionen: 314.252, bip: 6022.4805 },
-  { label: '2041–2044', saldo: -361.9836, schuldenquote: 92.2635, gini: 0.3107, emissionen: 237.88,  bip: 6651.6802 },
+  { label: '2025–2028', saldo: -174.3204, schuldenquote: 63.5,    gini: 0.3115, emissionen: 649,     bip: 4470 },
+  { label: '2029–2032', saldo: -256.2545, schuldenquote: 71.5868, gini: 0.3112, emissionen: 500.392, bip: 4968.6991 },
+  { label: '2033–2036', saldo: -315.8797, schuldenquote: 83.498,  gini: 0.311,  emissionen: 399.388, bip: 5524.8164 },
+  { label: '2037–2040', saldo: -334.6973, schuldenquote: 96.4564, gini: 0.3108, emissionen: 314.252, bip: 6132.35 },
+  { label: '2041–2044', saldo: -419.8575, schuldenquote: 107.9912, gini: 0.3107, emissionen: 237.88, bip: 6754.7469 },
 ];
 
 test('Status-quo-Pfad (5 Perioden) reproduziert die Referenzwerte', () => {

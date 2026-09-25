@@ -2,7 +2,8 @@
 // Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
 import { DEZILE, ELAST, BASIS_MAKRO, STAATSAUSGABEN, PRESETS, BASIS_AUFKOMMEN, ADMIN_QUOTE, AUSGABEN_TOTAL, BGE_LABOR_EFF, PERIOD_STATE_0, ZINS_EFFEKTIV, emissionsBasis,
          KINDER_JE_HH, BUERGERGELD_QUOTE, CO2_GEWICHT, MPC_DEZIL, MPC_MITTEL,
-         MULTIPLIKATOR_STEUER_TRANSFER, MULTIPLIKATOR_INVEST } from '../data.js';
+         MULTIPLIKATOR_STEUER_TRANSFER, MULTIPLIKATOR_INVEST, NATO_QUOTE_2025, verteidigungQuote,
+         sondervermoegen, SCHULDENBREMSE_STRUKTURELL, VERTEIDIGUNG_AUSNAHME_AB, BUDGET_SEMIELASTIZITAET } from '../data.js';
 import { estHaushalt, grenzsteuersatzHaushalt } from './einkommensteuer.js';
 import { aequivalenzEinkommen, berechneGini, berechneMedianGewichtet, berechnePalma, berechneDezilDelta, berechneNettoSQ } from './verteilung.js';
 
@@ -431,7 +432,16 @@ function berechne(params, zustand = null, optionen = {}) {
   // Erhebungskosten (59 Mrd.) die gesamte Verwaltung (PRUEFUNG-2.md II, C3).
   const admin_referenz = optionen.adminReferenz ? admin_kosten : erhebungskostenStatusQuo();
   const ausgaben_real = AUSGABEN_TOTAL - grundsicherung_entfaellt - klimafonds_weniger + bg_auszahlung + kg_auszahlung + neg_est_auszahlung + bge_brutto + (admin_kosten - admin_referenz) - STAATSAUSGABEN.zinsen - rv_einsparung + sv_ausgaben_delta + demografie_aufschlag + invest_impuls;
-  const ausgaben_total = ausgaben_real * trend_faktor + zinsen_dyn;
+  // Rechtsstand 2026: Anstieg der Verteidigungsausgaben über 2025 (NATO-Plan) und das
+  // Sondervermögen Infrastruktur, gemittelt über die Jahre der Periode (docs/RECHTSSTAND.md)
+  // Ohne Periodenzustand gilt das Kalibrierungsjahr 2025 allein
+  const jahre = zustand ? Array.from({ length: zustand.laenge ?? 4 }, (_, k) => (zustand.jahr ?? 2025) + k) : [2025];
+  const mittel = f => jahre.reduce((a, j) => a + f(j), 0) / jahre.length;
+  const verteidigung_quote = mittel(verteidigungQuote);                                  // % BIP
+  const verteidigung_zusatz = (verteidigung_quote - NATO_QUOTE_2025) / 100 * BASIS_MAKRO.bip;   // Größen 2025
+  const sondervermoegen_nominal = mittel(sondervermoegen);
+  const sondervermoegen_real = sondervermoegen_nominal / trend_faktor;
+  const ausgaben_total = (ausgaben_real + verteidigung_zusatz) * trend_faktor + sondervermoegen_nominal + zinsen_dyn;
 
   // ---------- 13. SALDO ----------
   const saldo = einnahmen_total - ausgaben_total;
@@ -530,7 +540,16 @@ function berechne(params, zustand = null, optionen = {}) {
   // ---------- 19b. SCHULDENBREMSE (Art. 109 GG) ----------
   // Vereinfacht: struktureller Saldo ≈ Gesamtsaldo / BIP (keine Konjunkturbereinigung im Modell)
   const saldo_bip_pct = saldo / bip_aktuell * 100;
-  const schuldenbremse_ok = saldo_bip_pct >= -0.35;
+  // Schuldenbremse 2025: struktureller Saldo = Saldo ohne Konjunkturkomponente und ohne die
+  // Ausnahmen (Verteidigung über 1 % BIP, Sondervermögen), Grenze 0,70 % BIP (Bund + Länder).
+  // Vereinfacht: Gesamtstaat statt Bund und Länder. Vorher: Ist-Saldo ≥ −0,35 %, ohne
+  // Konjunktur und ohne die Ausnahmen von 2025 (PRUEFUNG-2.md III).
+  const konjunktur_pct = BUDGET_SEMIELASTIZITAET * nachfrage_luecke * 100;
+  const ausnahmen_pct = Math.max(0, verteidigung_quote - VERTEIDIGUNG_AUSNAHME_AB)
+                      + sondervermoegen_nominal / bip_aktuell * 100;
+  const struktureller_saldo_pct = saldo_bip_pct - konjunktur_pct + ausnahmen_pct;
+  const schuldenbremse_ok = struktureller_saldo_pct >= -SCHULDENBREMSE_STRUKTURELL;
+  const schuldenbremse_luecke = Math.max(0, -(struktureller_saldo_pct + SCHULDENBREMSE_STRUKTURELL)) / 100 * bip_aktuell;
 
   // ---------- 19c. DYNAMISCHES SCORING ----------
   // Verhaltensbedingte Aufkommensänderung gegenüber mechanischer (statischer) Wirkung
@@ -547,7 +566,8 @@ function berechne(params, zustand = null, optionen = {}) {
     armutsrisiko, schuldenquote_delta, metr, dwl, poverty_line,
     rv_einsparung, bge_brutto,
     // Research-basierte Erweiterungen (QUELLENRECHERCHE.md)
-    saldo_bip_pct, schuldenbremse_ok,
+    saldo_bip_pct, schuldenbremse_ok, struktureller_saldo_pct, schuldenbremse_luecke,
+    verteidigung_quote, sondervermoegen_real,
     dynamisch_kst, dynamisch_est, dynamisch_delta,
     investment_factor, avg_labor,
     // GKV-Reform-Boni (für GKV-Panel-Darstellung)

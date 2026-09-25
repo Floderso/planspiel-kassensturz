@@ -190,6 +190,10 @@ Iteriert alle Perioden der Simulation. Gibt ein Array zurück (ein Eintrag je Pe
   bleiben in Preisen von 2025. Bis 24.09.2026 blieben ESt, MwSt, Beiträge und Ausgaben 20 Jahre
   nominal eingefroren (`entwurf/PRUEFUNG-2.md` I.2)
 - **Schuldenentwicklung:** `D_{t+1} = D_t − Saldo/BIP` (Domar-Mechanismus)
+- **Rechtsstand 2026, Ausgaben:** Verteidigungsanstieg nach NATO-Plan und Sondervermögen
+  Infrastruktur, gemittelt über die Jahre der Periode (`verteidigungQuote`, `sondervermoegen` in
+  `data.js`). Schuldenbremse 2025: `struktureller_saldo_pct`, `schuldenbremse_ok`,
+  `schuldenbremse_luecke`
 - **Tarif:** § 32a EStG 2026, Zonenbreiten fest. Jeder Regler wirkt nur auf seine Zone:
   Freibetrag verschiebt den Tarif, Eingangssatz die Progressionszone, Spitzensatz nur ab der
   Grenze, Grenze nur den Beginn der obersten Zone (Zone 4 fest 42 %, gedeckelt auf die Spitze).

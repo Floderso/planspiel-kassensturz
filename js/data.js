@@ -256,6 +256,35 @@ const OEFF_KAPITALSTOCK = 1600;
 // ~4–5 % des Nettoanlagevermögens, Destatis VGR)
 const OEFF_ABSCHREIBUNG = 0.04;
 
+/**
+ * Rechtsstand 2026, Teil 2 (docs/RECHTSSTAND.md, PRUEFUNG-2.md III).
+ *
+ * Verteidigung: NATO-Quote 2025 rund 2,4 % BIP, Plan 2,6 % (2026), 3,0 % (2027), 3,3 % (2028),
+ * 3,5 % ab 2029 (Finanzplan der Bundesregierung 2025; BMVg). Das Modell bucht den ANSTIEG über
+ * 2025 zusätzlich — die Basis steckt in STAATSAUSGABEN.verteidigung.
+ * Sondervermögen Infrastruktur: 500 Mrd. € über 12 Jahre (Art. 143h GG, März 2025); hier ab
+ * 2026 gleichmäßig 500/11 Mrd. € nominal bis 2036. Wirkt als öffentliche Investition.
+ * Schuldenbremse 2025: Bund 0,35 % + Länder 0,35 % BIP strukturell; Verteidigung über 1 % BIP
+ * und das Sondervermögen ausgenommen (Art. 109, 115, 143h GG).
+ */
+const NATO_QUOTE_2025 = 2.4;
+const VERTEIDIGUNG_PLAN = [[2025, 2.4], [2026, 2.6], [2027, 3.0], [2028, 3.3], [2029, 3.5]];
+function verteidigungQuote(jahr) {
+  if (jahr <= VERTEIDIGUNG_PLAN[0][0]) return VERTEIDIGUNG_PLAN[0][1];
+  for (let i = 1; i < VERTEIDIGUNG_PLAN.length; i++) {
+    const [j0, q0] = VERTEIDIGUNG_PLAN[i - 1], [j1, q1] = VERTEIDIGUNG_PLAN[i];
+    if (jahr <= j1) return q0 + (q1 - q0) * (jahr - j0);
+  }
+  return VERTEIDIGUNG_PLAN[VERTEIDIGUNG_PLAN.length - 1][1];
+}
+const SONDERVERMOEGEN_JAHR = 500 / 11;                // Mrd. € nominal, 2026–2036
+const sondervermoegen = jahr => (jahr >= 2026 && jahr <= 2036) ? SONDERVERMOEGEN_JAHR : 0;
+const SCHULDENBREMSE_STRUKTURELL = 0.70;              // % BIP, Bund 0,35 + Länder 0,35
+const VERTEIDIGUNG_AUSNAHME_AB = 1.0;                 // % BIP, darüber ausgenommen
+// Budget-Semielastizität: Änderung des Saldos je Prozent Produktionslücke, % BIP
+// (EU-Kommission, Mourre et al. 2019, European Economy DP 100: DE ~0,5)
+const BUDGET_SEMIELASTIZITAET = 0.5;
+
 const EMISSIONEN_1990 = 1252;
 const EMISSIONS_ANKER = [
   [2025, 649], [2030, EMISSIONEN_1990 * 0.37], [2040, EMISSIONEN_1990 * 0.20], [2045, EMISSIONEN_1990 * 0.15],
@@ -484,8 +513,8 @@ const CHALLENGES = [
     desc:'Verwaltungskosten unter 100 Mrd. €',
     subs:[{ label:'Verwaltung', check:r=>r.admin_kosten<100, cur:r=>r.admin_kosten, tgt:100, refFn:ref=>ref.admin_kosten, dir:'down', fmt:v=>v.toFixed(0)+' Mrd.' }]},
   { id:'schuldenbremse', diff:'weekly', title:'Schuldenbremse',
-    desc:'Strukturellen Saldo auf ≥ −0,35 % BIP bringen (Art. 109 GG)',
-    subs:[{ label:'Saldo % BIP', check:r=>r.saldo_bip_pct>=-0.35, cur:r=>r.saldo_bip_pct, tgt:-0.35, refFn:ref=>ref.saldo_bip_pct, dir:'up', fmt:v=>(v>=0?'+':'')+v.toFixed(2)+' %' }]},
+    desc:'Schuldenbremse 2025 einhalten: struktureller Saldo ≥ −0,70 % BIP (Verteidigung über 1 % und Sondervermögen ausgenommen)',
+    subs:[{ label:'Struktureller Saldo % BIP', check:r=>r.struktureller_saldo_pct>=-0.70, cur:r=>r.struktureller_saldo_pct, tgt:-0.70, refFn:ref=>ref.struktureller_saldo_pct, dir:'up', fmt:v=>(v>=0?'+':'')+v.toFixed(2)+' %' }]},
   { id:'metr_d1_70', diff:'weekly', title:'Armutsfalle durchbrechen',
     desc:'Grenzbelastung des untersten Dezils unter 70 % senken',
     subs:[{ label:'METR D1', check:r=>r.metr[0]<0.70, cur:r=>r.metr[0]*100, tgt:70, refFn:()=>99, dir:'down', fmt:v=>v.toFixed(0)+' %' }]},
@@ -875,7 +904,8 @@ const PERIOD_STATE_0 = {
   lohnbasis_faktor: 1.0,    // Arbeitsmarkt-Zustandsindex (1,0 = Status quo 2025)
   renten_faktor:    1.0,    // wird per Periode aus DEMOGRAFIE_KURVE gesetzt
   oeff_kapital:     0,      // öffentliches Kapital über dem Status-quo-Pfad, Mrd. € (Preise 2025)
-  jahr:             2025,   // Startjahr der Periode — wird per Periode gesetzt (Emissionsbasispfad)
+  jahr:             2025,   // Startjahr der Periode
+  laenge:           4,      // Jahre der Periode — wird per Periode gesetzt (Emissionsbasispfad)
   trend_faktor:     1.0,    // nominaler Trend seit 2025, (1 + BIP_WACHSTUM_NOMINAL_JAHR)^Jahre —
                             // Preis- und Lohnniveau, an dem die Ausgaben wachsen (PRUEFUNG-2.md I.2)
 };
@@ -1003,6 +1033,7 @@ const ZUKUNFTS_SZENARIEN = [
 ];
 
 export { ZINS_EFFEKTIV, BIP_WACHSTUM_NOMINAL_JAHR, EMISSIONEN_1990, EMISSIONS_ANKER, emissionsBasis };
+export { NATO_QUOTE_2025, verteidigungQuote, sondervermoegen, SCHULDENBREMSE_STRUKTURELL, VERTEIDIGUNG_AUSNAHME_AB, BUDGET_SEMIELASTIZITAET };
 export { MPC_DEZIL, MPC_MITTEL, MULTIPLIKATOR_STEUER_TRANSFER, MULTIPLIKATOR_INVEST, OEFF_KAPITAL_ELASTIZITAET, OEFF_KAPITALSTOCK, OEFF_ABSCHREIBUNG };
 
 export { KINDER_JE_HH, KINDERGELD_KINDER, BUERGERGELD_QUOTE, CO2_GEWICHT };

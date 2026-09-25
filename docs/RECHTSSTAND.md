@@ -28,14 +28,15 @@ also nicht dasselbe Jahr; die Lücke ist dokumentiert, nicht geschlossen.
 | Erbschaftsteuer | effektiv nach Modell, Betriebsvermögen begünstigt | ErbStG |
 | Emissionspfad | 649 Mt 2025 → −63 % 2030 / −80 % 2040 ggü. 1990 | UBA Projektionsbericht 2025 (Mit-Maßnahmen-Szenario) |
 | CO₂-Budget | 5.380 Mt (DE-Anteil am 1,7-°C-Budget) | Forster et al. (2026), IGCC 2025, ESSD |
+| Verteidigung | NATO-Quote 2,4 % (2025) → 2,6 / 3,0 / 3,3 % → 3,5 % ab 2029; Anstieg über 2025 zusätzlich gebucht | Finanzplan der Bundesregierung 2025; BMVg. Plan, kein Gesetz |
+| Sondervermögen Infrastruktur | 500 Mrd. € über 12 Jahre, im Modell 2026–2036 gleichmäßig; wirkt als öffentliche Investition | Art. 143h GG (März 2025) |
+| Schuldenbremse | struktureller Saldo ≥ −0,70 % BIP (Bund 0,35 + Länder 0,35), Verteidigung über 1 % BIP und Sondervermögen ausgenommen, Konjunkturkomponente mit Semielastizität 0,5 | Art. 109, 115, 143h GG (Änderung März 2025); Mourre et al. (2019). Vereinfacht auf den Gesamtstaat |
 
 ## Bekannt, aber (noch) nicht im Modell
 
 | Thema | Stand | Warum wichtig |
 |---|---|---|
-| Schuldenbremse 2025 | Verteidigung über 1 % BIP ausgenommen, Sondervermögen Infrastruktur 500 Mrd., Länder 0,35 % | Die Challenge „≥ −0,35 % BIP (Art. 109 GG)" prüft den Gesamtstaats-Ist-Saldo ohne Konjunkturkomponente und ohne diese Ausnahmen |
 | EU-Fiskalregeln | Nettoausgabenpfad | fehlt ganz |
-| Verteidigung | NATO-Ziel 3,5 % BIP bis 2035; Modell: fest 90 Mrd. € | größte Haushaltsdynamik des Jahrzehnts |
 | Grundsteuerreform | seit 2025 in Kraft, Ländermodelle (BW Bodenwert, BY Fläche, HH Wohnlage) | Regler „Boden" ist eine Bodenwertsteuer, kein Abbild des Ländermix |
 | Demografie | Modell: 14. Bevölkerungsvorausberechnung; aktuell ist die 15. (2022); nur die Rente altert | KV, Pflege und Arbeitskräftepotenzial altern nicht mit |
 | KSt-Senkung ab 2028 | beschlossen (1 Pp. pro Jahr bis 10 % 2032) | Status quo hält 15 % |
