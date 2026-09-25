@@ -43,12 +43,13 @@
 \usepackage{booktabs,longtable,tabularx,array,multirow}
 \usepackage{graphicx}
 \usepackage{eurosym}
-\usepackage{xcolor}
+\usepackage[table]{xcolor}
 \usepackage{enumitem}
 \usepackage{tikz}
 \usetikzlibrary{positioning,arrows.meta,calc,fit,backgrounds,shapes.geometric}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
+\usepgfplotslibrary{groupplots}
 \usepackage{caption}
 \usepackage[hidelinks]{hyperref}
 
@@ -63,6 +64,21 @@
 \definecolor{hell}{HTML}{EEF2F6}
 
 \newcommand{\COz}{CO\textsubscript{2}}
+
+% Wirkungsgraphen (Teil III): Knoten und gemessene Kanten, erzeugt von messung.js
+\tikzset{
+  stell/.style={draw=grau, rounded corners=2pt, fill=hell, align=center, font=\small,
+                text width=33mm, inner sep=3pt},
+  kanal/.style={draw=grau, rounded corners=2pt, fill=white, align=left, font=\small,
+                text width=52mm, minimum height=6mm, anchor=west},
+  ziel/.style={draw=black, thick, rounded corners=2pt, fill=white, align=center, font=\small,
+               text width=30mm, minimum height=9mm},
+  wlabel/.style={font=\scriptsize, fill=white, inner sep=0.8pt},
+}
+% Kante: waagerechter Ansatz an der Stellgröße (Versatz #6 cm) mit der Zahl, dann zum Kanal
+\newcommand{\wkante}[6]{%
+  \draw[-{Stealth[length=2.2mm]}, color=#3, line width=#4pt, draw opacity=0.8]
+    ($(L-#1.east)+(0,#6)$) -- node[wlabel, text=#3]{#5} ++(1.25,0) -- (K-#2.west);}
 \newcommand{\Mrd}{Mrd.\,\euro{}}
 \newcommand{\datei}[1]{\texttt{#1}}
 \newcommand{\Pp}{Pp.}

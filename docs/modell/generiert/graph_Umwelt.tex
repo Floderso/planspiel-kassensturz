@@ -1,9 +1,22 @@
 % Erzeugt von docs/modell/messung.js — nicht von Hand bearbeiten
-\wkante{co2}{co2}{pos}{0.86}{2,6}
-\wkante{co2}{nachfr}{neg}{0.71}{$-$1,4}
-\wkante{klimageld}{est}{pos}{0.51}{0,6}
-\wkante{klimageld}{mwst}{pos}{0.52}{0,5}
-\wkante{klimageld}{sv}{pos}{0.58}{1,3}
-\wkante{klimageld}{co2}{neg}{2.60}{$-$12,6}
-\wkante{klimageld}{transfer}{pos}{2.60}{12,6}
-\wkante{klimageld}{nachfr}{pos}{2.05}{7,8}
+\node[kanal] (K-est) at (8.4,0.00) {Einkommensteuer {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-mwst) at (8.4,-0.95) {Umsatzsteuer {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-unt) at (8.4,-1.90) {KSt + GewSt {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-verm) at (8.4,-2.85) {Erb-, Boden-, Verm.-St. {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-sv) at (8.4,-3.80) {SV-Beiträge {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-co2) at (8.4,-4.75) {CO\textsubscript{2}-Einnahmen netto {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-transfer) at (8.4,-5.70) {Transfers {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-rente) at (8.4,-6.65) {Rentenzahlungen {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-arbeit) at (8.4,-7.60) {Arbeitsangebot {\scriptsize[\%]}};
+\node[kanal] (K-invest) at (8.4,-8.55) {Investitionsfaktor {\scriptsize[\%]}};
+\node[kanal] (K-nachfr) at (8.4,-9.50) {Nachfrageimpuls {\scriptsize[Mrd. \euro{}]}};
+\node[stell, minimum height=1.30cm] (L-co2) at (0,-1.90) {\textbf{CO\textsubscript{2}-Preis}\\{\scriptsize +10 \euro{}/t}\\{\scriptsize Saldo $+$2,0}};
+\wkante{co2}{co2}{pos}{0.76}{$+$2,6}{0.19}
+\wkante{co2}{nachfr}{neg}{0.60}{$-$1,4}{-0.19}
+\node[stell, minimum height=2.58cm] (L-klimageld) at (0,-6.96) {\textbf{Klimageld}\\{\scriptsize +ein}\\{\scriptsize Saldo $-$9,7}};
+\wkante{klimageld}{est}{pos}{0.49}{$+$0,6}{0.95}
+\wkante{klimageld}{mwst}{pos}{0.47}{$+$0,5}{0.57}
+\wkante{klimageld}{sv}{pos}{0.58}{$+$1,3}{0.19}
+\wkante{klimageld}{co2}{neg}{2.14}{$-$12,6}{-0.19}
+\wkante{klimageld}{transfer}{pos}{2.14}{$+$12,6}{-0.57}
+\wkante{klimageld}{nachfr}{pos}{1.47}{$+$7,8}{-0.95}

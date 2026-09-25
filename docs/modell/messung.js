@@ -242,17 +242,62 @@ function dezilTabelle(zeilen, defs) {
  */
 const SCHWELLE = { 'Mrd. €': 0.3, '%': 0.02 };
 
-function graphKanten(zeilen, zeilenMax) {
+// Ressortgraph: Stellgrößen links, alle Kanäle rechts in fester Reihenfolge (damit die vier
+// Graphen gleich aussehen), Kanten mit gemessenem Wert. Jede Stellgröße trägt ihre
+// Saldowirkung der ersten Periode im Knoten.
+const KANAL_ABSTAND = 0.95;   // cm
+const STUMMEL_ABSTAND = 0.38; // cm zwischen den Kantenansätzen an einer Stellgröße
+function ressortGraph(zeilen, zeilenMax) {
+  const hoehe = KANAL_ABSTAND * (KANAELE.length - 1);
   const aus = [];
-  for (const z of zeilen) {
-    for (const k of KANAELE) {
-      const v = z.kanal[k.id];
-      if (Math.abs(v) < (SCHWELLE[k.einheit] ?? 0.3)) continue;
-      const staerke = (0.4 + 2.2 * Math.abs(v) / zeilenMax[k.id]).toFixed(2);
-      aus.push(`\\wkante{${z.key}}{${k.id}}{${v >= 0 ? 'pos' : 'neg'}}{${staerke}}{${ohneVz(v, NK[k.einheit] ?? 1).replace('-', '$-$')}}`);
-    }
-  }
+  KANAELE.forEach((k, j) => aus.push(
+    `\\node[kanal] (K-${k.id}) at (8.4,${(-j * KANAL_ABSTAND).toFixed(2)}) {${tex(k.bez)} {\\scriptsize[${tex(k.einheit)}]}};`));
+  // Kanten je Stellgröße, in der Reihenfolge der Kanäle: dann kreuzen sich die Ansätze nicht
+  const kanten = zeilen.map(z => KANAELE.map((k, j) => ({ k, j, v: z.kanal[k.id] }))
+    .filter(e => Math.abs(e.v) >= (SCHWELLE[e.k.einheit] ?? 0.3)));
+  // Stellgrößen untereinander, jede so hoch wie ihre Ansätze, gleichmäßig verteilt
+  const hoehen = kanten.map(ks => Math.max(1.3, ks.length * STUMMEL_ABSTAND + 0.3));
+  const luecke = Math.max(0.3, (hoehe + 0.6 - hoehen.reduce((a, h) => a + h, 0)) / Math.max(1, zeilen.length));
+  let y = 0.3 - luecke / 2;
+  zeilen.forEach((z, i) => {
+    const s = STELLGROESSEN.find(d => d.key === z.key);
+    const mitte = y - hoehen[i] / 2;
+    y -= hoehen[i] + luecke;
+    aus.push(`\\node[stell, minimum height=${hoehen[i].toFixed(2)}cm] (L-${z.key}) at (0,${mitte.toFixed(2)}) {\\textbf{${tex(s.bez)}}\\\\{\\scriptsize +${tex(s.einheit)}}\\\\{\\scriptsize Saldo ${zahl(z.kennzahl.saldo, 1)}}};`);
+    kanten[i].forEach((e, n) => {
+      const versatz = ((kanten[i].length - 1) / 2 - n) * STUMMEL_ABSTAND;
+      const staerke = (0.4 + 2.2 * Math.abs(e.v) / zeilenMax[e.k.id]).toFixed(2);
+      aus.push(`\\wkante{${z.key}}{${e.k.id}}{${e.v >= 0 ? 'pos' : 'neg'}}{${staerke}}{${zahl(e.v, NK[e.k.einheit] ?? 1)}}{${versatz.toFixed(2)}}`);
+    });
+  });
   return aus.join('\n') + '\n';
+}
+
+// Gesamtmatrix: Zelle gefärbt nach Erwünschtheit (blau erwünscht, orange unerwünscht),
+// Sättigung nach Betrag relativ zum größten Wert der Spalte.
+const ERWUENSCHT = { saldo: 1, gini: -1, armut: -1, emiss: -1, bip: 1, d1: 1, d5: 1, d10c: 1,
+                     schuld: -1, co2kum: -1 };
+function gesamtMatrix(m) {
+  const spalten = [
+    ...KENNZAHLEN.map(k => ({ ...k, quelle: 'kennzahl' })),
+    ...PFAD.filter(k => ['schuld', 'bip', 'co2kum'].includes(k.id)).map(k => ({ ...k, quelle: 'pfad' })),
+  ];
+  const max = spalten.map(k => Math.max(1e-9, ...m.tisch.map(z => Math.abs(z[k.quelle][k.id]))));
+  const kopf = spalten.map(k => `\\rotatebox{70}{${tex(k.bez)}}`).join(' & ');
+  const rumpf = m.tisch.map(z => {
+    const s = STELLGROESSEN.find(d => d.key === z.key);
+    const zellen = spalten.map((k, j) => {
+      const v = z[k.quelle][k.id];
+      const nk = NK[k.einheit] ?? 1;
+      if (Number(v.toFixed(nk)) === 0) return `\\textcolor{grau}{0}`;
+      const gut = Math.sign(v) * (ERWUENSCHT[k.id] ?? 1) > 0;
+      const staerke = Math.round(12 + 58 * Math.min(1, Math.abs(v) / max[j]));
+      return `\\cellcolor{${gut ? 'pos' : 'neg'}!${staerke}}${ohneVz(v, Math.min(nk, 2)).replace('-', '$-$')}`;
+    }).join(' & ');
+    return `${tex(s.bez)} & ${zellen} \\\\`;
+  }).join('\n');
+  const einheiten = spalten.map(k => `{\\tiny ${tex(k.einheit)}}`).join(' & ');
+  return `\\begin{tabular}{l${'r'.repeat(spalten.length)}}\n\\toprule\nStellgröße & ${kopf} \\\\\n & ${einheiten} \\\\\n\\midrule\n${rumpf}\n\\bottomrule\n\\end{tabular}\n`;
 }
 
 function zerlegungTabelle(m) {
@@ -317,6 +362,7 @@ function makros(m) {
     for (const [f, v] of Object.entries(z.pfad)) def('pfad', z.key, f, v, NK[PFAD.find(k => k.id === f).einheit] ?? 1);
     for (const [f, v] of Object.entries(z.kanal)) def('kanal', z.key, f, v, NK[KANAELE.find(k => k.id === f).einheit] ?? 1);
   }
+  for (const key of Object.keys(m.verlaeufe)) einzel.push(`\\wertdef{sq}{${key}}{x}{${SQ[key]}}`);
   return zeilen.map(([n, v]) => `\\newcommand{\\${n}}{${v.replace('-', '$-$')}}`).join('\n') + '\n' + einzel.join('\n') + '\n';
 }
 
@@ -388,6 +434,7 @@ function schreibe() {
   w('makros.tex', makros(m));
   w('zerlegung.tex', zerlegungTabelle(m));
   w('symmetrie.tex', symmetrieTabelle(m));
+  w('gesamtmatrix.tex', gesamtMatrix(m));
   w('daten_dezile.tex', dezilDaten());
   w('elastizitaeten.tex', elastTabelle());
   w('quellen.tex', quellenTabelle());
@@ -398,13 +445,15 @@ function schreibe() {
   w('dezile.tex', dezilTabelle(m.tisch, STELLGROESSEN));
   w('weitere_kennzahlen.tex', tabelle(m.weitere, KENNZAHLEN, 'kennzahl', WEITERE));
   w('weitere_pfad.tex', tabelle(m.weitere, PFAD, 'pfad', WEITERE));
-  // Strichstärke relativ zum größten Wert des Kanals über ALLE Stellgrößen am Tisch,
+  // Strichstärke relativ zum größten Wert über ALLE Stellgrößen am Tisch,
   // damit die vier Ressortgraphen untereinander vergleichbar sind
-  const zeilenMax = Object.fromEntries(KANAELE.map(k =>
-    [k.id, Math.max(1e-9, ...m.tisch.map(z => Math.abs(z.kanal[k.id])))]));
+  // — je Einheit, nicht je Kanal: 0,3 Mrd. Erbschaftsteuer sollen dünner sein als 15,7 Mrd. Beiträge
+  const maxJeEinheit = e => Math.max(1e-9, ...KANAELE.filter(k => k.einheit === e)
+    .flatMap(k => m.tisch.map(z => Math.abs(z.kanal[k.id]))));
+  const zeilenMax = Object.fromEntries(KANAELE.map(k => [k.id, maxJeEinheit(k.einheit)]));
   for (const r of ['Finanzen', 'Wirtschaft', 'Soziales', 'Umwelt']) {
     const keys = STELLGROESSEN.filter(s => s.ressort === r).map(s => s.key);
-    w(`graph_${r}.tex`, graphKanten(m.tisch.filter(z => keys.includes(z.key)), zeilenMax));
+    w(`graph_${r}.tex`, ressortGraph(m.tisch.filter(z => keys.includes(z.key)), zeilenMax));
   }
   for (const [key, daten] of Object.entries(verlaufDaten(m))) {
     fs.writeFileSync(path.join(ziel, `verlauf_${key}.dat`), daten);

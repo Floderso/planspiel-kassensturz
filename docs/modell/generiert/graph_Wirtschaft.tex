@@ -1,8 +1,21 @@
 % Erzeugt von docs/modell/messung.js — nicht von Hand bearbeiten
-\wkante{kst}{unt}{pos}{1.54}{2,5}
-\wkante{kst}{invest}{neg}{2.60}{$-$0,40}
-\wkante{kst}{nachfr}{neg}{0.62}{$-$1,0}
-\wkante{gewst}{unt}{pos}{2.60}{4,8}
-\wkante{gewst}{sv}{neg}{0.45}{$-$0,3}
-\wkante{gewst}{invest}{neg}{2.60}{$-$0,40}
-\wkante{gewst}{nachfr}{neg}{0.83}{$-$2,0}
+\node[kanal] (K-est) at (8.4,0.00) {Einkommensteuer {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-mwst) at (8.4,-0.95) {Umsatzsteuer {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-unt) at (8.4,-1.90) {KSt + GewSt {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-verm) at (8.4,-2.85) {Erb-, Boden-, Verm.-St. {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-sv) at (8.4,-3.80) {SV-Beiträge {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-co2) at (8.4,-4.75) {CO\textsubscript{2}-Einnahmen netto {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-transfer) at (8.4,-5.70) {Transfers {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-rente) at (8.4,-6.65) {Rentenzahlungen {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-arbeit) at (8.4,-7.60) {Arbeitsangebot {\scriptsize[\%]}};
+\node[kanal] (K-invest) at (8.4,-8.55) {Investitionsfaktor {\scriptsize[\%]}};
+\node[kanal] (K-nachfr) at (8.4,-9.50) {Nachfrageimpuls {\scriptsize[Mrd. \euro{}]}};
+\node[stell, minimum height=1.44cm] (L-kst) at (0,-2.13) {\textbf{Körperschaftsteuer}\\{\scriptsize +1 Pp.}\\{\scriptsize Saldo $+$2,0}};
+\wkante{kst}{unt}{pos}{0.75}{$+$2,5}{0.38}
+\wkante{kst}{invest}{neg}{2.60}{$-$0,40}{0.00}
+\wkante{kst}{nachfr}{neg}{0.54}{$-$1,0}{-0.38}
+\node[stell, minimum height=1.82cm] (L-gewst) at (0,-7.18) {\textbf{Gewerbesteuer}\\{\scriptsize +1 Pp.}\\{\scriptsize Saldo $+$3,9}};
+\wkante{gewst}{unt}{pos}{1.07}{$+$4,8}{0.57}
+\wkante{gewst}{sv}{neg}{0.45}{$-$0,3}{0.19}
+\wkante{gewst}{invest}{neg}{2.60}{$-$0,40}{-0.19}
+\wkante{gewst}{nachfr}{neg}{0.68}{$-$2,0}{-0.57}

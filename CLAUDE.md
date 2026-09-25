@@ -20,6 +20,7 @@ oder rätst, sieh dort nach:
 | `docs/API.md` | Alle Endpunkte mit Beispielen |
 | `docs/DEPLOYMENT.md` | Frontend und Backend ausrollen |
 | `docs/adrs/001–004` | Warum Engine im Client, warum Hono/Cloudflare, warum KV, warum Polling |
+| `docs/modell/modell.pdf` | Die Engine in Worten, in Formeln und als gemessener Wirkungsgraph. Nach Änderungen an `js/rechner/` oder `data.js`: `node docs/modell/messung.js`, dann `cd docs/modell && latexmk -pdf modell.tex` — `tests/modelldoku.test.js` wird sonst rot |
 
 Diese Datei wiederholt das nicht. Sie hält nur fest, was sonst nirgends steht.
 

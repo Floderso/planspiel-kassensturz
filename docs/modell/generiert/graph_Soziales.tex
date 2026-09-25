@@ -1,18 +1,34 @@
 % Erzeugt von docs/modell/messung.js — nicht von Hand bearbeiten
-\wkante{rv}{est}{neg}{0.55}{$-$0,9}
-\wkante{rv}{mwst}{neg}{0.94}{$-$2,3}
-\wkante{rv}{sv}{pos}{2.58}{15,7}
-\wkante{rv}{nachfr}{neg}{2.60}{$-$10,3}
-\wkante{kv}{est}{neg}{0.54}{$-$0,8}
-\wkante{kv}{mwst}{neg}{0.90}{$-$2,1}
-\wkante{kv}{sv}{pos}{2.60}{15,9}
-\wkante{kv}{nachfr}{neg}{2.43}{$-$9,6}
-\wkante{rentenniveau}{est}{pos}{0.47}{0,4}
-\wkante{rentenniveau}{mwst}{pos}{0.47}{0,3}
-\wkante{rentenniveau}{sv}{pos}{0.51}{0,8}
-\wkante{rentenniveau}{rente}{pos}{2.60}{7,5}
-\wkante{rentenniveau}{nachfr}{pos}{1.42}{4,8}
-\wkante{bg}{transfer}{pos}{0.48}{0,5}
-\wkante{bg}{nachfr}{pos}{0.48}{0,4}
-\wkante{kg}{transfer}{pos}{0.76}{2,0}
-\wkante{kg}{nachfr}{pos}{0.68}{1,3}
+\node[kanal] (K-est) at (8.4,0.00) {Einkommensteuer {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-mwst) at (8.4,-0.95) {Umsatzsteuer {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-unt) at (8.4,-1.90) {KSt + GewSt {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-verm) at (8.4,-2.85) {Erb-, Boden-, Verm.-St. {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-sv) at (8.4,-3.80) {SV-Beiträge {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-co2) at (8.4,-4.75) {CO\textsubscript{2}-Einnahmen netto {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-transfer) at (8.4,-5.70) {Transfers {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-rente) at (8.4,-6.65) {Rentenzahlungen {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-arbeit) at (8.4,-7.60) {Arbeitsangebot {\scriptsize[\%]}};
+\node[kanal] (K-invest) at (8.4,-8.55) {Investitionsfaktor {\scriptsize[\%]}};
+\node[kanal] (K-nachfr) at (8.4,-9.50) {Nachfrageimpuls {\scriptsize[Mrd. \euro{}]}};
+\node[stell, minimum height=1.82cm] (L-rv) at (0,-0.78) {\textbf{RV-Beitrag}\\{\scriptsize +1 Pp.}\\{\scriptsize Saldo $+$11,7}};
+\wkante{rv}{est}{neg}{0.52}{$-$0,9}{0.57}
+\wkante{rv}{mwst}{neg}{0.72}{$-$2,3}{0.19}
+\wkante{rv}{sv}{pos}{2.58}{$+$15,7}{-0.19}
+\wkante{rv}{nachfr}{neg}{1.83}{$-$10,3}{-0.57}
+\node[stell, minimum height=1.82cm] (L-kv) at (0,-2.93) {\textbf{KV-Beitrag}\\{\scriptsize +1 Pp.}\\{\scriptsize Saldo $+$12,1}};
+\wkante{kv}{est}{neg}{0.51}{$-$0,8}{0.57}
+\wkante{kv}{mwst}{neg}{0.70}{$-$2,1}{0.19}
+\wkante{kv}{sv}{pos}{2.60}{$+$15,9}{-0.19}
+\wkante{kv}{nachfr}{neg}{1.72}{$-$9,6}{-0.57}
+\node[stell, minimum height=2.20cm] (L-rentenniveau) at (0,-5.27) {\textbf{Rentenniveau}\\{\scriptsize +1 Pp.}\\{\scriptsize Saldo $-$5,8}};
+\wkante{rentenniveau}{est}{pos}{0.45}{$+$0,4}{0.76}
+\wkante{rentenniveau}{mwst}{pos}{0.44}{$+$0,3}{0.38}
+\wkante{rentenniveau}{sv}{pos}{0.51}{$+$0,8}{0.00}
+\wkante{rentenniveau}{rente}{pos}{1.44}{$+$7,5}{-0.38}
+\wkante{rentenniveau}{nachfr}{pos}{1.06}{$+$4,8}{-0.76}
+\node[stell, minimum height=1.30cm] (L-bg) at (0,-7.35) {\textbf{Bürgergeld}\\{\scriptsize +10 \euro{}/Monat}\\{\scriptsize Saldo $-$0,4}};
+\wkante{bg}{transfer}{pos}{0.46}{$+$0,5}{0.19}
+\wkante{bg}{nachfr}{pos}{0.45}{$+$0,4}{-0.19}
+\node[stell, minimum height=1.30cm] (L-kg) at (0,-8.98) {\textbf{Kindergeld}\\{\scriptsize +10 \euro{}/Monat}\\{\scriptsize Saldo $-$1,7}};
+\wkante{kg}{transfer}{pos}{0.68}{$+$2,0}{0.19}
+\wkante{kg}{nachfr}{pos}{0.58}{$+$1,3}{-0.19}

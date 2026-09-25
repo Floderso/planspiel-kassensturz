@@ -1,17 +1,33 @@
 % Erzeugt von docs/modell/messung.js — nicht von Hand bearbeiten
-\wkante{freibetrag}{est}{neg}{2.60}{$-$12,6}
-\wkante{freibetrag}{mwst}{pos}{1.20}{3,4}
-\wkante{freibetrag}{sv}{pos}{0.60}{1,4}
-\wkante{freibetrag}{arbeit}{pos}{2.60}{0,35}
-\wkante{freibetrag}{nachfr}{pos}{2.22}{8,5}
-\wkante{eingang}{est}{pos}{1.19}{4,5}
-\wkante{eingang}{mwst}{neg}{0.67}{$-$1,1}
-\wkante{eingang}{sv}{neg}{0.46}{$-$0,5}
-\wkante{eingang}{arbeit}{neg}{0.93}{$-$0,08}
-\wkante{eingang}{nachfr}{neg}{1.00}{$-$2,8}
-\wkante{spitze}{est}{pos}{0.46}{0,3}
-\wkante{mwst}{est}{neg}{0.48}{$-$0,5}
-\wkante{mwst}{mwst}{pos}{2.60}{9,5}
-\wkante{mwst}{sv}{neg}{0.53}{$-$0,9}
-\wkante{mwst}{nachfr}{neg}{1.57}{$-$5,5}
-\wkante{erb}{verm}{pos}{2.60}{0,3}
+\node[kanal] (K-est) at (8.4,0.00) {Einkommensteuer {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-mwst) at (8.4,-0.95) {Umsatzsteuer {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-unt) at (8.4,-1.90) {KSt + GewSt {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-verm) at (8.4,-2.85) {Erb-, Boden-, Verm.-St. {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-sv) at (8.4,-3.80) {SV-Beiträge {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-co2) at (8.4,-4.75) {CO\textsubscript{2}-Einnahmen netto {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-transfer) at (8.4,-5.70) {Transfers {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-rente) at (8.4,-6.65) {Rentenzahlungen {\scriptsize[Mrd. \euro{}]}};
+\node[kanal] (K-arbeit) at (8.4,-7.60) {Arbeitsangebot {\scriptsize[\%]}};
+\node[kanal] (K-invest) at (8.4,-8.55) {Investitionsfaktor {\scriptsize[\%]}};
+\node[kanal] (K-nachfr) at (8.4,-9.50) {Nachfrageimpuls {\scriptsize[Mrd. \euro{}]}};
+\node[stell, minimum height=2.20cm] (L-freibetrag) at (0,-0.95) {\textbf{Grundfreibetrag}\\{\scriptsize +1.000 \euro{}}\\{\scriptsize Saldo $-$6,9}};
+\wkante{freibetrag}{est}{neg}{2.15}{$-$12,6}{0.76}
+\wkante{freibetrag}{mwst}{pos}{0.88}{$+$3,4}{0.38}
+\wkante{freibetrag}{sv}{pos}{0.60}{$+$1,4}{0.00}
+\wkante{freibetrag}{arbeit}{pos}{2.32}{$+$0,35}{-0.38}
+\wkante{freibetrag}{nachfr}{pos}{1.58}{$+$8,5}{-0.76}
+\node[stell, minimum height=2.20cm] (L-eingang) at (0,-3.45) {\textbf{Eingangssteuersatz}\\{\scriptsize +1 Pp.}\\{\scriptsize Saldo $+$2,6}};
+\wkante{eingang}{est}{pos}{1.03}{$+$4,5}{0.76}
+\wkante{eingang}{mwst}{neg}{0.56}{$-$1,1}{0.38}
+\wkante{eingang}{sv}{neg}{0.46}{$-$0,5}{0.00}
+\wkante{eingang}{arbeit}{neg}{0.86}{$-$0,08}{-0.38}
+\wkante{eingang}{nachfr}{neg}{0.79}{$-$2,8}{-0.76}
+\node[stell, minimum height=1.30cm] (L-spitze) at (0,-5.50) {\textbf{Spitzensteuersatz}\\{\scriptsize +1 Pp.}\\{\scriptsize Saldo $+$0,3}};
+\wkante{spitze}{est}{pos}{0.45}{$+$0,3}{0.00}
+\node[stell, minimum height=1.82cm] (L-mwst) at (0,-7.36) {\textbf{Umsatzsteuer}\\{\scriptsize +1 Pp.}\\{\scriptsize Saldo $+$7,7}};
+\wkante{mwst}{est}{neg}{0.46}{$-$0,5}{0.57}
+\wkante{mwst}{mwst}{pos}{1.71}{$+$9,5}{0.19}
+\wkante{mwst}{sv}{neg}{0.53}{$-$0,9}{-0.19}
+\wkante{mwst}{nachfr}{neg}{1.16}{$-$5,5}{-0.57}
+\node[stell, minimum height=1.30cm] (L-erb) at (0,-9.22) {\textbf{Erbschaftsteuer}\\{\scriptsize +1 Pp.}\\{\scriptsize Saldo $+$0,3}};
+\wkante{erb}{verm}{pos}{0.44}{$+$0,3}{0.00}
