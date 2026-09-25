@@ -20,10 +20,11 @@ const DEZILE = [
   // D10 aufgespalten in P90–95, P95–99, Top-1% (Basis: SOEP v40, DINA-DE, DIW Vermögensbericht 2024)
   { d:10, idx:9,  label:'D10a', brutto: 125000, kapital: 0.08, konsum: 0.60, gewicht: 2.0, vermoegen: 450000,  anzahl: 2.05, rente_anteil: 0.042 },
   { d:10, idx:10, label:'D10b', brutto: 220000, kapital: 0.18, konsum: 0.52, gewicht: 2.0, vermoegen: 1500000, anzahl: 1.64, rente_anteil: 0.025 },
-  { d:10, idx:11, label:'D10c', brutto: 700000, kapital: 0.45, konsum: 0.40, gewicht: 2.0, vermoegen: 7000000, anzahl: 0.41, rente_anteil: 0.008 },
+  { d:10, idx:11, label:'D10c', brutto: 700000, kapital: 0.45, konsum: 0.40, gewicht: 2.0, vermoegen: 7000000, anzahl: 0.41, rente_anteil: 0.008, pareto_alpha: 1.5 },
 ];
 // D10c = Top 1% (0,41 Mio. Haushalte). Brutto 700k ist Durchschnitt — echte Spitze deutlich höher.
 // Kapitalanteil D10c: ~45% des Einkommens aus Kapital (DINA-DE, Bach/Buggeln 2024).
+// pareto_alpha D10c: Einkommen im obersten Prozent Pareto-verteilt (FORMEL_QUELLEN_EST.spitzenzone).
 
 // ── HAUSHALTSPROFILE — eine Quelle für Haushalte UND Staat (PRUEFUNG-2.md I.4) ──
 // Bis 24.09.2026 rechneten beide Seiten mit verschiedenen Zahlen: 36,5 Mio. Kinder bei den

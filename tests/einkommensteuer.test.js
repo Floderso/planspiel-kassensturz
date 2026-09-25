@@ -126,6 +126,30 @@ test('Parameteränderungen wirken in die richtige Richtung', () => {
   const basis = modell(60000);
   assert.ok(estTarif(60000, 14000, 14, 45, 277826) < basis, 'höherer Freibetrag muss entlasten');
   assert.ok(estTarif(60000, 12348, 16, 45, 277826) > basis, 'höherer Eingangssatz muss belasten');
-  assert.ok(estTarif(60000, 12348, 14, 50, 277826) > basis, 'höherer Spitzensatz muss (über Zone 3/4) belasten');
+  assert.ok(estTarif(400000, 12348, 14, 50, 277826) > modell(400000), 'höherer Spitzensatz muss Topeinkommen belasten');
   assert.ok(estTarif(400000, 12348, 14, 45, 200000) > modell(400000), 'niedrigere Spitzensatz-Grenze muss Topeinkommen belasten');
+});
+
+test('Spitzensatz und Grenze treffen nur Einkommen oberhalb der Grenze (PRUEFUNG.md B1/B2)', () => {
+  // Früher hob der Spitzensatz die 42-%-Zone mit an, und die Grenze skalierte alle Zonen:
+  // Spitze 55 % kostete 60.000 € zvE 2.439 €, Grenze 150.000 € machte 40.000 € zvE zum 41-%-Fall.
+  for (const zvE of [20000, 40000, 60000, 100000, 140000]) {
+    assert.equal(estTarif(zvE, 12348, 14, 55, 277826), modell(zvE), `Spitze 55 %, zvE ${zvE}`);
+    assert.equal(estTarif(zvE, 12348, 14, 45, 150000), modell(zvE), `Grenze 150.000, zvE ${zvE}`);
+    assert.equal(grenzsteuersatz(zvE, 12348, 14, 55, 150000), grenzsteuersatz(zvE, 12348, 14, 45, 277826));
+  }
+  // Oberhalb der Grenze: genau der Spitzensatz
+  assert.ok(Math.abs(grenzsteuersatz(200000, 12348, 14, 55, 150000) - 0.55) < 1e-12);
+});
+
+test('Spitzenzone im obersten Prozent: Pareto-Rand statt Durchschnitt', () => {
+  // Das zvE-Mittel von D10c (~190.000 € je Veranlagung) liegt unter der Grenze; ohne
+  // Verteilung zahlte im Modell niemand den Spitzensatz.
+  const brutto = 385000; // Arbeitseinkommen D10c
+  const ohne = estHaushalt(brutto, 12348, 14, 55, 277826) - estHaushalt(brutto, 12348, 14, 45, 277826);
+  const mit  = estHaushalt(brutto, 12348, 14, 55, 277826, 1.5) - estHaushalt(brutto, 12348, 14, 45, 277826, 1.5);
+  assert.equal(ohne, 0);
+  assert.ok(mit > 0, 'mit Pareto-Rand zahlt ein Teil der Veranlagungen mehr');
+  assert.ok(Math.abs(estHaushalt(brutto, 12348, 14, 45, 277826, 1.5) - estHaushalt(brutto, 12348, 14, 45, 277826)) < 0.05 * estHaushalt(brutto, 12348, 14, 45, 277826),
+    'der Rand ändert die Steuerlast im Status quo nur wenig');
 });

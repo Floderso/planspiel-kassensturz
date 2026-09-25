@@ -176,7 +176,7 @@ function berechneNettoSQ(d) {
   const brutto = d.brutto;
   const arbeit_sq = brutto * (1 - d.kapital);
   const kapital_sq = brutto * d.kapital;
-  const est = estHaushalt(arbeit_sq, sq.freibetrag, sq.eingang, sq.spitze, sq.grenze)
+  const est = estHaushalt(arbeit_sq, sq.freibetrag, sq.eingang, sq.spitze, sq.grenze, d.pareto_alpha)
             + kapital_sq * sq.abgeltung / 100;
   // SV exakt wie berechneDezilDelta bei SQ-Parametern — die SQ-Referenz muss
   // dasselbe Modell mit denselben BBG-Konventionen sein, sonst sind die

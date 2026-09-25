@@ -127,7 +127,7 @@ Dazu kommen veraltete oder falsch zugeordnete Klimaparameter:
 
 ## II · Aus der ersten Prüfung weiterhin offen
 
-- **B1/B2, Spitzensteuersatz:** Wer den Regler „Spitzensteuersatz" auf 55 %
+- **B1/B2, Spitzensteuersatz** (✔ erledigt 25.09., siehe PRUEFUNG.md G6)**:** Wer den Regler „Spitzensteuersatz" auf 55 %
   stellt, hebt den 42-%-Satz auf 51 % an. D5 zahlt 318 € mehr. Die
   Reichensteuer bringt real etwa 5–8 Mrd., das Modell zeigt 28 Mrd.
   Mehreinnahmen.

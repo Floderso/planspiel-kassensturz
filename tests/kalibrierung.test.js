@@ -69,3 +69,10 @@ test('Palma Status quo in der Größenordnung des Lehrbuchwerts (DE ~1,2)', () =
   assert.ok(r.palma > 1.0 && r.palma < 1.5,
     `Palma ${r.palma.toFixed(2)} außerhalb 1,0–1,5 (DE: ~1,2)`);
 });
+
+test('Spitzensatz 45 → 55 % bringt einstellige Milliarden, nicht 37 Mrd. (PRUEFUNG-2.md II)', () => {
+  // Die Prüfung schätzt real 5–8 Mrd. statisch; das Modell rechnet mit Verhaltensreaktion.
+  // Vorher 36,7 Mrd., weil der Regler die 42-%-Zone mit anhob.
+  const mehr = berechne({ ...PRESETS.status_quo, spitze: 55 }).rev.est - r.rev.est;
+  assert.ok(mehr > 2 && mehr < 8, `Mehraufkommen ${mehr.toFixed(1)} Mrd. €`);
+});

@@ -10,7 +10,7 @@ const FORMEL_QUELLEN_EST = {
   estTarif: {
     formel: '∫₀ˣ r(z) dz  (stückweise lineare Grenzsteuerrate, 5 Zonen)',
     ref:    '§ 32a Abs. 1 EStG 2026 (Steuerfortentwicklungsgesetz, BGBl. 2024 I Nr. 449) · Formeltarif (kontinuierlich, keine Sprünge)',
-    note:   'Zonen werden proportional zur grenze-Parameter skaliert; Referenz: SQ-Grenzwerte 2026 (12.348 / 17.799 / 69.878 / 277.825)'
+    note:   'Zonenbreiten 2026 fest (12.348 / 17.799 / 69.878 / 277.825); spitze wirkt nur ab grenze, grenze verschiebt nur den Beginn der obersten Zone, Zone 4 fest 42 % (gedeckelt auf die Spitze). Bis 25.09.2026 skalierten alle Zonen mit (PRUEFUNG.md B1/B2)'
   },
   grenzsteuersatz: {
     formel: 'r(z) = r₀ + (rₘ − r₀) × z/g₂  [Zone 2], linear interpoliert je Zone',
@@ -21,6 +21,11 @@ const FORMEL_QUELLEN_EST = {
     formel: 'T(z) / z',
     ref:    '§ 2 Abs. 5 EStG',
     note:   'Durchschnittssteuersatz = Gesamtsteuer / Gesamteinkommen; stets ≤ Grenzsteuersatz'
+  },
+  spitzenzone: {
+    formel: 'Zuschlag_D10c = (r5 − r4) × E[max(0, x − Grenze)],  x ~ Pareto(α = 1,5) mit dem zvE-Mittel des Dezils',
+    ref:    'Atkinson/Piketty/Saez (2011) JEL 49(1), Top Incomes in the Long Run of History · Bartels/Jenderny (2015) DIW Discussion Paper 1508',
+    note:   'Für Deutschland liegt der invertierte Pareto-Koeffizient β bei etwa 2,5–3, also α = β/(β−1) ≈ 1,5–1,7; α = 1,5 ist der untere Rand (schwerer Rand). Statisch, ohne Verhaltensreaktion der Spitzenverdiener. Näherung (PRUEFUNG.md B2)'
   },
   estHaushalt: {
     formel: 'T_HH = s × T(brutto × q / s)  mit q = zvE-Quote, s = Splitting-Faktor',
@@ -38,97 +43,92 @@ const FORMEL_QUELLEN_EST = {
 const ZVE_QUOTE        = 0.79; // zvE / Haushaltsbrutto (Destatis ESt-Statistik)
 const SPLITTING_FAKTOR = 1.6;  // Tarifeinheiten je Haushalt (Mikrozensus 2024)
 
-// Einkommensteuer eines Haushalts auf Arbeits-/Gesamteinkommen 'brutto'
-function estHaushalt(brutto, freibetrag, eingang, spitze, grenze) {
-  return SPLITTING_FAKTOR
-    * estTarif(brutto * ZVE_QUOTE / SPLITTING_FAKTOR, freibetrag, eingang, spitze, grenze);
+// Einkommensteuer eines Haushalts auf Arbeits-/Gesamteinkommen 'brutto'.
+// pareto_alpha (nur D10c): Die Einkommen innerhalb des Dezils folgen einer Pareto-
+// Verteilung mit diesem Mittelwert. Der Durchschnitt des obersten Prozents liegt mit rund
+// 190.000 € zvE je Veranlagung unter der Grenze der obersten Zone (277.826 €) — ohne diese
+// Verteilung zahlte niemand im Modell den Spitzensatz, und der Regler wirkte auf nichts.
+// Gerechnet wird: Tarif bis Zone 4 auf den Durchschnitt, dazu (r5 − r4) × E[max(0, x − Grenze)].
+function estHaushalt(brutto, freibetrag, eingang, spitze, grenze, pareto_alpha = null) {
+  const mittel = brutto * ZVE_QUOTE / SPLITTING_FAKTOR;
+  if (!pareto_alpha) return SPLITTING_FAKTOR * estTarif(mittel, freibetrag, eingang, spitze, grenze);
+  const bis_zone4 = estTarif(mittel, freibetrag, eingang, spitze, Infinity);
+  const { r4, r5 } = zonen(freibetrag, eingang, spitze, grenze);
+  return SPLITTING_FAKTOR * (bis_zone4 + (r5 - r4) * paretoUeberschuss(mittel, pareto_alpha, grenze));
+}
+
+// E[max(0, x − schwelle)] für x ~ Pareto(α) mit Mittelwert 'mittel'
+function paretoUeberschuss(mittel, alpha, schwelle) {
+  const xm = mittel * (alpha - 1) / alpha;
+  if (schwelle <= xm) return mittel - schwelle;
+  return Math.pow(xm, alpha) * Math.pow(schwelle, 1 - alpha) / (alpha - 1);
 }
 
 // Grenzbelastung eines zusätzlichen Euro Haushaltsbrutto:
 // d/dB [s·T(B·q/s)] = q · T'(B·q/s)
-function grenzsteuersatzHaushalt(brutto, freibetrag, eingang, spitze, grenze) {
-  return ZVE_QUOTE
-    * grenzsteuersatz(brutto * ZVE_QUOTE / SPLITTING_FAKTOR, freibetrag, eingang, spitze, grenze);
+// Mit pareto_alpha: durchschnittlicher Grenzsatz über die Verteilung — bis Zone 4 wie der
+// Durchschnitt, dazu (r5 − r4) × Anteil der Veranlagungen über der Grenze
+function grenzsteuersatzHaushalt(brutto, freibetrag, eingang, spitze, grenze, pareto_alpha = null) {
+  const mittel = brutto * ZVE_QUOTE / SPLITTING_FAKTOR;
+  if (!pareto_alpha) return ZVE_QUOTE * grenzsteuersatz(mittel, freibetrag, eingang, spitze, grenze);
+  const { r4, r5 } = zonen(freibetrag, eingang, spitze, grenze);
+  const xm = mittel * (pareto_alpha - 1) / pareto_alpha;
+  const anteil_oben = grenze <= xm ? 1 : Math.pow(xm / grenze, pareto_alpha);
+  return ZVE_QUOTE * (grenzsteuersatz(mittel, freibetrag, eingang, spitze, Infinity) + (r5 - r4) * anteil_oben);
 }
 
 
-// Basis-Grenzwerte 2026; werden beim Ändern von Freibetrag/Spitze/Grenze skaliert.
-// Für Status Quo: exakt gesetzliche Werte.
-// Bei Parameteränderung: Zonen werden proportional skaliert.
 
 // Zonenbreiten § 32a Abs. 1 EStG 2026 — einmal definiert, von Tarif und Grenzsatz genutzt
 const ZONE_2026 = { z2: 17799 - 12348, z3: 69878 - 17799, z4: 277825 - 69878 };
+const SATZ_ZONE4 = 0.42; // § 32a Abs. 1 Nr. 4 EStG: 42 % zwischen 69.879 und 277.825 €
+
+// Jeder Regler wirkt nur dort, wo sein Name hinzeigt (PRUEFUNG.md B1/B2):
+//   freibetrag — verschiebt den ganzen Tarif (Zonenbreiten 2026 bleiben)
+//   eingang    — Grenzsatz am Beginn der Progressionszone
+//   spitze     — Grenzsatz der obersten Zone, ab 'grenze'
+//   grenze     — Beginn der obersten Zone; Zonen 2 und 3 bleiben, wo sie sind
+// Bis 25.09.2026 skalierte 'grenze' alle Zonenbreiten mit (Grenze 150.000 € → 40.000 € zvE
+// zahlte 41 % statt 32 % Grenzsatz), und 'spitze' hob die 42-%-Zone mit an (Spitze 55 % →
+// Zone 4 bei 51 %; D5 zahlte 321 € mehr, das Aufkommen stieg um 37 statt ~5 Mrd.).
+// Liegt die Spitze unter 42 %, wird Zone 4 auf sie gedeckelt — sonst wäre der Tarif oben
+// regressiv. Liegt die Grenze unter dem Ende von Zone 3, endet der Tarif dort mit der Spitze.
+function zonen(freibetrag, eingang, spitze, grenze) {
+  const G  = Math.max(0, grenze - freibetrag);   // Beginn Zone 5, relativ zum Freibetrag
+  const e2 = Math.min(ZONE_2026.z2, G);
+  const e3 = Math.min(ZONE_2026.z2 + ZONE_2026.z3, G);
+  const r0 = eingang / 100;
+  const r5 = spitze / 100;
+  const r4 = Math.min(SATZ_ZONE4, r5);
+  // rm: Grenzsatz am Ende von Zone 2 — § 32a 2025 und 2026: 23,97 % bei r0 = 14 %, r4 = 42 %
+  const rm = r0 + (r4 - r0) * 0.35607;
+  return { e2, e3, G, r0, rm, r4, r5 };
+}
 
 function estTarif(einkommen, freibetrag, eingang, spitze, grenze) {
   if (einkommen <= freibetrag) return 0;
-  const zve = einkommen - freibetrag;
-
-  // Status-Quo-Grenzwerte 2026 (relativ zum Freibetrag; § 32a Abs. 1 EStG 2026)
-  // Zone 2: 12.349–17.799 (5.451 € breit), Zone 3: 17.800–69.878 (52.079 € breit)
-  // Zone 4: 69.879–277.825 (207.947 € breit), Zone 5: ab 277.826
-  // Vorher: Breiten von 2025 mit dem Grundfreibetrag 2026 — ein Tarif, den es nie gab (PRUEFUNG.md B6).
-  // Wir skalieren Zone 4/5-Grenze auf 'grenze' und Zone 2/3-Grenzwerte proportional.
-  const sq_z2 = ZONE_2026.z2;
-  const sq_z3 = ZONE_2026.z3;
-  const sq_z4 = ZONE_2026.z4;
-  const sq_total = sq_z2 + sq_z3 + sq_z4; // = 265.477 = 277.825 − 12.348
-  const scale = (grenze - freibetrag) / sq_total;
-  const g2 = sq_z2 * scale; // Breite Zone 2 skaliert
-  const g3 = sq_z3 * scale; // Breite Zone 3 skaliert
-
-  // Eingangssatz beeinflusst Zone 2 (Progressionszone)
-  // Spitzensatz gilt ab Zone 5 (=grenze)
-  // Zone 4: Interpolation so gewichtet, dass SQ (14 %, 45 %) exakt die
-  // gesetzlichen 42 % ergibt: 42 = 14×(3/31) + 45×(28/31)
-  const satz4 = Math.min(spitze, eingang * (3 / 31) + spitze * (28 / 31)) / 100;
-
-  // Marginalsteuersatz-Grenzen (keine Sprünge an Zonengrenzen):
-  // Zone 2: r0 → rm  (Eingangssatz → Zwischensatz)
-  // Zone 3: rm → r4  (Zwischensatz → Zone-4-Satz, kontinuierlich)
-  // Zone 4: r4 (konstant)  Zone 5: r5 = spitze/100
-  // rm = r0 + (r4 - r0) × 0.35607 — § 32a 2025 und 2026: Grenzsatz am Zone-2-Ende = 23,97 %
-  const r0 = eingang / 100;
-  const r4 = satz4;
-  const r5 = spitze / 100;
-  const rm = r0 + (r4 - r0) * 0.35607;
-  const g4 = sq_z4 * scale;
-
-  // Integral der stückweise linearen Grenzsteuerrate: ∫₀ˣ [a + (b−a)·t/w] dt
-  const T = (a, b, w, x) => a * x + (b - a) * x * x / (2 * w);
-
-  const T2 = T(r0, rm, g2, g2);
-  const T3 = T(rm, r4, g3, g3);
-  const T4 = r4 * g4;
-
-  if (zve <= g2) {
-    return T(r0, rm, g2, zve);
-  } else if (zve <= g2 + g3) {
-    return T2 + T(rm, r4, g3, zve - g2);
-  } else if (zve <= g2 + g3 + g4) {
-    // Zone 4: linear mit satz4
-    const zv4 = zve - g2 - g3;
-    return T2 + T3 + r4 * zv4;
-  } else {
-    const zv5 = zve - g2 - g3 - g4;
-    return T2 + T3 + T4 + r5 * zv5;
-  }
+  const x = einkommen - freibetrag;
+  const { e2, e3, G, r0, rm, r4, r5 } = zonen(freibetrag, eingang, spitze, grenze);
+  const w2 = ZONE_2026.z2, w3 = ZONE_2026.z3;
+  // Integral der stückweise linearen Grenzsteuerrate
+  const T2 = t => r0 * t + (rm - r0) * t * t / (2 * w2);                   // 0 ≤ t ≤ w2
+  const T3 = t => rm * t + (r4 - rm) * t * t / (2 * w3);                   // 0 ≤ t ≤ w3
+  const bis = Math.min(x, G);
+  let steuer = T2(Math.min(bis, e2));
+  if (bis > e2) steuer += T3(Math.min(bis, e3) - e2);
+  if (bis > e3) steuer += r4 * (bis - e3);
+  if (x > G)    steuer += r5 * (x - G);
+  return steuer;
 }
 
 function grenzsteuersatz(einkommen, freibetrag, eingang, spitze, grenze) {
   if (einkommen <= freibetrag) return 0;
-  const zve = einkommen - freibetrag;
-  const scale = (grenze - freibetrag) / (ZONE_2026.z2 + ZONE_2026.z3 + ZONE_2026.z4);
-  const g2 = ZONE_2026.z2 * scale;
-  const g3 = ZONE_2026.z3 * scale;
-  const g4 = ZONE_2026.z4 * scale;
-  const r0 = eingang / 100;
-  const r4 = Math.min(spitze, eingang * (3 / 31) + spitze * (28 / 31)) / 100;
-  const rm = r0 + (r4 - r0) * 0.35607; // kontinuierlich: Zone-2-Ende = Zone-3-Start (SQ: 23,97 %)
-
-  if (zve <= g2)           return r0 + (rm - r0) * zve / g2;
-  if (zve <= g2 + g3)      return rm + (r4 - rm) * (zve - g2) / g3;
-  if (zve <= g2 + g3 + g4) return r4;
-  return spitze / 100;
+  const x = einkommen - freibetrag;
+  const { e2, e3, G, r0, rm, r4, r5 } = zonen(freibetrag, eingang, spitze, grenze);
+  if (x > G)  return r5;
+  if (x <= e2) return r0 + (rm - r0) * x / ZONE_2026.z2;
+  if (x <= e3) return rm + (r4 - rm) * (x - e2) / ZONE_2026.z3;
+  return r4;
 }
 
 // Effektiver Durchschnittssteuersatz

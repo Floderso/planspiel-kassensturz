@@ -190,6 +190,11 @@ Iteriert alle Perioden der Simulation. Gibt ein Array zurück (ein Eintrag je Pe
   bleiben in Preisen von 2025. Bis 24.09.2026 blieben ESt, MwSt, Beiträge und Ausgaben 20 Jahre
   nominal eingefroren (`entwurf/PRUEFUNG-2.md` I.2)
 - **Schuldenentwicklung:** `D_{t+1} = D_t − Saldo/BIP` (Domar-Mechanismus)
+- **Tarif:** § 32a EStG 2026, Zonenbreiten fest. Jeder Regler wirkt nur auf seine Zone:
+  Freibetrag verschiebt den Tarif, Eingangssatz die Progressionszone, Spitzensatz nur ab der
+  Grenze, Grenze nur den Beginn der obersten Zone (Zone 4 fest 42 %, gedeckelt auf die Spitze).
+  D10c rechnet mit Pareto-Rand (α = 1,5), weil das Durchschnittseinkommen des obersten Prozents
+  unter der Grenze liegt (`estHaushalt(…, pareto_alpha)`)
 - **Haushalte = Staat:** Kindergeld (17 Mio. Kinder, `KINDER_JE_HH`), Bürgergeld-Regelbedarf
   (`BUERGERGELD_QUOTE`) und CO₂-Last (`CO2_GEWICHT`, Summe = Bruttoaufkommen) kommen aus einer Quelle
   in `data.js`; der Staat bucht die Summe über die Haushalte. Unterkunft und Mehrbedarfe

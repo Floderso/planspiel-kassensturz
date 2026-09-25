@@ -441,7 +441,7 @@ Steuerprogression lehren soll.
 | 3 | **B3** Äquivalenzgewicht im Gini nutzen **oder** Feedback-Schwellen anpassen | überschaubar | ✔ **erledigt** 24.09. (Äquivalenzgewicht, Gini 0,303) |
 | 4 | **A3** Palma auf die Anteilsdefinition umstellen (Test mit) | eine Zeile + Test | ✔ **erledigt** |
 | 5 | **F1** nominales Wachstum auf 2,5–3 % | eine Konstante | ✔ **erledigt** (2,5 %) |
-| 6 | **B1/B2** Tarifzonen entkoppeln | mittel | offen — echte Modellarbeit |
+| 6 | **B1/B2** Tarifzonen entkoppeln | mittel | ✔ **erledigt** 25.09.: Spitzensatz nur ab der Grenze, Grenze verschiebt nur Zone 5, Zonen 2026 fest; D10c mit Pareto-Rand (α = 1,5). Spitze 55 %: +3,5 statt +36,7 Mrd., D5 unberührt |
 | 7 | **A2** Klimasensitivität korrigieren, Schadensfunktion neu justieren | mittel | ✔ **erledigt** 24.09.: nationaler Klimaschaden entfernt (PRUEFUNG-2.md I.5); C2 mit erledigt |
 | 8 | **A5** Zinsdoppelzählung | wenige Zeilen | ✔ **erledigt** |
 | 9 | **B4** GGI-Referenz auf den Spielbereich strecken | eine Zeile | ✔ **erledigt** (60–150 %) |

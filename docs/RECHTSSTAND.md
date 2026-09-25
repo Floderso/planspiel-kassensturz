@@ -13,7 +13,7 @@ also nicht dasselbe Jahr; die Lücke ist dokumentiert, nicht geschlossen.
 
 | Größe | Wert | Rechtsgrundlage / Quelle |
 |---|---|---|
-| Einkommensteuertarif | Grundfreibetrag 12.348 €; Zonen bis 17.799 / 69.878 / 277.825 €; 14 / 42 / 45 % | § 32a Abs. 1 EStG 2026 (Steuerfortentwicklungsgesetz, BGBl. 2024 I Nr. 449) |
+| Einkommensteuertarif | Grundfreibetrag 12.348 €; Zonen bis 17.799 / 69.878 / 277.825 €; 14 / 42 / 45 %. Spitzensatz 45 % erreicht im Modell nur der Pareto-Rand von D10c | § 32a Abs. 1 EStG 2026 (Steuerfortentwicklungsgesetz, BGBl. 2024 I Nr. 449) |
 | Kindergeld | 259 € je Kind und Monat, rund 17 Mio. Kinder | § 66 EStG, Stand 2026 |
 | Bürgergeld / Grundsicherungsgeld | Regelbedarf 563 € (Nullrunde 2026); seit 01.07.2026 Grundsicherungsgeld | § 20 SGB II; Gesetz zur neuen Grundsicherung. Sanktionen nicht abgebildet |
 | Rentenversicherung | 18,6 %, BBG 101.400 € (bundeseinheitlich) | § 158 SGB VI; SV-Rechengrößenverordnung 2026 |
