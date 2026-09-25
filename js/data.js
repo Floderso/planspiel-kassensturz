@@ -255,6 +255,14 @@ const OEFF_KAPITALSTOCK = 1600;
 // Abschreibungsrate öffentlichen Kapitals p. a. (Näherung: Abschreibungen des Staates
 // ~4–5 % des Nettoanlagevermögens, Destatis VGR)
 const OEFF_ABSCHREIBUNG = 0.04;
+// Angebotsseite als NIVEAU, nicht als Wachstumsrate: Kapital- und Arbeitsanteil der
+// Produktion (Cobb-Douglas; Lohnquote DE ~0,65, Destatis VGR) und die Geschwindigkeit, mit
+// der sich der private Kapitalstock an ein neues Steuerniveau anpasst (Abschreibungsrate
+// privater Ausrüstungen und Bauten ~7 % p. a., Destatis Vermögensrechnung; Näherung).
+// Vorher kumulierten beide Effekte je Periode: KSt 30 % senkte das BIP jede Periode um
+// weitere 0,9 % ohne Ende (PRUEFUNG-2.md VI.3, offen gebliebener Punkt).
+const KAPITALANTEIL = 0.35;
+const PRIVAT_ANPASSUNG = 0.07;
 
 /**
  * Rechtsstand 2026, Teil 2 (docs/RECHTSSTAND.md, PRUEFUNG-2.md III).
@@ -903,7 +911,9 @@ const PERIOD_STATE_0 = {
   co2_kumulat:      0,      // Mio. t CO₂e kumuliert seit 2025
   lohnbasis_faktor: 1.0,    // Arbeitsmarkt-Zustandsindex (1,0 = Status quo 2025)
   renten_faktor:    1.0,    // wird per Periode aus DEMOGRAFIE_KURVE gesetzt
-  oeff_kapital:     0,      // öffentliches Kapital über dem Status-quo-Pfad, Mrd. € (Preise 2025)
+  oeff_kapital:     0,
+  niveau_kapital:   1,      // Niveaueffekt des privaten Kapitals (1 = Status quo)
+  niveau_arbeit:    1,      // Niveaueffekt des Arbeitsangebots      // öffentliches Kapital über dem Status-quo-Pfad, Mrd. € (Preise 2025)
   jahr:             2025,   // Startjahr der Periode
   laenge:           4,      // Jahre der Periode — wird per Periode gesetzt (Emissionsbasispfad)
   trend_faktor:     1.0,    // nominaler Trend seit 2025, (1 + BIP_WACHSTUM_NOMINAL_JAHR)^Jahre —
@@ -1034,6 +1044,7 @@ const ZUKUNFTS_SZENARIEN = [
 
 export { ZINS_EFFEKTIV, BIP_WACHSTUM_NOMINAL_JAHR, EMISSIONEN_1990, EMISSIONS_ANKER, emissionsBasis };
 export { NATO_QUOTE_2025, verteidigungQuote, sondervermoegen, SCHULDENBREMSE_STRUKTURELL, VERTEIDIGUNG_AUSNAHME_AB, BUDGET_SEMIELASTIZITAET };
+export { KAPITALANTEIL, PRIVAT_ANPASSUNG };
 export { MPC_DEZIL, MPC_MITTEL, MULTIPLIKATOR_STEUER_TRANSFER, MULTIPLIKATOR_INVEST, OEFF_KAPITAL_ELASTIZITAET, OEFF_KAPITALSTOCK, OEFF_ABSCHREIBUNG };
 
 export { KINDER_JE_HH, KINDERGELD_KINDER, BUERGERGELD_QUOTE, CO2_GEWICHT };

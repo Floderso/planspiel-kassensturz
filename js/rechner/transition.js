@@ -26,7 +26,8 @@
 import { DEZILE, DEMOGRAFIE_KURVE, PERIOD_STATE_0, KURS_KONFIG_DEFAULT, PRESETS,
          ZINS_EFFEKTIV, BIP_WACHSTUM_NOMINAL_JAHR, emissionsBasis,
          MPC_DEZIL, MPC_MITTEL, MULTIPLIKATOR_STEUER_TRANSFER,
-         OEFF_KAPITAL_ELASTIZITAET, OEFF_KAPITALSTOCK, OEFF_ABSCHREIBUNG } from '../data.js';
+         OEFF_KAPITAL_ELASTIZITAET, OEFF_KAPITALSTOCK, OEFF_ABSCHREIBUNG,
+         KAPITALANTEIL, PRIVAT_ANPASSUNG } from '../data.js';
 import { berechne } from './berechne.js';
 
 // Zins und Wachstum kommen aus data.js — EINE Quelle für alle Module.
@@ -81,8 +82,15 @@ function berechneTransition(prevState, prevResult, nextStartJahr, n) {
 
   // ── BIP ──────────────────────────────────────────────────────────────
   const wachstum_basis      = Math.pow(1 + BIP_WACHSTUM_NOMINAL, n);
-  const invest_privat_bonus = 1 + (prevResult.investment_factor - 1) * 0.15;
-  const labor_bonus         = 1 + (prevResult.avg_labor - 1) * 0.10;
+  // Privates Kapital nähert sich dem Niveau, das die Steuerpolitik langfristig trägt
+  // (Kapitalanteil × Investitionsänderung), mit der Abschreibungsrate; das Arbeitsangebot
+  // wirkt sofort mit dem Arbeitsanteil. Beides Niveaus — sie kumulieren nicht je Periode.
+  const k_alt = prevState.niveau_kapital ?? 1, a_alt = prevState.niveau_arbeit ?? 1;
+  const k_ziel = 1 + KAPITALANTEIL * (prevResult.investment_factor - 1);
+  const k_neu  = k_alt + (1 - Math.pow(1 - PRIVAT_ANPASSUNG, n)) * (k_ziel - k_alt);
+  const a_neu  = 1 + (1 - KAPITALANTEIL) * (prevResult.avg_labor - 1);
+  const invest_privat_bonus = k_neu / k_alt;
+  const labor_bonus         = a_neu / a_alt;
   // Öffentliches Kapital: Zusatzinvestitionen gegenüber dem Status quo bauen einen Stock auf,
   // der abschreibt; er wirkt über die Produktionselastizität dauerhaft auf das Potenzial.
   // Vorher: 1 + I·n·μ/BIP als bleibender, kumulierender Niveaueffekt ohne Abschreibung —
@@ -131,6 +139,8 @@ function berechneTransition(prevState, prevResult, nextStartJahr, n) {
     renten_faktor:    demo.renten_faktor,
     jahr:             nextStartJahr,
     oeff_kapital:     kapital_next,
+    niveau_kapital:   k_neu,
+    niveau_arbeit:    a_neu,
     // Trend ohne Politik- und Klimaeffekte: daran wachsen die Ausgaben. Die
     // Einnahmen folgen dem tatsächlichen BIP (berechne.js, Abschnitt 10b).
     trend_faktor:     (prevState.trend_faktor ?? 1) * wachstum_basis,

@@ -153,3 +153,14 @@ test('Die Nachfragelücke wird nicht fortgeschrieben', () => {
   assert.ok(Math.abs(einmal[1].zustand.bip - basis[1].zustand.bip) / basis[1].zustand.bip < 0.001,
     'ein Sparjahr senkt das Potenzial der Folgeperiode nicht');
 });
+
+test('Steuerpolitik verschiebt das BIP-Niveau, nicht die Wachstumsrate', () => {
+  // Vorher kumulierten die Angebotseffekte je Periode: KSt 30 % kostete jede Periode weitere
+  // 0,9 % BIP, ohne Ende. Jetzt nähert sich das Niveau einem Grenzwert (Kapitalanteil 0,35).
+  const lauf = p => simulierePfad(Array.from({ length: 12 }, () => ({ ...SQ, ...p })));
+  const sq = lauf({}), kst = lauf({ kst: 30 });
+  const abst = sq.map((e, i) => kst[i].zustand.bip / e.zustand.bip - 1);
+  const schritte = abst.slice(1).map((a, i) => a - abst[i]);
+  assert.ok(Math.abs(schritte[schritte.length - 1]) < Math.abs(schritte[0]) / 3, 'die Wirkung klingt ab');
+  assert.ok(abst[11] > -0.03, `langfristig ${(abst[11] * 100).toFixed(1)} % (Grenzwert ~−2 %)`);
+});
