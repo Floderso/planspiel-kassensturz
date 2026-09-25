@@ -216,6 +216,8 @@ Iteriert alle Perioden der Simulation. Gibt ein Array zurück (ein Eintrag je Pe
   gegenüber dem Status quo derselben Periode × Grenzkonsumneigung je Dezil (`MPC_DEZIL`, 0,65 → 0,15)
   × 0,6/0,48 (Gechert 2015), plus Investitionsimpuls × 1,0. Die Lücke wirkt auf BIP und Einnahmen
   der Periode und wird nicht fortgeschrieben; Konsolidierung kostet Wachstum
+- **Angebotsseite:** privates Kapital nähert sich dem Niveau 1 + 0,35 × (Investitionsfaktor − 1)
+  mit 7 % p. a.; Arbeit wirkt sofort mit 0,65 × (Arbeitsangebot − 1). Niveaus, keine Wachstumsraten
 - **Öffentliches Kapital:** Zusatzinvestitionen bauen `oeff_kapital` auf (Abschreibung 4 % p. a.),
   Potenzial × (1 + 0,08 × K / 1.600 Mrd.) (Bom/Ligthart 2014). Ersetzt den kumulierenden
   Niveaueffekt 1 + I·n·μ/BIP (`entwurf/PRUEFUNG-2.md` I.3)
