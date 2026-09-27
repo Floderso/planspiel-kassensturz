@@ -75,6 +75,30 @@ for (const [name, p, k] of [['MwSt', { mwst: 22 }, 'mwst'], ['RV', { rv: 20 }, '
   });
 }
 
+// Beitragsbemessungsgrenze: Bis 27.09.2026 galt die Lohnsummenregel beim Staat nur nach oben,
+// und die Haushalte spürten bei einer anderen Grenze nur den Arbeitnehmeranteil. Eine Senkung
+// entlastete die Haushalte, der Staat buchte nichts — der Saldo stieg in beide Richtungen
+// (docs/modell, „Was das Modell nicht kann“). Jetzt: symmetrisch, und die Haushalte tragen die
+// ganze Änderung wie bei den Beitragssätzen.
+for (const [name, delta] of [['BBG +10.000 €', 10000], ['BBG −10.000 €', -10000], ['BBG +50.000 €', 50000]]) {
+  test(`${name}: Haushalte tragen die Änderung, die der Staat einnimmt (±15 %)`, () => {
+    const r = berechne({ ...SQ, bbg: SQ.bbg + delta });
+    const sv = x => x.rev.rv + x.rev.kv + x.rev.al;
+    const st = sv(r) - sv(BASIS), hh = -haushalte(r);
+    assert.ok(Math.sign(st) === Math.sign(delta), `Staat bucht ${st.toFixed(1)} Mrd. €`);
+    assert.ok(Math.abs(hh / st - 1) < 0.15, `Staat ${st.toFixed(1)}, Haushalte ${hh.toFixed(1)} Mrd. €`);
+  });
+}
+
+test('Die Beitragsbemessungsgrenze wirkt in beide Richtungen gleich', () => {
+  const saldo = d => berechne({ ...SQ, bbg: SQ.bbg + d }).saldo - BASIS.saldo;
+  const auf = saldo(10000), ab = saldo(-10000);
+  assert.ok(auf > 0 && ab < 0, `+10.000 € → ${auf.toFixed(2)}, −10.000 € → ${ab.toFixed(2)} Mrd. €`);
+  // Nicht exakt spiegelbildlich (+7,4 gegen −7,0 Mrd.): Die Umsatzsteuer auf den Konsum reagiert
+  // je Dezil verschieden, und eine Senkung trifft andere Dezile als eine Anhebung
+  assert.ok(Math.abs(auf + ab) < 0.10 * Math.abs(auf), 'Senkung und Anhebung wirken nicht annähernd spiegelbildlich');
+});
+
 test('Bürgergeld 0 € streicht den Regelsatz, nicht Unterkunft und Mehrbedarfe', () => {
   // Fand die Code-Prüfung vom 25.09.: 1 € → 0 € sparte 7,6 Mrd. und kostete D1 rund 1.670 €,
   // weil „BGE ≥ Bürgergeld" auch bei 0 ≥ 0 galt.

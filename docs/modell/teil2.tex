@@ -223,13 +223,18 @@ R_Z&=600\,\bigl(1-0{,}15\min(1,t_Z/2)\bigr)\,\frac{[t_Z-0{,}3-t_V]^+}{100}.
 
 \textbf{Sozialbeiträge} (7). Lohnsumme mit Lohnbasisindex und BBG-Aufschlag,
 \begin{equation}
-L^{SV}=1.750\;\ell_t\Bigl(1+0{,}12\,\Bigl[\frac{\bar B-\bar B^{SQ}}{\bar B^{SQ}}\Bigr]^+\Bigr),\qquad
+L^{SV}=1.750\;\ell_t\Bigl(1+0{,}12\,\frac{\bar B-\bar B^{SQ}}{\bar B^{SQ}}\Bigr),\qquad
 R_{RV}=L^{SV}\frac{\beta_R}{100},\ R_{KV}=L^{SV}\frac{\beta_K}{100},\ R_{AL}=L^{SV}\frac{\beta_A}{100}
 \end{equation}
 (die Schalter der klassischen Fläche, Bürgerversicherung $\times1{,}15$ und die Zuschläge für
 aufgehobene KV-Grenze und KV-Pflicht auf Kapitaleinkommen, sind hier weggelassen; ebenso die
-Rundung von $\bar B_K$). Die positive Klammer ist die Ursache der Asymmetrie aus Abschnitt~\ref{sec:grenzen}: Auf der
-Haushaltsseite wirkt $\bar B$ in $SV^{AN}_i$ in beide Richtungen.
+Rundung von $\bar B_K$). Rund 12\,\% der sozialversicherungspflichtigen Löhne liegen zwischen der
+Grenze und knapp ihrem Doppelten; die Regel gilt in beide Richtungen. Bis 27.09.2026 stand dort
+$[\cdot]^+$: Eine Senkung der Grenze entlastete die Haushalte, der Staat buchte nichts, und der
+Saldo verbesserte sich in beide Richtungen. Die BBG-Wirkung beim Staat ist
+\begin{equation}
+\Delta^{\bar B}=1.750\,\ell_t\cdot0{,}12\,\frac{\bar B-\bar B^{SQ}}{\bar B^{SQ}}\cdot\frac{\beta_R+\beta_K+\beta_A}{100}.
+\end{equation}
 
 \textbf{Übrige Verbrauchsteuern} (8): $R_{kl}=109$\,\Mrd{} (Energie, Tabak, Kfz, Sonstige,
 Solidaritätszuschlag), entfällt nur bei Abschaffung.
@@ -278,6 +283,15 @@ Arbeitgeberänderung (Melguizo\slash{}González-Páramo 2013),
 SV_i=SV^{AN}_i+\tfrac12\Bigl[\min(W_i,\bar B)\,\frac{\Delta(\beta_R+0{,}42\beta_A)}{100}\\
 +\min(W_i,\bar B_K)\,\frac{\Delta(\beta_K+0{,}58\beta_A)}{100}\Bigr],
 \end{multline}
+\begin{equation}
+\hphantom{SV_i=}{}+\underbrace{\frac{\Delta^{\bar B}\,\rho^{\bar B}_i}{\mathcal S[\rho^{\bar B}]}-\tfrac12\rho^{\bar B}_i}_{\text{BBG-Zuschlag}},\qquad
+\rho^{\bar B}_i=\Delta_{\bar B}\min(W_i,\bar B)\,\tfrac{\beta_R+0{,}42\beta_A}{100}+\Delta_{\bar B}\min(W_i,\bar B_K)\,\tfrac{\beta_K+0{,}58\beta_A}{100},
+\end{equation}
+wobei in der ersten Zeile $\min(W_i,\cdot)$ hier auf der Grenze des Status quo steht und
+$\Delta_{\bar B}$ die Änderung von $\min(W_i,\cdot)$ gegenüber dieser Grenze ist. Den
+Arbeitnehmeranteil der BBG-Änderung, $\tfrac12\rho^{\bar B}_i$, enthält $SV^{AN}_i$ bereits; der
+Zuschlag ergänzt den Arbeitgeberanteil und skaliert auf die Buchung des Staates, sodass
+$\mathcal S[\text{BBG-Wirkung}]=\Delta^{\bar B}$ gilt.
 $\Delta$ jeweils gegenüber $\theta^{SQ_0}$, also ohne den gesetzlichen Anstieg
 $\bar\sigma_R$. Der gesetzliche Anstieg des Rentenbeitrags kommt deshalb auch im Status quo
 späterer Perioden als Arbeitgeberanteil voll bei den Haushalten an. Umsatzsteuer mit dem Satzindex
@@ -416,11 +430,13 @@ von 525\,Gt für 1,7\,°C (Forster u.\,a. 2026).
   Rentenbeitrag, fallende \COz-Last).
 \item \textbf{Buchungsidentität.} $\mathcal S[\Delta P]=\Delta\mathit{RV}$,
   $\mathcal S[12g_Kk]=KG$, $\mathcal S[L^{\text{CO}_2}]=R^{\text{brutto}}_{\text{CO}_2}$ und
-  $\mathcal S[Z]=\delta_U+\delta_W+\delta_Z$ gelten exakt (\datei{tests/buchung.test.js}); bei
+  $\mathcal S[Z]=\delta_U+\delta_W+\delta_Z$ und für die Beiträge die BBG-Wirkung
+  $\Delta^{\bar B}$ gelten exakt (\datei{tests/buchung.test.js}); bei
   Umsatzsteuer und Beiträgen bleibt eine Restabweichung.
 \item \textbf{Stückweise Glattheit.} Das System ist stetig, aber nicht überall
   differenzierbar: Knicke liegen an den Tarifgrenzen, an $M_{12}=0{,}45$ und $0{,}60$, an den
-  Klammern von $\lambda_i$, $\pi$, $f_R$, $f_E$, $\varphi$, bei $\bar B=\bar B^{SQ}$ und bei
+  Klammern von $\lambda_i$, $\pi$, $f_R$, $f_E$, $\varphi$, dort, wo eine Grenze $\bar B$ oder
+  $\bar B_K$ das Arbeitseinkommen eines Dezils kreuzt, und bei
   $t_Z=0{,}3+t_V$ und $t_Z=2$, sowie dort, wo die Grenze $G$ unter das Ende von Zone~3 oder~2
   fällt ($G'=e_3$, $G'=e_2$). Die Messwerte in Teil~III sind deshalb endliche Differenzen für genau den
   angegebenen Schritt; Tabelle~\ref{tab:symmetrie} zeigt, wo $+\Delta$ und $-\Delta$

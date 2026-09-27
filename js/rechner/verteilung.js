@@ -111,7 +111,7 @@ function berechnePalma(werte) {
 // zusatz: { renten, co2_brutto, inzidenz } aus berechne.js — Werte, die der Staat bucht und
 // die hier je Haushalt ankommen (PRUEFUNG-2.md I.4). co2_brutto in Mrd. €, sonst €/Haushalt.
 function berechneDezilDelta(dezile, params, est_dez, klima, bg, kg, zusatz = {}) {
-  const { renten = null, co2_brutto = BASIS_MAKRO.emissions * params.co2 / 1000, inzidenz = null } = zusatz;
+  const { renten = null, co2_brutto = BASIS_MAKRO.emissions * params.co2 / 1000, inzidenz = null, sv_bbg = null } = zusatz;
   // Netto-Einkommen pro Dezil NEU
   const netto = [];
   const delta = [];
@@ -135,10 +135,15 @@ function berechneDezilDelta(dezile, params, est_dez, klima, bg, kg, zusatz = {})
     // Beschäftigten getragen (Melguizo/González-Páramo 2013, Int. Tax and Public Finance 20:
     // Meta-Analyse). Nur die Änderung gegenüber dem Status quo — das Niveau bleibt beim
     // Arbeitnehmeranteil. Vorher spürten Haushalte nur die Hälfte dessen, was der Staat bucht.
+    // Auf der Grenze des Status quo: Die Wirkung einer anderen BBG steht vollständig in sv_bbg.
     const sq = PRESETS.status_quo;
-    const sv_ag_delta = Math.min(arbeit_dez, bbg_rv_dez) * ((params.rv + params.alpf * 0.42) - (sq.rv + sq.alpf * 0.42)) / 100 * 0.5
-                      + Math.min(arbeit_dez, bbg_kv_dez) * ((params.kv + params.alpf * 0.58) - (sq.kv + sq.alpf * 0.58)) / 100 * 0.5;
-    const sv = sv_lohn + sv_kapital + sv_ag_delta;
+    const bbg_kv_sq = params.kv_bbg_frei ? Infinity : BASIS_MAKRO.kv_bbg_kv_sq;
+    const sv_ag_delta = Math.min(arbeit_dez, sq.bbg) * ((params.rv + params.alpf * 0.42) - (sq.rv + sq.alpf * 0.42)) / 100 * 0.5
+                      + Math.min(arbeit_dez, bbg_kv_sq) * ((params.kv + params.alpf * 0.58) - (sq.kv + sq.alpf * 0.58)) / 100 * 0.5;
+    // Andere BBG: Den Arbeitnehmeranteil enthält sv_lohn schon (über die Grenze selbst); sv_bbg
+    // ergänzt den Arbeitgeberanteil und skaliert auf die Buchung des Staates (berechne.js, 7)
+    const sv_bbg_i = sv_bbg ? sv_bbg[i] : 0;
+    const sv = sv_lohn + sv_kapital + sv_ag_delta + sv_bbg_i;
     // MwSt auf Konsum
     const vornetto = brutto - est - sv_lohn - sv_kapital;
     const konsum = vornetto * d.konsum;

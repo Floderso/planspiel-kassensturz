@@ -51,7 +51,7 @@ const FORMEL_QUELLEN_BERECHNE = {
   sv_beitraege: {
     formel: 'SV = Lohnsumme_sv × Satz%  (nur bis BBG)',
     ref:    '§ 158 SGB VI · § 241 SGB V · § 341 SGB III · § 55 SGB XI · DRV Beitragssätze 2025',
-    note:   'BBG-Lohnsummen-Faktor: +12 % je 90 k € BBG-Erhöhung (12 % der sozialversicherungspflichtigen Löhne). Der Satz wirkt nur auf die Einnahmen; die Ausgaben hängen am Leistungsniveau (rv_ausgaben). Der RV-Regler zeigt den Satz 2026; nach § 158 SGB VI steigt er zusätzlich mit den Ausgaben — 20,1 % (2030), 21,15 % (2039), BMAS Rentenversicherungsbericht 2025'
+    note:   'Lohnsumme kalibriert auf das Ist-Aufkommen bei der BBG des Status quo; eine andere BBG ändert die Basis im Verhältnis Σ N_i × min(Lohn_i, BBG) über die Dezile (SOEP v40, Mikrozensus 2024), getrennt für RV/AL und KV/PV — dieselbe Rechnung wie bei den Haushalten. Näherung: jeder Haushalt zählt als eine beitragspflichtige Person; Mehrverdienerhaushalte liegen seltener über der Grenze. Nahe dem Status quo entspricht das der früheren Faustregel (+12 % Lohnsumme je Verdopplung der BBG). Der Satz wirkt nur auf die Einnahmen; die Ausgaben hängen am Leistungsniveau (rv_ausgaben). Der RV-Regler zeigt den Satz 2026; nach § 158 SGB VI steigt er zusätzlich mit den Ausgaben — 20,1 % (2030), 21,15 % (2039), BMAS Rentenversicherungsbericht 2025'
   },
   rv_ausgaben: {
     formel: 'ΔRente_i = Brutto_i × rente_anteil_i × renten_faktor × (Rentenniveau/48 % − 1);  ΔRV-Ausgaben = Σ Haushalte ΔRente_i;  KV, AL, PV fest',
@@ -130,6 +130,7 @@ function erhebungskostenStatusQuo() {
 
 // Beitragsbemessungsgrenze RV des Status quo — Bezug aller BBG-Rechnungen
 const BBG_SQ = PRESETS.status_quo.bbg;
+const bbgKV = bbg => Math.round(bbg * (BASIS_MAKRO.kv_bbg_kv_sq / BBG_SQ));   // KV/PV-Grenze, wie verteilung.js
 
 function berechne(params, zustand = null, optionen = {}) {
   // Periodenübergreifender Zustand für Multi-Perioden-Simulation
@@ -269,10 +270,14 @@ function berechne(params, zustand = null, optionen = {}) {
 
   // ---------- 7. SV-BEITRÄGE ----------
   const bbg = params.bbg ?? BBG_SQ;
-  // BBG-Erhöhung über den Status quo: ~12 % der sv-pflichtigen Löhne liegen zwischen BBG und
-  // knapp dem Doppelten. Bezug ist die BBG des Status quo — die Lohnsumme ist auf das Ist-
-  // Aufkommen kalibriert, eine Anhebung auf den Wert von 2026 bringt kein Extra-Aufkommen.
-  const bbg_lohnsumme_factor = 1 + Math.max(0, (bbg - BBG_SQ) / BBG_SQ) * 0.12;
+  // BBG gegenüber dem Status quo: ~12 % der sv-pflichtigen Löhne liegen zwischen BBG und knapp
+  // dem Doppelten, also ändert eine um x % andere Grenze die Lohnsumme um 0,12·x %. Bezug ist die
+  // BBG des Status quo — die Lohnsumme ist auf das Ist-Aufkommen kalibriert. Symmetrisch: Bis
+  // 27.09.2026 galt die Regel nur nach oben; eine Senkung entlastete die Haushalte, der Staat
+  // buchte nichts, und der Saldo stieg in beide Richtungen (docs/modell, „Was das Modell nicht kann“).
+  // Nicht aus den Dezilen gerechnet: Die sind Haushaltseinkommen, die Grenze gilt je Person, und
+  // Mehrverdienerhaushalte lägen fälschlich über ihr — die Masse wäre etwa doppelt so groß.
+  const bbg_lohnsumme_factor = 1 + (bbg - BBG_SQ) / BBG_SQ * 0.12;
   const lohnsumme_sv = BASIS_MAKRO.lohnsumme_sv * lohnbasis_faktor * bbg_lohnsumme_factor;
   const buerger_boost = params.buergerv ? 1.15 : 1.0;
   const rv_auf = lohnsumme_sv * params.rv / 100;
@@ -281,6 +286,21 @@ function berechne(params, zustand = null, optionen = {}) {
   const kv_kapital_bonus  = params.kv_kapital  ? BASIS_MAKRO.kv_kapital_bonus  * (params.kv / PRESETS.status_quo.kv) : 0;
   const kv_auf = lohnsumme_sv * params.kv / 100 * buerger_boost + kv_bbg_frei_bonus + kv_kapital_bonus;
   const al_auf = lohnsumme_sv * params.alpf / 100;
+
+  // BBG-Wirkung bei den Haushalten: Sie tragen die ganze Änderung, die der Staat bucht (Arbeit-
+  // nehmer- und Arbeitgeberanteil, Überwälzung wie bei den Sätzen — verteilung.js), verteilt nach
+  // der Lohnmasse, die je Haushalt zwischen alter und neuer Grenze liegt. Den Arbeitnehmeranteil
+  // rechnet verteilung.js über die Grenze selbst; hier steht der Rest bis zur Staatsbuchung.
+  const sv_bbg_staat = BASIS_MAKRO.lohnsumme_sv * lohnbasis_faktor * (bbg_lohnsumme_factor - 1)
+                     * (params.rv + params.kv * buerger_boost + params.alpf) / 100;           // Mrd. €
+  const sv_bbg_roh = dezile.map(d => {
+    const w = d.brutto_adj * (1 - d.kapital);
+    return (Math.min(w, bbg) - Math.min(w, BBG_SQ)) * (params.rv + params.alpf * 0.42) / 100
+         + (Math.min(w, bbgKV(bbg)) - Math.min(w, bbgKV(BBG_SQ))) * (params.kv + params.alpf * 0.58) / 100;
+  });                                                                                         // €/Haushalt
+  const sv_bbg_summe = dezile.reduce((a, d, i) => a + d.anzahl * sv_bbg_roh[i], 0) / 1000;
+  const sv_bbg_zusatz = sv_bbg_roh.map(r =>
+    (Math.abs(sv_bbg_summe) > 1e-9 ? sv_bbg_staat * r / sv_bbg_summe : 0) - 0.5 * r);
 
   // ---------- 7b. ZUCMAN-MINDESTSTEUER ----------
   const zucman_auf = kvs.zucman;   // Formel in kapitalUndVermoegensteuern()
@@ -362,7 +382,7 @@ function berechne(params, zustand = null, optionen = {}) {
     + d_verm * ANTEIL_VERMOEGEN[i]
     + d_zuc  * ANTEIL_ZUCMAN[i]));
   const hh_delta = berechneDezilDelta(dezile, params, est_pro_dezil, klimageld_auszahlung, bg_auszahlung, kg_auszahlung,
-                                      { renten: renten_delta, co2_brutto: co2_auf, inzidenz });
+                                      { renten: renten_delta, co2_brutto: co2_auf, inzidenz, sv_bbg: sv_bbg_zusatz });
 
   // ---------- 10a. NACHFRAGE (PRUEFUNG-2.md I.3) ----------
   // Die Einkommensänderung der Haushalte gegenüber dem Status quo DERSELBEN Periode wirkt

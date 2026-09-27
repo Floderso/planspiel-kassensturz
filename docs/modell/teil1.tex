@@ -414,16 +414,17 @@ erklärt:
   EU-Fiskalregeln fehlen.
 \end{itemize}
 
-Die Messung für Teil~III hat drei weitere Eigenschaften sichtbar gemacht:
+Die Messung für Teil~III hat weitere Eigenschaften sichtbar gemacht:
 
 \begin{itemize}
-\item \textbf{Die Beitragsbemessungsgrenze wirkt asymmetrisch.} Eine Anhebung um 10.000\,\euro{}
-  verbessert den Saldo der ersten Periode um rund 6\,\Mrd, eine Senkung um denselben Betrag
-  \emph{verbessert} ihn ebenfalls, um rund 3,5\,\Mrd. Grund: Beim Staat sind Mehreinnahmen
-  aus der Grenze nach unten bei null abgeschnitten, bei den Haushalten sinken die Beiträge.
-  Etwa die Hälfte der Verbesserung ist mechanisch: Das höhere Vornetto erhöht den Konsum und
-  damit die Umsatzsteuer. Die andere Hälfte kommt über die Nachfrage. Das ist ein
-  Buchungsfehler; er ist zur Behebung vorgemerkt.
+\item \textbf{Die Beitragsbemessungsgrenze wirkt über eine Faustregel.} Eine um $x$\,\% andere
+  Grenze ändert die beitragspflichtige Lohnsumme um $0{,}12\,x$\,\%, in beide Richtungen; die
+  Haushalte tragen genau diese Änderung, verteilt nach ihrer Lohnmasse zwischen alter und neuer
+  Grenze. Aus den Dezilen allein lässt sich die Lohnmasse über der Grenze nicht rechnen: Sie
+  sind Haushaltseinkommen, die Grenze gilt je Person, und Mehrverdienerhaushalte lägen
+  fälschlich darüber. Bis 27.09.2026 wirkte die Regel beim Staat nur nach oben, und eine
+  Senkung der Grenze verbesserte den Saldo; das hat die Messung für dieses Dokument
+  aufgedeckt (\datei{tests/buchung.test.js}).
 \item \textbf{Der Spitzensteuersatz bringt wenig:} rund \wert{zerl}{spitze}{gesamt}\,\Mrd{} je
   Prozentpunkt in der ersten Periode, weniger als übliche Schätzungen (etwa 1 bis 2\,\Mrd).
   Die Zerlegung in Abschnitt~\ref{sec:zerlegung} zeigt, dass das fast ganz an der Rechnung
