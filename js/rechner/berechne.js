@@ -4,7 +4,7 @@ import { DEZILE, ELAST, BASIS_MAKRO, STAATSAUSGABEN, PRESETS, BASIS_AUFKOMMEN, A
          KINDER_JE_HH, BUERGERGELD_QUOTE, CO2_GEWICHT, MPC_DEZIL, MPC_MITTEL,
          MULTIPLIKATOR_STEUER_TRANSFER, MULTIPLIKATOR_INVEST, NATO_QUOTE_2025, verteidigungQuote,
          sondervermoegen, kstSenkung, rvAnstieg, SCHULDENBREMSE_STRUKTURELL, VERTEIDIGUNG_AUSNAHME_AB, BUDGET_SEMIELASTIZITAET } from '../data.js';
-import { estHaushalt, grenzsteuersatzHaushalt } from './einkommensteuer.js';
+import { estHaushalt, grenzsteuersatzHaushalt, einkommensanteilUeber } from './einkommensteuer.js';
 import { aequivalenzEinkommen, berechneGini, berechneMedianGewichtet, berechnePalma, berechneDezilDelta, berechneNettoSQ } from './verteilung.js';
 
 // ═══════════════════════════════════════════════════════
@@ -21,7 +21,7 @@ const FORMEL_QUELLEN_BERECHNE = {
   arbeitsangebot: {
     formel: 'labor_factor = 1 + ε × Δ(1 − GS) / (1 − GS_SQ)',
     ref:    'Saez/Chetty/Gruber Konsens · ifo Schnelldienst 01/2025 · Piketty/Saez/Stantcheva (2014) AER',
-    note:   'ε = 0,20 (intensive margin, konservativ); D10c: ε = 0,40 + Avoidance/Wegzug-Korrektur'
+    note:   'ε = 0,20 (intensive margin, konservativ); D10c: ε = 0,40, dazu Ausweichen (0,50 je Pp. Spitzensatz über 45 %) und Wegzug (0,10 je Pp. über 60 %), ausgelöst vom tariflichen Spitzensatz und gewichtet mit dem Einkommensanteil über der Grenze (Pareto-Rand, ~0,48 im Status quo). Für die Betroffenen entspricht das einer Elastizität des zu versteuernden Einkommens von rund 0,25–0,3 (Saez/Slemrod/Giertz 2012: 0,12–0,4)'
   },
   bge_arbeitsangebot: {
     formel: 'lf = lf_tax × (1 − BGE_LABOR_EFF[i] × min(1,67; BGE/1200))',
@@ -182,18 +182,25 @@ function berechne(params, zustand = null, optionen = {}) {
     if (d.label === 'D10c') {
       // Top 1%: höhere Arbeitsangebots-Elastizität (extensive margin: Stunden, Rentenentscheidung)
       elas = ELAST.d10c_labor;
-      // Steuervermeidung / Einkommensverschiebung: greift ab GSatz > 45%
-      // (Kapitalgesellschaft, Stiftung, Timing-Effekte)
-      const avoid_trigger = Math.max(0, gs_neu - 0.45);
-      const wegzug_trigger = Math.max(0, gs_neu - 0.60);
-      avoidance = Math.max(0.40,
-        1 - ELAST.d10c_avoidance * avoid_trigger
-          - ELAST.d10c_wegzug * wegzug_trigger
-      );
+      // Steuervermeidung / Einkommensverschiebung (Kapitalgesellschaft, Stiftung, Timing) ab einem
+      // Spitzensatz über 45 %, Wegzug über 60 % — ausgelöst vom TARIFLICHEN Spitzensatz und nur
+      // für den Einkommensanteil der Steuerpflichtigen über der Grenze: Wer den Spitzensatz nicht
+      // zahlt, weicht ihm nicht aus. Bis 27.09.2026 stand hier der Grenzsatz je Euro Haushalts-
+      // brutto (mit zvE-Quote, gemittelt über D10c); der erreichte auch bei 75 % Spitze nur ~36 %,
+      // und die Reaktion griff am Tisch nie (docs/modell, „Was das Modell nicht kann“).
+      const spitze = params.spitze / 100;
+      const anteil_oben = einkommensanteilUeber(d.brutto * (1 - d.kapital), d.pareto_alpha, params.grenze);
+      avoidance = Math.max(0.40, 1 - anteil_oben * (
+          ELAST.d10c_avoidance * Math.max(0, spitze - 0.45)
+        + ELAST.d10c_wegzug    * Math.max(0, spitze - 0.60)));
     }
 
     const labor_factor_raw = 1 + elas * (delta_nettolohn / Math.max(0.0001, 1 - gs_sq));
-    const lf_tax = Math.max(0.55, Math.min(1.25, labor_factor_raw)) * avoidance;
+    // Ausweichen betrifft nur, was dem Spitzensatz unterliegt: die Arbeitseinkünfte. Kapital-
+    // einkünfte (in D10c 45 %) tragen die Abgeltungsteuer; wirkte der Faktor auf das ganze
+    // Brutto, wäre die Reaktion fast doppelt so stark wie ihre Elastizität
+    const avoidance_brutto = 1 - (1 - avoidance) * (1 - d.kapital);
+    const lf_tax = Math.max(0.55, Math.min(1.25, labor_factor_raw)) * avoidance_brutto;
     // BGE: Substitutionseffekt — skaliert mit BGE/1200 und Dezil (RWI/ZEW)
     const lf = Math.max(0.55, lf_tax * (1 - BGE_LABOR_EFF[idx] * bge_labor_scale));
     return { ...d, labor_factor: lf, brutto_adj: d.brutto * lf, gs_neu, avoidance };
@@ -598,6 +605,7 @@ function berechne(params, zustand = null, optionen = {}) {
     verteidigung_quote, sondervermoegen_real, kst_senkung, rv_anstieg,
     dynamisch_kst, dynamisch_est, dynamisch_delta,
     investment_factor, avg_labor,
+    dezile_avoidance: dezile[dezile.length - 1].avoidance,   // Ausweichfaktor D10c (Tests, Doku)
     // GKV-Reform-Boni (für GKV-Panel-Darstellung)
     kv_bbg_frei_bonus, kv_kapital_bonus,
     // Multi-Perioden-Felder

@@ -154,10 +154,19 @@ $M_i=M(B_i(1-\kappa_i))$ der Grenzsteuersatz auf Arbeit und
 \varepsilon_i=\begin{cases}0{,}40&i=\text{D10c}\\0{,}20&\text{sonst}\end{cases}
 \end{equation}
 (Saez\slash{}Chetty\slash{}Gruber; für D10c die Elastizität des zu versteuernden Einkommens nach
-Saez\slash{}Slemrod\slash{}Giertz 2012). Für D10c kommen Ausweichen und Wegzug hinzu,
-\begin{equation}
-\Omega_{12}=\max\bigl(0{,}40,\;1-0{,}50\,[M_{12}-0{,}45]^+-0{,}10\,[M_{12}-0{,}60]^+\bigr),\qquad\Omega_i=1\text{ sonst},
-\end{equation}
+Saez\slash{}Slemrod\slash{}Giertz 2012). Für D10c kommen Ausweichen und Wegzug hinzu, ausgelöst
+vom tariflichen Spitzensatz $t_5$ und gewichtet mit dem Einkommensanteil der Steuerpflichtigen
+über der Grenze, $s^G=\min\bigl(1,(x_m/G)^{\alpha-1}\bigr)$ mit $x_m$ aus Abschnitt~\ref{sec:est}
+(im Status quo rund 0,48):
+\begin{gather}
+\omega=\max\bigl(0{,}40,\;1-s^G\bigl(0{,}50\,[t_5-0{,}45]^+ +0{,}10\,[t_5-0{,}60]^+\bigr)\bigr),\\
+\Omega_{12}=1-(1-\omega)(1-\kappa_{12}),\qquad\Omega_i=1\text{ sonst}.
+\end{gather}
+Der letzte Schritt beschränkt die Reaktion auf die Arbeitseinkünfte; die Kapitaleinkünfte
+unterliegen der Abgeltungsteuer, nicht dem Spitzensatz. Für die Betroffenen entspricht das
+einer Elastizität des zu versteuernden Einkommens von rund $0{,}5\,(1-t_5)\approx0{,}25$--$0{,}3$.
+Bis 27.09.2026 stand statt $t_5$ der Haushaltsgrenzsatz $M_{12}$ (höchstens 0,36 am Tisch), und
+die Reaktion griff nie.
 und mit einem Grundeinkommen $b^{G}$ (nur klassische Fläche) der Faktor $\psi_i\min(1{,}67,\,b^G/1200)$:
 \begin{equation}
 \lambda_i=\max\Bigl(0{,}55,\;\operatorname{clip}(\lambda^{\text{roh}}_i,0{,}55,1{,}25)\,\Omega_i\,\bigl(1-\psi_i\min(1{,}67,b^G/1200)\bigr)\Bigr).

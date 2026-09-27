@@ -172,8 +172,10 @@ Vier Reaktionen machen aus der mechanischen Rechnung eine Verhaltensrechnung.
 (eins minus Grenzsteuersatz), um 10\,\%, steigt das Arbeitseinkommen um 2\,\%
 (Elastizität 0,20, Konsens von Saez, Chetty und Gruber). Für das oberste Prozent ist die
 Elastizität doppelt so hoch (0,40), weil dort Einkommen leichter verlagert werden kann;
-oberhalb eines Grenzsteuersatzes von 45\,\% kommt Steuervermeidung hinzu, oberhalb von 60\,\%
-Wegzug. Alle Reaktionen sind nach unten und oben begrenzt.
+liegt der Spitzensatz über 45\,\%, kommt Steuervermeidung hinzu, über 60\,\% Wegzug. Beides
+trifft nur die Arbeitseinkünfte derer, die tatsächlich über der Grenze des Spitzensatzes
+liegen (knapp die Hälfte des Einkommens im obersten Prozent). Alle Reaktionen sind nach
+unten und oben begrenzt.
 
 \textbf{Konsum.} Eine um einen Punkt höhere Umsatzsteuer senkt den besteuerten Konsum um
 0,35\,\%, getrennt für den Regel- und den ermäßigten Satz. Diese Reaktion wirkt nur auf das
@@ -427,17 +429,13 @@ Die Messung für Teil~III hat weitere Eigenschaften sichtbar gemacht:
   aufgedeckt (\datei{tests/buchung.test.js}).
 \item \textbf{Der Spitzensteuersatz bringt wenig:} rund \wert{zerl}{spitze}{gesamt}\,\Mrd{} je
   Prozentpunkt in der ersten Periode, weniger als übliche Schätzungen (etwa 1 bis 2\,\Mrd).
-  Die Zerlegung in Abschnitt~\ref{sec:zerlegung} zeigt, dass das fast ganz an der Rechnung
-  selbst liegt (\wert{zerl}{spitze}{mechanisch}\,\Mrd{} mechanisch), nicht am Verhalten
-  (\wert{zerl}{spitze}{verhalten}\,\Mrd): Der Satz trifft nur den Teil der Einkommen im
-  obersten Prozent, der nach dem Pareto-Rand über der Grenze liegt. Ob der Rand zu dünn ist,
-  wäre mit der Einkommensteuerstatistik zu prüfen.
-\item \textbf{Die Ausweich- und Wegzugsreaktion des obersten Prozents greift am Tisch nie.}
-  Ihre Schwellen (45 und 60\,\%) werden mit dem Grenzsteuersatz auf das
-  \emph{Haushaltsbrutto} verglichen, der die zvE-Quote von 0,79 enthält. Auch bei einem
-  Spitzensatz von 75\,\% liegt er für D10c nur bei rund 36\,\%. Erst wenn in der klassischen
-  Fläche zusätzlich die Grenze der obersten Zone stark gesenkt wird, setzt die Reaktion ein.
-  Ob die Schwellen auf den tariflichen Grenzsteuersatz bezogen sein sollten, ist zu prüfen.
+  Schon die Rechnung selbst ist klein (\wert{zerl}{spitze}{mechanisch}\,\Mrd{} mechanisch),
+  weil der Satz nur den Teil der Einkommen im obersten Prozent trifft, der nach dem
+  Pareto-Rand über der Grenze liegt; das Ausweichen nimmt davon
+  \wert{zerl}{spitze}{verhalten}\,\Mrd{} zurück (Abschnitt~\ref{sec:zerlegung}). Ob der Rand zu
+  dünn ist, wäre mit der Einkommensteuerstatistik zu prüfen. Bis 27.09.2026 griff das
+  Ausweichen am Tisch nie: Seine Schwelle wurde mit dem Grenzsatz auf das Haushaltsbrutto
+  verglichen, der auch bei 75\,\% Spitze nur rund 36\,\% erreichte.
 \item \textbf{Die Mindeststeuer auf Milliardäre greift erst oberhalb von 0,3\,\%}, weil die
   gezahlte Einkommensteuer angerechnet wird. Das ist gewollt, erklärt aber, warum kleine
   Sätze nichts bewirken.

@@ -64,6 +64,14 @@ function paretoUeberschuss(mittel, alpha, schwelle) {
   return Math.pow(xm, alpha) * Math.pow(schwelle, 1 - alpha) / (alpha - 1);
 }
 
+// Anteil am Einkommen eines Pareto-verteilten Dezils, der auf Steuerpflichtige über 'grenze'
+// entfällt: (x_m / grenze)^(α−1), 1 wenn schon die Untergrenze darüber liegt. Für D10c im Status
+// quo rund 0,48 — gut ein Zehntel der Veranlagungen bezieht knapp die Hälfte des Einkommens.
+function einkommensanteilUeber(brutto, pareto_alpha, grenze) {
+  const xm = brutto * ZVE_QUOTE / SPLITTING_FAKTOR * (pareto_alpha - 1) / pareto_alpha;
+  return grenze <= xm ? 1 : Math.pow(xm / grenze, pareto_alpha - 1);
+}
+
 // Grenzbelastung eines zusätzlichen Euro Haushaltsbrutto:
 // d/dB [s·T(B·q/s)] = q · T'(B·q/s)
 // Mit pareto_alpha: durchschnittlicher Grenzsatz über die Verteilung — bis Zone 4 wie der
@@ -137,4 +145,4 @@ function effSteuersatz(einkommen, freibetrag, eingang, spitze, grenze) {
   return estTarif(einkommen, freibetrag, eingang, spitze, grenze) / einkommen;
 }
 
-export { estTarif, grenzsteuersatz, effSteuersatz, estHaushalt, grenzsteuersatzHaushalt, ZVE_QUOTE, SPLITTING_FAKTOR, FORMEL_QUELLEN_EST };
+export { estTarif, grenzsteuersatz, effSteuersatz, estHaushalt, grenzsteuersatzHaushalt, einkommensanteilUeber, ZVE_QUOTE, SPLITTING_FAKTOR, FORMEL_QUELLEN_EST };
