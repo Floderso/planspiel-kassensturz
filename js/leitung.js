@@ -365,21 +365,35 @@ function zeichneLeitstand() {
     const angenommen = vorlagen.filter(v => v.stand === 'angenommen').length;
     const minuten = t.last_updated
       ? Math.round((jetzt - Date.parse(t.last_updated)) / 60000) : null;
+    // Ohne offene Periode ist das Team entweder durch — oder es wartet auf
+    // die Freigabe der naechsten (der Tisch spielt seit 28.09.2026 nicht
+    // voraus). Beides ist kein Festhaengen, auch wenn lange nichts kommt:
+    // der Tisch wartet auf DICH.
+    const zu = (t.perioden ?? []).filter(p => p.locked).map(p => p.idx);
+    const naechste = zu.length ? Math.max(...zu) + 1 : 0;
+    const durch  = !laufend && naechste >= sicht.perioden_anzahl;
+    const wartet = !laufend && !durch && naechste >= (sicht.perioden_freigegeben ?? 1);
     // "Haengt fest" heisst: lange nichts gemeldet UND noch nicht fertig.
-    const haengt = minuten !== null && minuten > 15 && angenommen < (sicht.ressorts?.length ?? 4);
-    return { name, anzeige: t.anzeigename, letzte, angenommen, minuten, haengt,
-             periode: (laufend?.idx ?? bahn.length - 1) + 1 };
+    const haengt = !wartet && !durch && minuten !== null && minuten > 15
+      && angenommen < (sicht.ressorts?.length ?? 4);
+    return { name, anzeige: t.anzeigename, letzte, angenommen, minuten, haengt, wartet, durch,
+             periode: (laufend?.idx ?? naechste) + 1 };
   }).sort((a, b) => Number(b.haengt) - Number(a.haengt) || a.name.localeCompare(b.name));
 
+  const warten = zeilen.filter(z => z.wartet).length;
   $('#leitstand-zahl').textContent =
-    `${zeilen.length} Teams · ${zeilen.filter(z => z.haengt).length} melden sich länger nicht`;
+    `${zeilen.length} Teams · ${zeilen.filter(z => z.haengt).length} melden sich länger nicht`
+    + (warten ? ` · ${warten} ${warten === 1 ? 'wartet' : 'warten'} auf die Freigabe` : '');
 
+  const n = sicht.ressorts?.length ?? 4;
   $('#leitstand').innerHTML = zeilen.map(z => `
-    <article class="lt" data-haengt="${z.haengt}">
+    <article class="lt" data-haengt="${z.haengt}" data-wartet="${z.wartet}">
       <header>
         <h3>${z.name}${z.anzeige ? ` <span class="anz">${z.anzeige}</span>` : ''}</h3>
-        <p class="lz">Periode ${z.periode} · ${z.angenommen} von ${sicht.ressorts?.length ?? 4}
-           Vorlagen angenommen${z.minuten === null ? ''
+        <p class="lz">${z.durch ? `Alle ${sicht.perioden_anzahl} Perioden abgeschlossen`
+           : z.wartet ? `Periode ${z.periode - 1} abgeschlossen · wartet auf die Freigabe von Periode ${z.periode}`
+           : `Periode ${z.periode} · ${z.angenommen} von ${n} Vorlagen angenommen`}${
+             z.minuten === null ? ''
              : z.minuten < 1 ? ' · gerade eben'
              : ` · vor ${z.minuten} Min.`}</p>
       </header>

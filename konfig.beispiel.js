@@ -37,6 +37,15 @@ window.KASSENSTURZ_KONFIG = {
   // Siehe entwurf/BETRIEB.md, Abschnitt 1.4.
   api_basis: '',
 
+  // Wo die Matrikelnummern liegen — ein Satz, der im Beitrittsformular unter
+  // der Matrikelnummer erscheint. Der feste Text dort sagt nur, was immer
+  // gilt (Zuordnung im Kurs, Löschung nach einem halben Jahr); WER speichert
+  // und WO, weiß allein die Umgebung. Solange die Sitzungsverwaltung bei
+  // Cloudflare läuft, gehört das hierhin — siehe entwurf/BETRIEB.md, 5.
+  //   'Die Sitzungsverwaltung läuft übergangsweise bei Cloudflare (USA).'
+  //   'Die Sitzungsverwaltung läuft auf einem Server der Hochschule.'
+  datenschutz_hinweis: '',
+
   // QR-Code für die Beitritts-URL.
   //
   // ACHTUNG: Der Dienst bekommt dabei die vollständige Join-URL inklusive

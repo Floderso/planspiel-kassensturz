@@ -176,6 +176,11 @@ export function ressortsIm(kurs = STANDARDKURS) {
 // Die klassische Flaeche (admin.html) schreibt in dasselbe Feld Ressortnamen
 // ("finanzen", "klima"). Die werden verstanden: ein freigegebenes Ressort
 // oeffnet alle seine Werkzeuge. So bricht keine alte Sitzung.
+//
+// Dieselbe Zuordnung liegt als api/src/werkzeuge.json beim Server, der sie
+// seit 28.09.2026 beim Einbringen einer Vorlage prueft. Der Server kann diese
+// Datei nicht importieren (eigenes Projekt); tests/spielkern.test.js haelt
+// beide Tabellen gleich. Wer hier ein `modul` aendert, zieht die JSON nach.
 
 export const WERKZEUGE = (() => {
   const gesehen = new Map();
@@ -189,7 +194,7 @@ export const WERKZEUGE = (() => {
   return [...gesehen.values()];
 })();
 
-const KLASSISCH = { finanzen: 'fin', wirtschaft: 'wir', soziales: 'soz', klima: 'umw' };
+export const KLASSISCH = { finanzen: 'fin', wirtschaft: 'wir', soziales: 'soz', klima: 'umw' };
 
 /** Die offenen Werkzeuge einer Runde als Menge — oder null, wenn alles offen ist. */
 export function offeneWerkzeuge(runde, kurs = STANDARDKURS) {

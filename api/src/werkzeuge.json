@@ -1,0 +1,13 @@
+{
+  "_hinweis": "Stellgroesse -> Werkzeug, wie in js/spielkern.js (RESSORTS[].stell[].modul). tests/spielkern.test.js haelt beide Tabellen gleich. Wer dort ein Werkzeug oder eine Stellgroesse aendert, zieht diese Datei nach — sonst wird der Test rot.",
+  "werkzeuge": {
+    "est":       { "name": "Einkommensteuer",        "ressort": "fin", "stell": ["freibetrag", "eingang", "spitze"] },
+    "mwst":      { "name": "Mehrwertsteuer",         "ressort": "fin", "stell": ["mwst"] },
+    "verm":      { "name": "Vermögen & Erbschaft",   "ressort": "fin", "stell": ["erb"] },
+    "kst":       { "name": "Unternehmen & Gewerbe",  "ressort": "wir", "stell": ["kst", "gewst"] },
+    "sv":        { "name": "Sozialversicherung",     "ressort": "soz", "stell": ["rv", "kv"] },
+    "transfers": { "name": "Transfers & Sozialstaat","ressort": "soz", "stell": ["bg", "kg"] },
+    "co2":       { "name": "CO₂-Steuer & Klimageld", "ressort": "umw", "stell": ["co2", "klimageld"] }
+  },
+  "klassisch": { "finanzen": "fin", "wirtschaft": "wir", "soziales": "soz", "klima": "umw" }
+}

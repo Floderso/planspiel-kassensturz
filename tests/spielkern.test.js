@@ -13,10 +13,14 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   erzeugeSpiel, spieleNach, vorausschau, kursAus, jahreDerRunde, laengeDerRunde,
   schockDerRunde, schockWirkung, STANDARDKURS, KENNZAHLEN,
   WERKZEUGE, ALLE, offeneWerkzeuge, istOffen, abRunde, werkzeugeAusAb, ressortsIm,
+  KLASSISCH,
 } from '../js/spielkern.js';
 import { simulierePfad } from '../js/rechner/transition.js';
 import { PRESETS, SCHOCK_BIBLIOTHEK } from '../js/data.js';
@@ -203,4 +207,24 @@ test('Ohne Angabe ist alles offen; alte Ressortnamen oeffnen ganze Ressorts', ()
   assert.equal(istOffen('co2', 1, alt), false);
   assert.equal(istOffen('co2', 2, alt), true);
   assert.equal(istOffen('sv', 3, alt), true, 'Periode ohne Eintrag: alles offen');
+});
+
+// ── Der Server kennt dieselben Werkzeuge ───────────────────────────────────
+//
+// api/src/werkzeuge.json ist die Tabelle, mit der der Server prueft, ob eine
+// Vorlage nur offene Werkzeuge anfasst. Sie muss zu WERKZEUGE hier passen —
+// zwei Tabellen, die auseinanderlaufen, hiessen: der Tisch erlaubt, was der
+// Server ablehnt, oder umgekehrt. Der Server kann spielkern.js nicht
+// importieren (eigenes Projekt, TypeScript); darum die Kopie, und darum
+// dieser Test.
+
+test('Der Server prueft mit derselben Werkzeugtabelle wie der Tisch', () => {
+  const datei = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
+                             '..', 'api', 'src', 'werkzeuge.json');
+  const server = JSON.parse(fs.readFileSync(datei, 'utf8'));
+  const tisch = Object.fromEntries(WERKZEUGE.map(w =>
+    [w.id, { name: w.name, ressort: w.ressort, stell: w.stell.map(s => s.key) }]));
+  assert.deepEqual(server.werkzeuge, tisch,
+    'api/src/werkzeuge.json weicht von RESSORTS/MOD_DEFS ab — nachziehen');
+  assert.deepEqual(server.klassisch, KLASSISCH);
 });

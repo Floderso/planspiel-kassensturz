@@ -69,13 +69,15 @@ Alle Felder optional — fehlende Felder erhalten Standardwerte.
 | `ressorts` | string[] | alle vier | Ressorts am Tisch — mindestens zwei, sonst `400` |
 | `quorum` | string | `"einfach"` | `einfach` · `absolut` · `einstimmig`, Unbekanntes wird `einfach` |
 | `perioden_werkzeuge` | object | — | Offene Werkzeuge je Periode, siehe unten |
-| `min_teilnahme_quote` | number | `0.5` | Mindestanteil für Perioden-Lock (0–1) |
+| `min_teilnahme_quote` | number | `0.5` | Mindestanteil für Perioden-Lock (0–1) — nur klassische Fläche, siehe `/vote` |
 | `sandbox` | boolean | `false` | Sandbox = kein Quorum nötig |
 
-**Für den Verhandlungstisch `min_teilnahme_quote: 0` setzen** (die Einrichtung
-tut das). Der Tisch meldet den Rundenschluss von EINEM Gerät, nachdem alle
-Vorlagen angenommen sind. Mit `0.5` und vier Mitgliedern verlangt der Server
-aber zwei Stimmen — die Periode würde nie gesperrt.
+Am Verhandlungstisch spielt die Quote **keine Rolle mehr**: seit 28.09.2026
+sperrt `/vote` eine Periode, sobald jedes Ressort eine angenommene Vorlage
+hat — und vorher nicht, egal welche Quote gilt. Die Einrichtung setzt
+trotzdem `0`, damit auch eine Sitzung ohne Vorlagen nicht an zwei Stimmen
+hängt. Vorher blieb eine Tischsitzung mit `0.5` auf ewig offen, weil nur ein
+Gerät den Schluss meldet.
 
 **Response `201 Created`:**
 
@@ -168,13 +170,23 @@ Speichert den Perioden-State eines Teams. Wird nach jeder Parameteränderung
 { "ok": true }
 ```
 
+**`409`**, wenn eine Periode als `locked` geschickt wird, die noch nicht
+freigegeben ist (`idx ≥ perioden_freigegeben`). Sperren darf nur, was die
+Lehrperson freigegeben hat — sonst umginge ein einziger PUT die Freigabe.
+
 ---
 
 ### `POST /api/sessions/:id/teams/:team/vote`
 
-Registriert eine Stimme für den Abschluss einer Periode. Wenn das Quorum
-(`min_teilnahme_quote × team_groesse`) erreicht ist, wird die Periode
-automatisch gesperrt.
+Meldet den Abschluss einer Periode. Zwei Flächen, zwei Regeln:
+
+- **Verhandlungstisch** (die Periode hat Vorlagen): gesperrt wird, sobald
+  jedes Ressort aus `ressorts` eine Vorlage im Stand `angenommen` hat.
+  Fehlt eine, antwortet der Server **`409`** und zählt die Meldung nicht.
+- **Klassische Fläche** (keine Vorlagen): gesperrt wird, wenn das Quorum
+  (`min_teilnahme_quote × Mitglieder`) erreicht ist.
+
+**`409`** außerdem, wenn die Periode noch nicht freigegeben ist.
 
 **Request-Body:**
 
@@ -225,7 +237,10 @@ Das Frontend berechnet die Simulation aus diesen Parametern neu (→ [ADR 001](a
 | HTTP | Bedeutung |
 |------|---|
 | `400` | Ungültige Anfrage (fehlende Felder, falscher Typ) |
+| `403` | Admin-Token fehlt oder stimmt nicht |
 | `404` | Session oder Team nicht gefunden |
+| `409` | Widerspricht dem Stand: Periode geschlossen oder nicht freigegeben, Werkzeug noch zu, Vorlage schon angenommen |
+| `422` | Inhaltlich unvollständig — etwa eine Vorlage ohne Begründung |
 | `500` | Interner Server-Fehler (KV nicht erreichbar) |
 
 ---
@@ -288,12 +303,26 @@ Einspruch zurücknehmen, Rumpf `{ "periode_idx": 0 }`.
 
 Vorlagen einer Periode mit Auszählung. Seit 24.09.2026 zusätzlich
 `locked`: ob die Periode schon geschlossen ist. Daran merken die anderen
-Geräte eines Teams, dass eines die Runde geschlossen hat.
+Geräte eines Teams, dass eines die Runde geschlossen hat. Seit 28.09.2026
+außerdem `perioden_freigegeben` — der Tisch fragt diesen Endpunkt ohnehin
+alle vier Sekunden ab und merkt so, wenn die Lehrperson die nächste
+Periode freischaltet.
 
 ```json
 { "vorlagen": { "fin": { "stand": "eingebracht", "…": "…" } },
-  "quorum": "einfach", "ressorts": ["fin", "wir", "soz", "umw"], "locked": false }
+  "quorum": "einfach", "ressorts": ["fin", "wir", "soz", "umw"], "locked": false,
+  "perioden_freigegeben": 1 }
 ```
+
+### `POST /api/sessions/:id/teams/:team/vorlagen`
+
+Eine Vorlage einbringen: `{ periode_idx, ressort, aenderungen, begruendung,
+person }`. Die einbringende Person stimmt automatisch zu.
+
+**`409`**, wenn die Periode geschlossen oder nicht freigegeben ist, die
+Vorlage schon angenommen ist — oder wenn `aenderungen` eine Stellgröße
+eines Werkzeugs anfasst, das in dieser Periode noch nicht offen ist (siehe
+`/werkzeuge`). **`422`** ohne Begründung.
 
 ### `PUT /api/sessions/:id/schocks` *(Admin)*
 
@@ -312,9 +341,23 @@ wird in `eingriffe` vermerkt.
 `{ "perioden_werkzeuge": { "0": ["est", "kst", "transfers", "co2"], "1": […] } }` —
 je Periodenindex die offenen Werkzeuge (Kennungen aus `MOD_DEFS`). Fehlt der
 Eintrag einer Periode, ist dort alles offen. Die klassische Fläche schreibt
-Ressortnamen (`"finanzen"`, `"klima"`); die versteht der Tisch weiterhin.
-Der Server prüft **nicht**, ob eine Vorlage nur offene Werkzeuge ändert —
-das erzwingt heute nur die Oberfläche.
+Ressortnamen (`"finanzen"`, `"klima"`); die verstehen Tisch und Server.
+
+Seit 28.09.2026 prüft der Server beim Einbringen einer Vorlage, ob sie nur
+offene Werkzeuge anfasst (`409` sonst). Die Zuordnung Stellgröße → Werkzeug
+steht in `api/src/werkzeuge.json`; `tests/spielkern.test.js` hält sie mit
+`js/spielkern.js` gleich.
+
+### `PUT /api/sessions/:id/freigabe` *(Admin)*
+
+`{ "perioden_freigegeben": n }` — wie viele Perioden gespielt werden dürfen
+(1 … `perioden_anzahl`). Die Leitung schaltet damit Periode für Periode
+frei (E4).
+
+Seit 28.09.2026 hält der **Server** die Reihenfolge ein, nicht nur die
+Oberfläche: eine Periode mit `idx ≥ perioden_freigegeben` nimmt weder
+Vorlage noch Stimme, Begründung, Unterschrift noch Abschlussmeldung an
+(`409`). Der Tisch wartet nach dem Rundenschluss sichtbar auf die Freigabe.
 
 ### Was dabei zu beachten ist
 

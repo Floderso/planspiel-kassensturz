@@ -354,3 +354,59 @@ Längen **dieselben** Zahlen liefern.
 - **Beitrittsformular:** „bleibt auf dem Server der Hochschule“ stimmt, solange
   Cloudflare läuft, nicht.
 - **Zwischen Geräten** kann KV weiter Schreibvorgänge verlieren (ADR 006).
+
+---
+
+## 11. Fortsetzung am 28.09.2026 — die offene Liste aus Abschnitt 10
+
+Vier der sechs Punkte sind erledigt und gegen die laufende API durchgespielt
+(Prüfsitzung anlegen → Runde 1 schließen → warten → Freigabe in der Leitung →
+weiterspielen, bei 1280 und 375 px, Kontrast der neuen Flächen gemessen).
+
+| Punkt | Wo | Kern |
+|---|---|---|
+| **Der Tisch erzwingt die Freigabe** | `js/verhandlungstisch.js` (`rundeFrei()`), `api/src/index.ts` (`holePeriode`, `/vote`, `PUT /teams`) | Nach dem Rundenschluss **wartet** der Tisch sichtbar auf die Lehrperson: blauer Hinweis im gemeinsamen Blatt, Knopf „Gesperrt — Sitzung n wartet auf die Freigabe“, kein Bearbeiten, kein Stimmen; der Ressorttausch bleibt möglich. `GET …/vorlagen` liefert `perioden_freigegeben` mit, darum merkt der Tisch die Freigabe über die laufende Abfrage. Und der **Server** hält es ein: eine nicht freigegebene Periode nimmt weder Vorlage noch Stimme, Begründung, Unterschrift noch Abschlussmeldung an (409), und `PUT /teams` sperrt sie nicht |
+| **`min_teilnahme_quote`** | `/vote` in `api/src/index.ts` | Hat die Periode Vorlagen, sperrt der Server, sobald **jedes Ressort eine angenommene Vorlage** hat — und sonst gar nicht (409), egal welche Quote gilt. Die Quote zählt nur noch für die klassische Fläche. Sitzungen aus `admin.html` und `werkzeug/demo-sitzung.js` laufen damit am Tisch ohne Änderung |
+| **Werkzeuge prüft der Server** | `api/src/werkzeuge.json`, `gesperrteWerkzeuge()` | Eine Vorlage, die ein noch geschlossenes Werkzeug anfasst, wird abgelehnt (409, mit Namen des Werkzeugs). Die Zuordnung Stellgröße → Werkzeug steht als Kopie beim Server; `tests/spielkern.test.js` hält sie mit `RESSORTS` gleich. **Wer in `spielkern.js` ein `modul` ändert, zieht die JSON nach — sonst wird der Test rot.** Das ist Absicht |
+| **Beitrittsformular** | `index.html`, `konfig.js` (`datenschutz_hinweis`) | Der feste Satz sagt nur noch, was immer gilt: Zuordnung im Kurs, Löschung ein halbes Jahr nach dem letzten Spielzug (KV-TTL). Wer speichert und wo, trägt die Umgebung in `konfig.js` ein — leer lassen ist erlaubt, aber solange Cloudflare läuft nicht ehrlich |
+
+Dazu: der **Leitstand** unterscheidet jetzt „wartet auf die Freigabe von
+Periode n“ (blau) und „alle Perioden abgeschlossen“ von „hängt fest“. Vorher
+galt ein fertiges Team nach 15 Minuten als hängend — dabei wartete es auf
+dich. Die Kopfzeile sagt, wie viele Teams warten: das ist der Moment zum
+Freischalten.
+
+Und: lehnt der Server den Rundenschluss ab (nicht: erreicht ihn nicht), bleibt
+die Runde am Tisch offen. Vorher zählte der Tisch lokal weiter und zeigte
+eine andere Wahrheit als der Server.
+
+### Bewusst nicht angefasst — und warum
+
+- **`invest_malus` und `co2_reduktion`.** PR
+  [#3](https://github.com/Floderso/planspiel-kassensturz/pull/3) (Engine,
+  Rechtsstand 2026) baut auf diesem Branch auf und schreibt `js/rechner/`
+  und `js/data.js` in weiten Teilen um — `transition.js` allein mit über
+  hundert geänderten Zeilen. Jeder Eingriff dort kollidiert. Außerdem heißt
+  Einbauen: einen Wirkungskanal festlegen (Investitionen laufen über
+  `investment_factor` und `invest_impuls`, Emissionen über `co2_factor` in
+  `berechne.js`) und eine Quelle angeben. Das gehört in den Engine-PR oder
+  dahinter, nicht daneben.
+- **C4 Teamvergleich** (Rest von Stufe 11) hängt an der offenen Entscheidung 6
+  im Plan: dürfen Teams fremde Stände sehen, und wann? Ohne Antwort gibt es
+  nichts zu bauen.
+- **Stufe 2, Live-Abstimmung, KV** — unverändert, siehe Abschnitt 7.
+- **Beitritt am zweiten Gerät:** Wer schon im Team ist und sich an einem
+  neuen Gerät anmeldet, sieht sein Team als „voll“ und kann es nicht wählen,
+  obwohl der Server den Wiedereintritt erlaubt. Beim Durchspielen aufgefallen,
+  nicht behoben — gehört zur Anmeldung (Stufe 2).
+
+### Falle, neu
+
+**Eine Adresse, die sich nur im Fragment unterscheidet, lädt nicht neu.**
+`index.html?session=X` → `index.html?session=X#tisch` löst nur `hashchange`
+aus; Modulzustand und Speicherlesungen bleiben, wie sie waren. Wer nach einer
+Änderung an `localStorage` „neu lädt“, indem er das Fragment setzt, prüft den
+alten Stand. Gilt für Menschen wie für Skripte.
+
+**Die Zahlen zum Vergleich:** 100 Tests (99 grün, 1 todo), TypeScript unter
+`strict` grün.
