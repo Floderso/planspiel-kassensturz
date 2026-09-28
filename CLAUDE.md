@@ -31,7 +31,7 @@ Diese Datei wiederholt das nicht. Sie hält nur fest, was sonst nirgends steht.
 npm start          # statischer Server auf :8000 (werkzeug/entwicklungsserver.js)
                    # sendet no-store — python3 -m http.server tat das nicht,
                    # und veraltete Module haben dadurch Seiten zerschossen (ADR 005)
-npm test           # node --test tests/*.test.js  → aktuell rund 145 Tests
+npm test           # node --test tests/*.test.js  → aktuell 157 Tests (1 todo)
 ```
 
 Unterprojekte haben eigene `package.json`:

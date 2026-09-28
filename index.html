@@ -141,6 +141,8 @@ body{background:var(--filz);color:var(--papier);font-family:Inter,system-ui,sans
 #streit{margin-top:14px;font-size:14px;line-height:1.5;max-width:84ch;
   border-left:4px solid var(--schlecht);padding:9px 12px;background:#F6E9E5}
 #streit[data-ok="true"]{border-left-color:var(--gut);background:#E6F1E9}
+#wartet{margin-top:10px;font-size:14px;line-height:1.5;max-width:84ch;
+  border-left:4px solid #173A66;padding:9px 12px;background:#E2E8EF}
 h3{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--grau);
   margin:18px 0 7px;border-top:1px solid #D5CEBC;padding-top:11px}
 #forderungen .f{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:baseline;
@@ -487,8 +489,9 @@ h3{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gr
        <input type="text" id="name" autocomplete="name" required maxlength="60"></p>
     <p><label for="matrikelnummer">Matrikelnummer</label>
        <input type="text" id="matrikelnummer" inputmode="numeric" autocomplete="off" required></p>
-    <p class="hinweis">Die Matrikelnummer dient nur der Zuordnung im Kurs und bleibt auf dem
-       Server der Hochschule.</p>
+    <p class="hinweis" id="beitritt-daten">Die Matrikelnummer dient nur der Zuordnung im Kurs.
+       Sie wird in der Sitzungsverwaltung gespeichert und ein halbes Jahr nach dem letzten
+       Spielzug gelöscht.</p>
     <p><label for="team">Team</label>
        <select id="team"></select></p>
     <button type="submit" id="beitreten">Team beitreten</button>
@@ -523,6 +526,7 @@ h3{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gr
     <div id="bilanz"></div>
     <p id="bilanz-legende" class="legende"></p>
     <p id="streit"></p>
+    <p id="wartet" role="status" hidden></p>
 
     <h3>Was auf dem Tisch liegt</h3>
     <div id="forderungen"></div>

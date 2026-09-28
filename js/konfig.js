@@ -21,6 +21,7 @@ export const KONFIG = {
   umgebung:  roh.umgebung  ?? 'unbekannt',
   api_basis: (roh.api_basis ?? '').replace(/\/+$/, ''),
   qr_dienst: (roh.qr_dienst ?? '').replace(/\/+$/, ''),
+  datenschutz_hinweis: String(roh.datenschutz_hinweis ?? '').trim(),
   tutor: {
     aktiv: Boolean(roh.tutor?.aktiv) && Boolean(roh.tutor?.basis) && Boolean(roh.tutor?.token),
     basis: (roh.tutor?.basis ?? '').replace(/\/+$/, ''),

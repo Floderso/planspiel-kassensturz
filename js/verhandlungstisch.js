@@ -49,6 +49,7 @@ import { hatBackend, holeMitglieder, trittBei, holeSitzung,
          setzeBegruendung, waehleRessort, holeVorlagen, bringeVorlageEin,
          ziehVorlageZurueck, stimmeUeberVorlage,
          ServerFehler } from './dienste/server.js';
+import { KONFIG } from './konfig.js';
 
 const spiel   = erzeugeSpiel();
 
@@ -103,6 +104,16 @@ const QUORUM_TEXT = {
   einstimmig:  'Einstimmigkeit — keine Ablehnung, Enthaltung erlaubt',
 };
 let quorum = 'einfach';
+
+/**
+ * Bis zu welcher Sitzung die Lehrperson den Kurs freigegeben hat (E4).
+ *
+ * Der Tisch spielt nicht voraus: nach dem Rundenschluss wartet er, bis die
+ * naechste Sitzung frei ist. Bis 28.09.2026 tat er das nicht — ein Team
+ * konnte den Kurs durchspielen, waehrend die Lehrperson noch Ereignisse
+ * setzte. Am eigenen Geraet gibt es keine Lehrperson: dort ist alles frei.
+ */
+let freigegeben = Infinity;
 
 /** Je Ressort der Schaukasten, wie ihn die andern zusammengestellt haben. */
 const schaukaesten = {};
@@ -166,6 +177,7 @@ async function uebernimmTeamstand() {
 function uebernimmKurs(stand) {
   if (!stand) return;
   quorum = stand.quorum ?? quorum;
+  if (Number.isInteger(stand.perioden_freigegeben)) freigegeben = stand.perioden_freigegeben;
   RESSORTS = ressortsIm(kursAus(stand));
   spiel.setzeKurs(kursAus(stand));
 }
@@ -289,14 +301,20 @@ const kannSchliessen = () => offeneRessorts().length === 0;
  * selben Bildschirm, und ihnen die Bedienung zu sperren waere Schikane.
  */
 const meinRessort = bekannt.rolle ?? null;
-const darfBearbeiten = (id) => !sitzungAktiv() || meinRessort === null || meinRessort === id;
+const darfBearbeiten = (id) =>
+  rundeFrei() && (!sitzungAktiv() || meinRessort === null || meinRessort === id);
 function sitzungAktiv() { return Boolean(SITZUNG_ID) && hatBackend(); }
+/** Ist die laufende Sitzung freigegeben? Ohne Meldung an die Lehrperson: immer. */
+const rundeFrei = () => !sitzungAktiv() || !sitzung.team || spiel.runde <= freigegeben;
 
 // ── Beitritt ───────────────────────────────────────────────────────────────
 
 async function zeigeBeitritt() {
   $('#beitritt').hidden = false;
   $('#spielflaeche').hidden = true;
+  // Wo die Matrikelnummer liegt, weiss nur die Umgebung (konfig.js). Der
+  // feste Satz sagt, was immer gilt; der Betreiber ergaenzt den Ort.
+  if (KONFIG.datenschutz_hinweis) $('#beitritt-daten').textContent += ` ${KONFIG.datenschutz_hinweis}`;
 
   if (!ONLINE) {
     $('#beitritt-lage').textContent = SITZUNG_ID
@@ -754,7 +772,7 @@ function zeichneAbstimmung() {
  * sitzen vier Personen davor; dort stimmt jede der Reihe nach ab, und die
  * Flaeche fragt nicht nach, wer gerade tippt.
  */
-const darfStimmen = () => !sitzungAktiv() || Boolean(meinRessort);
+const darfStimmen = () => rundeFrei() && (!sitzungAktiv() || Boolean(meinRessort));
 
 async function gibStimme(ressort, stimme) {
   const v = tisch[ressort]?.vorlage;
@@ -851,6 +869,18 @@ async function holeTischstand() {
   try {
     const antwort = await holeVorlagen(SITZUNG_ID, sitzung.team, spiel.runde - 1);
     quorum = antwort.quorum ?? quorum;
+    // Die Freigabe faehrt in dieser Antwort mit. So merkt ein wartendes Team,
+    // dass die Lehrperson die naechste Sitzung geoeffnet hat.
+    let freigabeNeu = false;
+    if (Number.isInteger(antwort.perioden_freigegeben)
+        && antwort.perioden_freigegeben !== freigegeben) {
+      const vorher = rundeFrei();
+      freigegeben = antwort.perioden_freigegeben;
+      freigabeNeu = true;
+      if (!vorher && rundeFrei()) {
+        zeigeMeldung(`Sitzung ${spiel.runde} ist freigegeben — es geht weiter.`);
+      }
+    }
     if (antwort.locked) {
       // Ein anderes Geraet hat die Runde geschlossen. Nachziehen — mit den
       // Werten, die es gemeldet hat, nicht mit den eigenen.
@@ -872,7 +902,7 @@ async function holeTischstand() {
     }
     uebernimmFremdeWerte();
     const tippt = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
-    if (geaendert && !tippt) zeichneAnsicht();
+    if ((geaendert || freigabeNeu) && !tippt) zeichneAnsicht();
   } catch (_) {
     // Ein verpasster Abgleich ist kein Fehler — der naechste kommt gleich.
   }
@@ -1039,6 +1069,15 @@ function zeichneMitte() {
   $('#streit').innerHTML = teile.join(' ');
   $('#streit').dataset.ok = String(kannSchliessen());
 
+  // Wartet der Tisch auf die Lehrperson, steht das ueber allem anderen.
+  const wartet = !rundeFrei();
+  $('#wartet').hidden = !wartet;
+  if (wartet) {
+    $('#wartet').textContent = `Sitzung ${spiel.runde} ist noch nicht freigegeben. Die Lehrperson `
+      + 'schaltet sie frei, wenn alle Teams so weit sind — bis dahin ruht der Tisch.'
+      + (meinRessort && !spiel.letzteRunde ? ' Inzwischen könnt ihr die Ressorts tauschen.' : '');
+  }
+
   $('#unterschriften').innerHTML = RESSORTS.map(r => {
     const v = tisch[r.id].vorlage;
     const zeichen = v?.stand === 'angenommen' ? '✓'
@@ -1063,15 +1102,18 @@ function zeichneMitte() {
 
   $('#lage').textContent =
     `Sitzung ${spiel.runde} von ${spiel.runden} · ${spiel.jahre.text} · `
-    + `${RESSORTS.length - offeneRessorts().length} von ${RESSORTS.length} Vorlagen angenommen`;
+    + (wartet ? 'wartet auf die Freigabe'
+       : `${RESSORTS.length - offeneRessorts().length} von ${RESSORTS.length} Vorlagen angenommen`);
 
   const knopf = $('#abschluss');
-  knopf.disabled = !kannSchliessen() || spiel.letzteRunde;
-  knopf.textContent = spiel.letzteRunde ? `Sitzung ${spiel.runde} ist die letzte`
+  knopf.disabled = wartet || !kannSchliessen() || spiel.letzteRunde;
+  knopf.textContent = wartet ? `Gesperrt — Sitzung ${spiel.runde} wartet auf die Freigabe`
+    : spiel.letzteRunde ? `Sitzung ${spiel.runde} ist die letzte`
     : kannSchliessen() ? `Sitzung ${spiel.runde} schließen`
     : 'Gesperrt — es fehlen Unterschriften';
-  $('#sperre').textContent = spiel.letzteRunde
-    ? 'Der Kurs endet nach dieser Sitzung.'
+  $('#sperre').textContent = wartet
+    ? `Die Lehrperson hat Sitzung ${spiel.runde} noch nicht freigegeben.`
+    : spiel.letzteRunde ? 'Der Kurs endet nach dieser Sitzung.'
     : kannSchliessen() ? 'Alle Vorlagen sind angenommen.'
     : `Offen: ${o.map(r => r.kurz).join(', ')}.`;
 
@@ -1109,8 +1151,20 @@ async function schliesseSitzung() {
         ? 'An die Lehrperson gemeldet — die Periode ist gesperrt.'
         : `An die Lehrperson gemeldet — ${antwort.votes} Stimme(n) für den Abschluss.`);
     } catch (f) {
-      // Der Tisch laeuft weiter: die Runde ist am Tisch entschieden, auch wenn
-      // die Meldung nicht durchkam. Verschwiegen wird das aber nicht.
+      // Der Server hat ABGELEHNT — eine Vorlage ist doch nicht angenommen,
+      // oder die Periode ist nicht freigegeben. Dann bleibt die Runde offen:
+      // ein Tisch, der lokal weiterzaehlt, waehrend der Server Nein sagt,
+      // zeigte zwei Wahrheiten. Der naechste Abgleich holt den wahren Stand.
+      if (f instanceof ServerFehler && !f.istNetzwerkfehler) {
+        zeigeMeldung(`Die Sitzung ließ sich nicht schließen: ${f.message}`, 'schlecht');
+        knopf.disabled = false;
+        await holeTischstand();
+        zeichneMitte();
+        return;
+      }
+      // NICHT ANGEKOMMEN: der Tisch laeuft weiter. Die Runde ist am Tisch
+      // entschieden, auch wenn die Meldung nicht durchkam. Verschwiegen wird
+      // das aber nicht.
       zeigeMeldung(f instanceof ServerFehler
         ? `Die Meldung an die Lehrperson hat nicht geklappt (${f.message}) `
           + '— am Tisch geht es weiter; sag der Lehrperson Bescheid.'

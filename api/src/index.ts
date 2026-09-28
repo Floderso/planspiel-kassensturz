@@ -25,6 +25,7 @@ import type {
 import { kvSpeicher } from './speicher/kv.js';
 import { KURS_LEBENSDAUER_SEKUNDEN } from './speicher/schnittstelle.js';
 import { pruefeAnzeigename } from './namenspruefung.js';
+import werkzeugTabelle from './werkzeuge.json';
 
 // ── Hilfsfunktionen ───────────────────────────────────────────────────────────
 
@@ -367,12 +368,24 @@ app.put('/api/sessions/:id/teams/:team', async (c) => {
     }
   }
 
+  const vorher     = session.teams[teamName]?.perioden ?? [];
+  const bestand    = session.teams[teamName];
+
+  // Gesperrt werden darf nur, was die Lehrperson freigegeben hat. Sonst
+  // umginge ein einziger PUT die Freigabe, die /vote und die Vorlagen
+  // einhalten — und ein Team saesse in einer Periode, die es noch nicht gibt.
+  const frei = session.perioden_freigegeben ?? 1;
+  const vorzeitig = body.perioden.find(p =>
+    p.locked && p.idx >= frei && !vorher.find(a => a.idx === p.idx)?.locked);
+  if (vorzeitig) {
+    return c.json({ error: `Periode ${vorzeitig.idx + 1} ist noch nicht freigegeben und kann `
+      + 'nicht abgeschlossen werden.' }, 409);
+  }
+
   // Die Oberflaeche schickt ihre Entscheidungen, nicht den Verhandlungsstand.
   // Zeichnungen und Einsprueche gehoeren dem Server — wuerde dieser PUT sie
   // mitersetzen, loeschte jedes Speichern eines Geraets die Unterschriften
   // der drei anderen.
-  const vorher     = session.teams[teamName]?.perioden ?? [];
-  const bestand    = session.teams[teamName];
   session.teams[teamName] = {
     // Was dem TEAM gehoert und nicht der Oberflaeche: Anzeigename und
     // Schaukaesten ueberleben jedes Speichern.
@@ -423,12 +436,34 @@ app.post('/api/sessions/:id/teams/:team/vote', async (c) => {
   const periode = session.teams[teamName].perioden[periode_idx];
   if (!periode) return c.json({ error: 'Ungültiger Perioden-Index' }, 400);
   if (periode.locked) return c.json({ ok: true, locked: true, message: 'Periode bereits gesperrt' });
+  if (periode_idx >= (session.perioden_freigegeben ?? 1)) {
+    return c.json({ error: `Periode ${periode_idx + 1} ist noch nicht freigegeben.` }, 409);
+  }
 
   const teamMembers = session.members.filter(m => m.team === teamName).length;
   const quorum      = Math.max(1, teamMembers);
   periode.votes     = Math.min(quorum, periode.votes + 1);
 
-  if (session.sandbox || periode.votes >= Math.ceil(quorum * session.min_teilnahme_quote)) {
+  // Zwei Flaechen, zwei Regeln.
+  //
+  // Am Verhandlungstisch ist eine Periode entschieden, wenn JEDES Ressort
+  // eine angenommene Vorlage hat. Das steht in den Vorlagen, und der Server
+  // sieht selbst nach — er sperrt dann auf die erste Meldung hin, welche
+  // Teilnahmequote die Sitzung auch traegt. Bis 28.09.2026 blieb eine
+  // Tischsitzung mit der Vorgabe 0,5 auf ewig offen: nur EIN Geraet meldet
+  // den Schluss, der Server wollte aber zwei Stimmen. Umgekehrt sperrt er
+  // NICHT, solange eine Vorlage fehlt — auch nicht bei Quote 0.
+  //
+  // Die klassische Flaeche kennt keine Vorlagen. Fuer sie gilt weiter der
+  // Anteil der Mitglieder, die den Abschluss gemeldet haben.
+  const vorlagen = periode.vorlagen ?? {};
+  if (Object.keys(vorlagen).length > 0) {
+    const offen = session.ressorts.filter(r => vorlagen[r]?.stand !== 'angenommen');
+    if (offen.length > 0) {
+      return c.json({ error: `Noch nicht entschieden — ohne angenommene Vorlage: ${offen.join(', ')}.` }, 409);
+    }
+    periode.locked = true;
+  } else if (session.sandbox || periode.votes >= Math.ceil(quorum * session.min_teilnahme_quote)) {
     periode.locked = true;
   }
 
@@ -897,6 +932,11 @@ app.post('/api/sessions/:id/teams/:team/vorlagen', async (c) => {
   if (!String(begruendung ?? '').trim()) {
     return c.json({ error: 'Eine Vorlage braucht eine Begründung.' }, 422);
   }
+  const zu = gesperrteWerkzeuge(session, periode_idx, aenderungen ?? {});
+  if (zu.length > 0) {
+    return c.json({ error: `In Periode ${periode_idx + 1} noch nicht freigegeben: ${zu.join(', ')}. `
+      + 'Die Vorlage ändert dort etwas.' }, 409);
+  }
 
   periode.vorlagen ??= {};
   const alt = periode.vorlagen[ressort];
@@ -1009,7 +1049,14 @@ app.get('/api/sessions/:id/teams/:team/vorlagen', async (c) => {
   const teamName = decodeURIComponent(c.req.param('team'));
   const idx = Number(c.req.query('periode_idx') ?? 0);
   const periode = session.teams[teamName]?.perioden?.[idx];
-  if (!periode) return c.json({ vorlagen: {}, quorum: session.quorum ?? 'einfach' });
+  // `perioden_freigegeben` faehrt mit, weil der Tisch diesen Aufruf ohnehin
+  // alle vier Sekunden macht: so merkt ein wartendes Team die Freigabe der
+  // naechsten Periode, ohne die ganze Sitzung zu laden.
+  const frei = session.perioden_freigegeben ?? 1;
+  if (!periode) {
+    return c.json({ vorlagen: {}, quorum: session.quorum ?? 'einfach',
+                    ressorts: session.ressorts, locked: false, perioden_freigegeben: frei });
+  }
 
   const mitStand = Object.fromEntries(
     Object.entries(periode.vorlagen ?? {})
@@ -1017,7 +1064,8 @@ app.get('/api/sessions/:id/teams/:team/vorlagen', async (c) => {
   // `locked` sagt den anderen Geraeten, dass ein Geraet die Runde geschlossen
   // hat. Ohne das blieben sie in der alten Runde stehen, bis jemand neu laedt.
   return c.json({ vorlagen: mitStand, quorum: session.quorum ?? 'einfach',
-                  ressorts: session.ressorts, locked: periode.locked });
+                  ressorts: session.ressorts, locked: periode.locked,
+                  perioden_freigegeben: frei });
 });
 
 // ── Der Verhandlungstisch: namentliche Unterschriften ───────────────────────
@@ -1047,6 +1095,14 @@ function holePeriode(session: SessionData, teamName: string, idx: unknown) {
   if (idx >= session.perioden_anzahl) {
     return { fehler: 'Periode liegt hinter dem Ende des Kurses', status: 400 as const };
   }
+  // Die Lehrperson gibt die Perioden nacheinander frei (E4). Bis 28.09.2026
+  // hielt das nur die klassische Flaeche ein; der Tisch spielte voraus, und
+  // der Server liess ihn. Jetzt nimmt eine Periode, die nicht freigegeben
+  // ist, weder Vorlage noch Stimme noch Begruendung an.
+  if (idx >= (session.perioden_freigegeben ?? 1)) {
+    return { fehler: `Periode ${idx + 1} ist noch nicht freigegeben — die Lehrperson schaltet sie frei.`,
+             status: 409 as const };
+  }
 
   session.teams[teamName] ??= { perioden: [], last_updated: new Date().toISOString() };
   const team = session.teams[teamName];
@@ -1055,6 +1111,39 @@ function holePeriode(session: SessionData, teamName: string, idx: unknown) {
     zeichnungen: {}, einsprueche: {},
   };
   return { periode: team.perioden[idx] };
+}
+
+/**
+ * Welche Werkzeuge eine Vorlage anfasst, die in dieser Periode noch zu sind —
+ * als Namen fuer die Fehlermeldung. Leer, wenn alles erlaubt ist.
+ *
+ * Die Zuordnung Stellgroesse → Werkzeug steht in werkzeuge.json und ist
+ * dieselbe wie in js/spielkern.js (RESSORTS[].stell[].modul);
+ * tests/spielkern.test.js haelt beide gleich. Bis 28.09.2026 pruefte nur die
+ * Oberflaeche — ein Geraet mit veraltetem Kurs oder ein Skript kam vorbei.
+ * Die klassische Flaeche schreibt Ressortnamen ("finanzen") in dasselbe
+ * Feld; die oeffnen alle Werkzeuge des Ressorts, genau wie am Tisch.
+ */
+function gesperrteWerkzeuge(session: SessionData, idx: number,
+                            aenderungen: Record<string, unknown>): string[] {
+  const liste = session.perioden_werkzeuge?.[String(idx)];
+  if (!Array.isArray(liste)) return [];          // kein Eintrag: alles offen
+  const tabelle  = werkzeugTabelle.werkzeuge as Record<string, { name: string; ressort: string; stell: string[] }>;
+  const klassisch = werkzeugTabelle.klassisch as Record<string, string>;
+  const offen = new Set<string>();
+  for (const eintrag of liste) {
+    if (eintrag in tabelle) offen.add(eintrag);
+    const ressort = klassisch[eintrag];
+    if (ressort) {
+      for (const [id, w] of Object.entries(tabelle)) if (w.ressort === ressort) offen.add(id);
+    }
+  }
+  const zu = new Set<string>();
+  for (const key of Object.keys(aenderungen)) {
+    const treffer = Object.entries(tabelle).find(([, w]) => w.stell.includes(key));
+    if (treffer && !offen.has(treffer[0])) zu.add(treffer[1].name);
+  }
+  return [...zu];
 }
 
 /**
@@ -1341,9 +1430,11 @@ app.put('/api/sessions/:id/schocks', async (c) => {
  * Hat schon jemand Periode `p` gesehen?
  *
  * Ja, wenn sie freigegeben ist — ODER wenn ein Team die Periode davor
- * abgeschlossen hat. Das zweite ist noetig, weil der Tisch die Freigabe
- * nicht erzwingt: ein Team, das vorauseilt, sitzt schon in Periode `p`,
- * waehrend die Lehrperson noch plant.
+ * abgeschlossen hat. Das zweite bleibt noetig, obwohl der Tisch seit dem
+ * 28.09.2026 auf die Freigabe wartet: wer die Periode davor schliesst, sieht
+ * sofort die Fortschreibung in `p` — samt Ereignis — als "ohne Beschluss".
+ * Ein Ereignis, das danach noch kaeme, aenderte Zahlen, die auf dem Tisch
+ * lagen.
  */
 function periodeGesehen(session: SessionData, p: number): boolean {
   if (p < (session.perioden_freigegeben ?? 1)) return true;

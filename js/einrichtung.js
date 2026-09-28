@@ -158,9 +158,10 @@ async function lege(ev) {
       // "alles offen", und das braucht keinen Eintrag.
       perioden_werkzeuge: Object.values(ab).some(x => x > 1) ? werkzeugeAusAb(ab, n) : undefined,
       // Der Tisch meldet den Rundenschluss erst, wenn jede Vorlage angenommen
-      // ist — DAS ist die Entscheidung des Teams. Eine zweite Stimmenzaehlung
-      // auf dem Server (Anteil der Mitglieder) wuerde die Periode nie sperren,
-      // weil nur ein Geraet den Schluss meldet.
+      // ist — DAS ist die Entscheidung des Teams, und der Server prueft sie
+      // seit 28.09.2026 selbst an den Vorlagen. Die Teilnahmequote zaehlt nur
+      // noch fuer die klassische Flaeche; hier bleibt sie 0, damit auch eine
+      // Sitzung ohne Vorlagen (Notfall, Skript) nicht an zwei Stimmen haengt.
       min_teilnahme_quote: 0,
       sandbox: false,
     });

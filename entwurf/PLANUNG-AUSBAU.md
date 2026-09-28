@@ -925,7 +925,7 @@ Jede Stufe ist für sich benutzbar — keine lässt den Kurs unbespielbar zurüc
 | **8** | C1/C2 ✓ **gebaut 23.09.** als `auswertung.html` | Nach der ersten durchgespielten Runde. |
 | **9** | C3/B1b Baukasten und Schaukasten ✓ **gebaut 23.09.** | Setzt C1/C2 voraus. |
 | **10** | D1/D2 Präsentation ✓ **gebaut 23.09.** als `buehne.html` | Setzt die Schaukästen voraus. |
-| **11** | E5 Ereignisse, C4 Teamvergleich | Kür. |
+| **11** | E5 Ereignisse ✓ **gebaut 24.09.** in `leitung.html` · C4 Teamvergleich offen — hängt an Entscheidung 6 (Sichtbarkeit fremder Stände) | Kür. |
 
 **Stufe 6 ist weiter vorn als in der ersten Fassung.** Notfallwerkzeuge sind
 kein Komfort: der erste Kurs, in dem jemand sein Kennwort vergisst und nicht
