@@ -30,7 +30,7 @@ const DEMO_SESSION = {
   ],
   lernziele: [
     { kpi: 'schuldenquote', operator: '<=', wert: 65, label: 'Schuldenquote ≤ 65 %' },
-    { kpi: 'saldo_bip_pct', operator: '>=', wert: -0.35, label: 'Schuldenbremse eingehalten' },
+    { kpi: 'struktureller_saldo_pct', operator: '>=', wert: -0.70, label: 'Schuldenbremse eingehalten (2025: strukturell −0,70 %)' },
     { kpi: 'gini', operator: '<=', wert: 0.285, label: 'Gini ≤ 0,285' }
   ],
   teams: {

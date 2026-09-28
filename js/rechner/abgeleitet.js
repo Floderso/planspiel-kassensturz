@@ -10,24 +10,30 @@
 //   ps_t          Primärsaldo (% BIP) = Saldo + Zinslast
 //   ps_star       Primärsaldo-Ziel für Schuldenstabilisierung (Domar-Bedingung)
 //   r_minus_g     r − g (Zinssatz minus BIP-Wachstum)
-//   s2            Blanchard S2-Lücke (ps_t − ps_star); negativ = nicht tragfähig
+//   s2            Primärsaldo-Lücke (ps_t − ps_star); negativ = nicht tragfähig. KEIN S2 der
+//                 EU-Kommission: das schließt die Alterungskosten über einen unendlichen
+//                 Horizont ein, dies hier nicht (PRUEFUNG-2.md IV). Feldname historisch.
 //   ggi           Generationengerechtigkeit-Index [0,1]: 0 = optimal
 //   ggi_schuld    GGI-Schulden-Teilindex
 //   ggi_co2       GGI-Klima-Teilindex
-//   co2_budget_rest  Verbleibendes DE 1,5°C-Budget (Mt CO₂e)
-//   mu_hank       HANK-Multiplikator der letzten Periode (aus prevResult)
+//   co2_budget_rest  Verbleibendes DE-Budget für 1,7 °C (Mt)
+//   mu_hank       Konsummultiplikator der letzten Periode (MPC-gewichtet, transition.js)
 //
 // Quellen:
 //   Domar (1944) Rev.Econ.Stat. · Blanchard (2019) AEA Presidential Address
 //   IPCC AR6 WG3 Ch.3 · SRU (2022) Wege zur ressourcenschonenden Treibhausgasneutralität
 //   IMF Fiscal Monitor 2024 · SVR Jahresgutachten 2024/25
 
-import { ZINS_SCHULDEN, BIP_WACHSTUM_NOMINAL, hankMultiplikator } from './transition.js';
+import { ZINS_SCHULDEN, BIP_WACHSTUM_NOMINAL, konsumMultiplikator } from './transition.js';
 
-// Verbleibendes deutsches CO₂-Budget für 1,5°C-Pfad ab 2025 (Mt CO₂e)
-// Basis: IPCC AR6 globales Budget 400 Gt CO₂ · DE-Anteil ~1,65 % (Bevölkerungsgewicht)
-// Quelle: SRU (2022) Wege zur Treibhausgasneutralität · IPCC AR6 SPM C.1.2
-const CO2_BUDGET_DE = 6600; // Mt CO₂e
+// Verbleibendes deutsches CO₂-Budget für 1,7 °C ab Anfang 2025 (Mt)
+// Globales Restbudget 525 Gt CO₂ für 1,7 °C (50 %), Forster et al. (2026) Indicators of
+// Global Climate Change 2025, ESSD 18, 3889 · deutscher Bevölkerungsanteil 1,025 %
+// (83,6 Mio. von 8,16 Mrd., UN WPP 2024) → 5.380 Mt. Für 1,5 °C blieben nur 130 Gt
+// (DE ~1,3 Gt, in rund zwei Jahren verbraucht, in jeder Politik — unterscheidet nicht).
+// Vereinfachung: Budget in CO₂, verbraucht wird mit allen Treibhausgasen (CO₂e).
+// Vorher 6.600 Mt für 1,5 °C nach IPCC AR6 — überholt (PRUEFUNG-2.md I.5).
+const CO2_BUDGET_DE = 5380; // Mt
 
 // GGI-Schuldenkomponente: Skala von der Maastricht-Grenze bis zum kritischen Bereich.
 // Vorher war die Referenz allein 60 % — weil die Quote schon bei 63,5 % startet,
@@ -57,7 +63,7 @@ function berechneAbgeleitet(result, zustand) {
   // ps* = (r − g) × D_t      — D_t steht schon in Prozent
   const ps_star = r_minus_g * D_t;
 
-  // ── S2-Tragfähigkeitslücke (Blanchard-Lücke) ─────────────────────────
+  // ── Primärsaldo-Lücke (Domar; nicht das S2 der EU-Kommission) ─────────
   // S2 > 0: tragfähig; S2 < 0: fiskalische Anpassung erforderlich
   const s2 = ps_t - ps_star;
 
@@ -72,7 +78,7 @@ function berechneAbgeleitet(result, zustand) {
   const co2_budget_rest = Math.max(0, CO2_BUDGET_DE - zustand.co2_kumulat);
 
   // ── HANK-Multiplikator ────────────────────────────────────────────────
-  const mu_hank = hankMultiplikator(result.hh_delta);
+  const mu_hank = konsumMultiplikator(result.hh_delta);   // Feldname für die Anzeige beibehalten
 
   return {
     D_t,

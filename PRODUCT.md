@@ -96,10 +96,12 @@ Legislaturlogik und Quorum. Teamvergleich und Debriefing.
   gewichtigste Defekt im Produkt.
 - Netzwerk- und Abstimmungsfehler werden verschluckt; kein Verbindungsstand.
 - Der Periodenabschluss ist unbestaetigt und unumkehrbar.
-- Die Gini-Schwelle (0,285) ist aus Realweltzahlen geliehen, waehrend die
-  Modellbasislinie bei 0,3766 liegt und die spielbare Spanne 0,019 betraegt.
-  Ob das Modell hier genug Bewegung zulaesst, ist eine **offene Modellfrage**,
-  keine Designfrage.
+- **Erledigt am 24.09.2026:** Die Gini-Schwelle (0,285) passte nicht zur
+  Modellbasislinie 0,3766. Gini und Palma rechnen jetzt auf
+  Aequivalenzeinkommen wie EU-SILC; die Basislinie liegt bei 0,310 (amtlich
+  0,295). Mit den Reglern des Tischs reicht die Spanne von etwa 0,17 bis
+  0,33 — die Schwelle ist erreichbar, aber nicht geschenkt
+  (`entwurf/PRUEFUNG.md` B3).
 - `localStorage` liegt noch verstreut (Architektur-Schritt 2, als `todo`
   markiert).
 

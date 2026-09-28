@@ -6,7 +6,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { berechneGini, berechnePalma, berechneMedianGewichtet } from '../js/rechner/verteilung.js';
+import { aequivalenzEinkommen, berechneGini, berechnePalma, berechneMedianGewichtet } from '../js/rechner/verteilung.js';
 import { DEZILE } from '../js/data.js';
 
 const N = DEZILE.length;
@@ -59,11 +59,9 @@ test('Palma: Gleichverteilung ergibt 0,25, Spreizung erhöht die Ratio', () => {
 });
 
 test('Palma liegt für Deutschland in international vergleichbarer Größenordnung', () => {
-  // Amtlich für DE: ~1,2 (verfügbare Äquivalenzeinkommen). Das Modell rechnet
-  // mit Haushaltseinkommen ohne Bedarfsgewichtung und liegt daher höher —
-  // aber es muss in der Nähe bleiben, nicht beim Vierfachen landen.
-  // Sobald das Äquivalenzgewicht genutzt wird (PRUEFUNG.md B3), sollte der
-  // Wert Richtung 1,2 wandern und dieser Korridor enger werden.
+  // Grober Korridor für die Formel allein, auf Haushaltseinkommen: Sie darf
+  // nicht beim Vierfachen landen (PRUEFUNG.md A3). Den engen Abgleich mit dem
+  // amtlichen Wert (~1,2, Äquivalenzeinkommen) macht kalibrierung.test.js.
   const netto_sq = DEZILE.map(d => d.brutto * 0.65);
   const p = berechnePalma(netto_sq);
   assert.ok(p > 0.8 && p < 2.5, `Palma ${p.toFixed(2)} außerhalb des plausiblen Bereichs 0,8–2,5`);
@@ -86,4 +84,24 @@ test('Datenbasis: 12 Dezil-Zellen, ~41 Mio. Haushalte (Destatis Mikrozensus)', (
   assert.ok(Math.abs(top - 4.1) < 0.2, `Top-Dezil ${top} Mio. HH`);
   // Bruttoeinkommen müssen streng aufsteigend sortiert sein
   for (let i = 1; i < N; i++) assert.ok(DEZILE[i].brutto > DEZILE[i - 1].brutto);
+});
+
+test('Äquivalenzeinkommen teilt das Haushaltsnetto durch das Bedarfsgewicht', () => {
+  const netto = DEZILE.map(d => d.brutto * 0.65);
+  const aeq = aequivalenzEinkommen(netto, DEZILE);
+  assert.equal(aeq.length, N);
+  aeq.forEach((v, i) => assert.ok(Math.abs(v * DEZILE[i].gewicht - netto[i]) < 1e-9));
+});
+
+test('Bedarfsgewichtung senkt den Gini, wenn große Haushalte oben stehen', () => {
+  // Die Gewichte steigen mit dem Dezil (1,3 → 2,0). Dann ist das Äquivalenz-
+  // einkommen gleichmäßiger verteilt als das Haushaltsnetto — genau der
+  // Effekt, der den Gini von 0,377 auf ~0,30 bringt (PRUEFUNG.md B3).
+  const netto = DEZILE.map(d => d.brutto * 0.65);
+  assert.ok(berechneGini(aequivalenzEinkommen(netto, DEZILE), DEZILE) < berechneGini(netto, DEZILE));
+});
+
+test('Gleiche Äquivalenzeinkommen ergeben Gini 0, auch bei ungleichem Haushaltsnetto', () => {
+  const netto = DEZILE.map(d => 20000 * d.gewicht);
+  assert.ok(berechneGini(aequivalenzEinkommen(netto, DEZILE), DEZILE) < 1e-9);
 });

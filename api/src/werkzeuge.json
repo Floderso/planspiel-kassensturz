@@ -5,7 +5,7 @@
     "mwst":      { "name": "Mehrwertsteuer",         "ressort": "fin", "stell": ["mwst"] },
     "verm":      { "name": "Vermögen & Erbschaft",   "ressort": "fin", "stell": ["erb"] },
     "kst":       { "name": "Unternehmen & Gewerbe",  "ressort": "wir", "stell": ["kst", "gewst"] },
-    "sv":        { "name": "Sozialversicherung",     "ressort": "soz", "stell": ["rv", "kv"] },
+    "sv":        { "name": "Sozialversicherung",     "ressort": "soz", "stell": ["rv", "kv", "rentenniveau"] },
     "transfers": { "name": "Transfers & Sozialstaat","ressort": "soz", "stell": ["bg", "kg"] },
     "co2":       { "name": "CO₂-Steuer & Klimageld", "ressort": "umw", "stell": ["co2", "klimageld"] }
   },

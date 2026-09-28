@@ -92,8 +92,15 @@ Haushaltsfunktionen.
 
 | Funktion | Ausgabe | Formel |
 |----------|---------|--------|
+| `aequivalenzEinkommen(netto, dezile)` | Äquivalenzeinkommen je Dezil in € | Netto / Bedarfsgewicht (`DEZILE[i].gewicht`, neue OECD-Skala) |
 | `berechneGini(nettoDezile)` | Gini-Koeffizient [0, 1] | Trapezregel über Lorenz-Kurve, gewichtet nach Haushaltszahl |
-| `berechnePalma(nettoDezile)` | Palma-Ratio | Ø Top-10 % / Ø Bottom-40 % |
+| `berechnePalma(nettoDezile)` | Palma-Ratio | Einkommensanteil Top-10 % / Anteil Bottom-40 % |
+
+`berechne()` übergibt Gini und Palma das **Äquivalenzeinkommen**, nicht das
+Haushaltsnetto — wie EU-SILC. Ohne Bedarfsgewichtung stehen große Haushalte
+oben und kleine unten, und der Gini fiel mit 0,377 zu hoch aus. Mit ihr liegt
+der Status quo bei 0,310 (amtlich 0,295), der Palma bei 1,30 (Lehrbuchwert
+~1,2). Median und Armutsquote rechnen weiter auf dem Haushaltsnetto.
 | `berechneMedianGewichtet(nettoDezile)` | Medianeinkommen in € | Kumulierte Haushaltsgewichte bis 50 % |
 | `berechneDezilDelta(params, periodeZustand)` | `{delta[], netto[]}` | Δ je Dezil vs. Status quo |
 | `berechneNettoSQ(dezil)` | Nettoeinkommen SQ in € | Brutto − ESt(SQ) − SV(SQ) − MwSt(SQ) + Transfers(SQ) |
@@ -126,6 +133,7 @@ berechne(params, periodeZustand) → ErgebnisObjekt
 | `rv` | % | Rentenbeitragssatz (AN+AG gesamt) |
 | `kv` | % | GKV-Beitragssatz |
 | `bbg` | € | SV-Beitragsbemessungsgrenze |
+| `rentenniveau` | % | Sicherungsniveau vor Steuern, Standard 48 (Haltelinie Rentenpaket 2025). Regler am Tisch im Sozialressort, 40–53 % |
 | `invest_impuls` | Mrd. €/a | Öffentlicher Investitionsimpuls |
 
 **`periodeZustand`** (Makro-Zustand — aus vorheriger Periode):
@@ -174,11 +182,53 @@ Iteriert alle Perioden der Simulation. Gibt ein Array zurück (ein Eintrag je Pe
 ```
 
 **Übergangsmechanismen zwischen Perioden:**
-- **BIP-Wachstum:** 1,5 % nominal p.a. (Bundesbank-Prognose), skaliert mit Klimaschaden
+- **BIP-Wachstum:** 2,5 % nominal p.a. (`BIP_WACHSTUM_NOMINAL_JAHR` in `data.js`)
+- **Nominale Fortschreibung:** `berechne()` rechnet in Größen von 2025 und schreibt dann fort:
+  Einnahmen mit dem tatsächlichen BIP der Periode (Aufkommenselastizität 1, Tarif als indexiert
+  angenommen; eine Rezession senkt die Einnahmen), Ausgaben außer Zinsen mit dem nominalen
+  Trend `trend_faktor` (Preise und Löhne; eine Rezession senkt sie nicht). Werte je Haushalt
+  bleiben in Preisen von 2025. Bis 24.09.2026 blieben ESt, MwSt, Beiträge und Ausgaben 20 Jahre
+  nominal eingefroren (`entwurf/PRUEFUNG-2.md` I.2)
 - **Schuldenentwicklung:** `D_{t+1} = D_t − Saldo/BIP` (Domar-Mechanismus)
-- **Klimaschaden (DICE):** Temperaturanstieg → prozentualer BIP-Verlust (`d₂ = 0,00267`, Nordhaus 2023)
-- **HANK-Multiplikator:** Fiskalmultiplikator gewichtet nach dezil-spezifischen MPCs (Kaplan/Moll/Violante 2018)
-- **Demografie:** Renten-Faktor aus `DEMOGRAFIE_KURVE` erhöht Sozialausgaben automatisch
+- **Rechtsstand 2026, Ausgaben:** Verteidigungsanstieg nach NATO-Plan und Sondervermögen
+  Infrastruktur, gemittelt über die Jahre der Periode (`verteidigungQuote`, `sondervermoegen` in
+  `data.js`). Schuldenbremse 2025: `struktureller_saldo_pct`, `schuldenbremse_ok`,
+  `schuldenbremse_luecke`
+- **Tarif:** § 32a EStG 2026, Zonenbreiten fest. Jeder Regler wirkt nur auf seine Zone:
+  Freibetrag verschiebt den Tarif, Eingangssatz die Progressionszone, Spitzensatz nur ab der
+  Grenze, Grenze nur den Beginn der obersten Zone (Zone 4 fest 42 %, gedeckelt auf die Spitze).
+  D10c rechnet mit Pareto-Rand (α = 1,5), weil das Durchschnittseinkommen des obersten Prozents
+  unter der Grenze liegt (`estHaushalt(…, pareto_alpha)`)
+- **Haushalte = Staat:** Kindergeld (17 Mio. Kinder, `KINDER_JE_HH`), Bürgergeld-Regelbedarf
+  (`BUERGERGELD_QUOTE`) und CO₂-Last (`CO2_GEWICHT`, Summe = Bruttoaufkommen) kommen aus einer Quelle
+  in `data.js`; der Staat bucht die Summe über die Haushalte. Unterkunft und Mehrbedarfe
+  (`grundsicherung_fix`, 10,8 Mrd.) fest, ebenfalls bei den Haushalten. KSt/GewSt treffen
+  Haushalte je zur Hälfte nach Arbeits- und Kapitaleinkommen, ErbSt/VermSt nach Vermögen,
+  Zucman D10c (`kapitalUndVermoegensteuern()`, Quelle `inzidenz`). `tests/buchung.test.js`
+- **Emissionen:** Basispfad `emissionsBasis(jahr)` in `data.js` (alle Treibhausgase, 649 Mt 2025,
+  −63 % 2030 / −80 % 2040 ggü. 1990 nach UBA-Projektionsbericht 2025). Der nationale CO₂-Preis wirkt
+  auf den bepreisten Anteil (327 von 649 Mt). `co2_kumulat` summiert Jahr für Jahr entlang des Pfads;
+  Budget `CO2_BUDGET_DE` = 5.380 Mt (deutscher Bevölkerungsanteil am 1,7-°C-Budget, IGCC 2025)
+- **Kein Klimaschaden aus deutschen Emissionen:** Bis 24.09.2026 senkte ein DICE-Term das BIP mit einer
+  1.100-fach zu hohen Klimasensitivität; ein hoher CO₂-Preis erzeugte so einen nationalen
+  Wachstumsgewinn (`entwurf/PRUEFUNG-2.md` I.5)
+- **Nachfrage (Strom, symmetrisch):** `berechne()` Abschnitt 10a — Einkommensänderung der Haushalte
+  gegenüber dem Status quo derselben Periode × Grenzkonsumneigung je Dezil (`MPC_DEZIL`, 0,65 → 0,15)
+  × 0,6/0,48 (Gechert 2015), plus Investitionsimpuls × 1,0. Die Lücke wirkt auf BIP und Einnahmen
+  der Periode und wird nicht fortgeschrieben; Konsolidierung kostet Wachstum
+- **Angebotsseite:** privates Kapital nähert sich dem Niveau 1 + 0,35 × (Investitionsfaktor − 1)
+  mit 7 % p. a.; Arbeit wirkt sofort mit 0,65 × (Arbeitsangebot − 1). Niveaus, keine Wachstumsraten
+- **Öffentliches Kapital:** Zusatzinvestitionen bauen `oeff_kapital` auf (Abschreibung 4 % p. a.),
+  Potenzial × (1 + 0,08 × K / 1.600 Mrd.) (Bom/Ligthart 2014). Ersetzt den kumulierenden
+  Niveaueffekt 1 + I·n·μ/BIP (`entwurf/PRUEFUNG-2.md` I.3)
+- **Demografie:** Renten-Faktor aus `DEMOGRAFIE_KURVE` erhöht die Rentenausgaben automatisch
+- **Sozialversicherung:** Beitragssätze wirken nur auf die Einnahmen. Die Rentenzahlungen
+  folgen dem Rentenniveau; jedes Dezil trägt einen Rentenanteil (`DEZILE[i].rente_anteil`,
+  Näherung, Summe ~362 Mrd. €), und eine Niveauänderung kommt dort in genau der Höhe an,
+  die der Staat bucht (`tests/rentenniveau.test.js`). KV, AL und PV bleiben auf Status quo.
+  Ein Satz unter Bedarf wird zur Lücke im Gesamtsaldo. Bis 24.09.2026
+  skalierten die Ausgaben mit dem Beitragssatz — eine Beitragssenkung verbesserte
+  Saldo und alle Dezile zugleich (`entwurf/PRUEFUNG-2.md` I.1, `tests/dominanz.test.js`)
 
 ---
 
@@ -200,7 +250,7 @@ berechneAbgeleitet(result, zustand) → AbgeleiteteIndikatoren
 | `s2` | Tragfähigkeitslücke: `ps_t − ps_star` (> 0 = tragfähig) | IMF Fiscal Monitor 2024 |
 | `ggi` | Generationengerechtigkeit-Index [0, 1]: 50 % Schulden + 50 % CO₂ | Eigene Konstruktion |
 | `co2_budget_rest` | Verbleibendes DE-CO₂-Budget für 1,5°C (Mt) | IPCC AR6, SRU (2022) |
-| `mu_hank` | HANK-Fiskalmultiplikator der Periode | Kaplan/Moll/Violante (2018) AER |
+| `mu_hank` | Konsummultiplikator der Periode (MPC-gewichtet; Name historisch) | Gechert (2015) · Jappelli/Pistaferri (2014) |
 
 ---
 
@@ -218,10 +268,10 @@ Rentenreform-Steuerung vorgesehen.
 |---|---|
 | Einkommensteuer-Tarif | § 32a EStG 2025 |
 | Arbeitsangebots-Elastizität | Saez/Chetty/Gruber · ifo Schnelldienst 01/2025 |
-| HANK-Multiplikator | Kaplan/Moll/Violante (2018) AER |
+| Multiplikatoren, öffentliches Kapital | Gechert (2015) · Jappelli/Pistaferri (2014) · Bom/Ligthart (2014) |
 | Fiskalmultiplikator Investitionen | Gechert/Heimberger (2022) NIER |
 | Domar-Schuldbedingung | Domar (1944) · Blanchard (2019) AEA Presidential Address |
-| DICE-Klimaschaden | Nordhaus (2023) PNAS; kalibriert mit IPCC AR6 |
+| Emissionspfad, CO₂-Budget | UBA Projektionsbericht 2025 · Forster et al. (2026) IGCC 2025, ESSD |
 | Dezil-Datenbasis | SOEP v40 · DINA-DE · DIW Vermögensbericht 2024 |
 | CO₂-Emissionsreaktion | EWI/DIW BEHG-Evaluation 2023 · Edenhofer/PIK 2024 |
 | Demografie | Destatis 14. Bev.-Vorausberechnung 2021 · DRV Rentenbericht 2024 |

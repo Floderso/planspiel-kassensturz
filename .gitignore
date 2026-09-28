@@ -22,3 +22,10 @@ makro-planspiel/ui/fonts/*.woff2
 # Aufnahmen aus den Gestaltungspruefungen: 9 MB Bilder, jederzeit neu
 # erzeugbar. Der Text daneben (critique/, surfaces/, design.json) bleibt.
 .impeccable/review/
+
+# LaTeX-Zwischenstände der Modelldokumentation (das PDF wird mit abgelegt)
+docs/modell/*.aux
+docs/modell/*.fdb_latexmk
+docs/modell/*.fls
+docs/modell/*.out
+docs/modell/*.toc

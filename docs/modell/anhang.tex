@@ -1,0 +1,24 @@
+% SPDX-License-Identifier: CC-BY-4.0
+% Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
+% Anhang — Daten, Elastizitäten, Quellen (alle Tabellen erzeugt von messung.js)
+
+\section{Haushaltsdaten}
+\begin{table}[!htb]
+\centering\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\input{generiert/daten_dezile.tex}
+\caption{Die zwölf Haushaltstypen (\datei{DEZILE} und Profile in \datei{data.js}).
+$B_i$ Bruttoeinkommen, $\kappa_i$ Kapitalanteil, $c_i$ durchschnittliche Konsumquote,
+$w_i$ Bedarfsgewicht (neue OECD-Skala), $V_i$ Vermögen, $N_i$ Haushalte,
+$\rho_i$ Rentenanteil am Einkommen (Näherung), $m_i$ Grenzkonsumneigung (Näherung),
+$k_i$ Kindergeldkinder je Haushalt, $q_i$ Bürgergeld-Regelsatzjahre je Haushalt,
+$\ell_i$ \COz-Last je Haushalt im Status quo (55\,\euro{}/t, vollständig überwälzt).}
+\label{tab:dezile}
+\end{table}
+
+\section{Elastizitäten}
+{\small\sloppy\input{generiert/elastizitaeten.tex}}
+
+\section{Formelquellen}
+Die Objekte \datei{FORMEL\_QUELLEN\_*} der Engine, unverändert abgedruckt.
+{\small\sloppy\input{generiert/quellen.tex}}

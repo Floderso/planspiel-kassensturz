@@ -1,0 +1,156 @@
+% SPDX-License-Identifier: CC-BY-4.0
+% Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
+%
+% Modelldokumentation der Rechenengine (js/rechner/, js/data.js)
+% Übersetzen:  cd docs/modell && node messung.js && latexmk -pdf modell.tex
+% Alle Messwerte stammen aus generiert/ und werden von messung.js erzeugt.
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{textcomp}
+\usepackage{newunicodechar}
+% Zeichen aus den Quellenobjekten der Engine (Anhang), für pdfLaTeX übersetzt
+\newunicodechar{·}{\textperiodcentered}
+\newunicodechar{×}{\ensuremath{\times}}
+\newunicodechar{−}{\ensuremath{-}}
+\newunicodechar{Δ}{\ensuremath{\Delta}}
+\newunicodechar{ε}{\ensuremath{\varepsilon}}
+\newunicodechar{α}{\ensuremath{\alpha}}
+\newunicodechar{Σ}{\ensuremath{\Sigma}}
+\newunicodechar{∑}{\ensuremath{\sum}}
+\newunicodechar{∫}{\ensuremath{\int}}
+\newunicodechar{÷}{\ensuremath{\div}}
+\newunicodechar{½}{\ensuremath{\tfrac12}}
+\newunicodechar{²}{\ensuremath{^2}}
+\newunicodechar{₀}{\ensuremath{_0}}
+\newunicodechar{₂}{\ensuremath{_2}}
+\newunicodechar{ₘ}{\ensuremath{_m}}
+\newunicodechar{ᵢ}{\ensuremath{_i}}
+\newunicodechar{ˣ}{\ensuremath{^x}}
+\newunicodechar{≤}{\ensuremath{\leq}}
+\newunicodechar{≥}{\ensuremath{\geq}}
+\newunicodechar{≈}{\ensuremath{\approx}}
+\newunicodechar{→}{\ensuremath{\rightarrow}}
+\newcommand{\formelschrift}{\ttfamily\footnotesize}
+\usepackage[ngerman]{babel}
+\usepackage[autostyle]{csquotes}
+\usepackage{microtype}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\numberwithin{equation}{section}
+\usepackage{booktabs,longtable,tabularx,array,multirow}
+\usepackage{graphicx}
+\usepackage{eurosym}
+\usepackage[table]{xcolor}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,calc,fit,backgrounds,shapes.geometric}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepgfplotslibrary{groupplots}
+\usepackage{caption}
+\usepackage[hidelinks]{hyperref}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\setlist{itemsep=0.2em,topsep=0.3em}
+
+% Farben: positiv (Saldo verbessert / Größe steigt) und negativ, farbfehlsichtig unterscheidbar
+\definecolor{pos}{HTML}{1F6FB2}
+\definecolor{neg}{HTML}{C4501A}
+\definecolor{grau}{HTML}{6B6B6B}
+\definecolor{hell}{HTML}{EEF2F6}
+
+\newcommand{\COz}{CO\textsubscript{2}}
+
+% Wirkungsgraphen (Teil III): Knoten und gemessene Kanten, erzeugt von messung.js
+\tikzset{
+  stell/.style={draw=grau, rounded corners=2pt, fill=hell, align=center, font=\small,
+                text width=33mm, inner sep=3pt},
+  kanal/.style={draw=grau, rounded corners=2pt, fill=white, align=left, font=\small,
+                text width=52mm, minimum height=6mm, anchor=west},
+  ziel/.style={draw=black, thick, rounded corners=2pt, fill=white, align=center, font=\small,
+               text width=30mm, minimum height=9mm},
+  wlabel/.style={font=\scriptsize, fill=white, inner sep=0.8pt},
+}
+% Kante: waagerechter Ansatz an der Stellgröße (Versatz #6 cm) mit der Zahl, dann zum Kanal
+\newcommand{\wkante}[6]{%
+  \draw[-{Stealth[length=2.2mm]}, color=#3, line width=#4pt, draw opacity=0.8]
+    ($(L-#1.east)+(0,#6)$) -- node[wlabel, text=#3]{#5} ++(1.25,0) -- (K-#2.west);}
+\newcommand{\Mrd}{Mrd.\,\euro{}}
+\newcommand{\datei}[1]{\texttt{#1}}
+\newcommand{\Pp}{Pp.}
+
+% Merksätze am Ende eines Abschnitts
+\newenvironment{merksatz}{\par\medskip\noindent\begin{tabular}{@{}p{\linewidth}@{}}\toprule\textbf{Kern.}\ }{\\\bottomrule\end{tabular}\par\medskip}
+
+% Einzelne Messwerte: \wert{bereich}{stellgröße}{feld}, abgelegt von messung.js
+\newcommand{\wertdef}[4]{\expandafter\def\csname wert-#1-#2-#3\endcsname{#4}}
+\newcommand{\wert}[3]{\ifcsname wert-#1-#2-#3\endcsname\csname wert-#1-#2-#3\endcsname\else\textbf{??}\fi}
+\input{generiert/makros.tex}
+
+\title{Kassensturz Planspiel\\[0.3em]\large Die Rechenengine in Worten, in Formeln und als Wirkungsgraph}
+\author{Modelldokumentation zu \datei{js/rechner/} und \datei{js/data.js}}
+\date{Stand: 25.\,September 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent Das Planspiel lässt Studierende Steuer- und Sozialpolitik einstellen und rechnet
+sofort die Folgen für Haushaltssaldo, Verteilung, Emissionen und Wirtschaftsleistung. Dieses
+Dokument beschreibt die Rechenengine dreimal: \emph{Teil~I} in Worten, für alle, die wissen
+wollen, was das Modell tut, ohne Code zu lesen; \emph{Teil~II} in Formeln, als vollständige
+Spezifikation mit Quellen; \emph{Teil~III} als gerichteten, gewichteten Graphen, dessen
+Kantengewichte nicht behauptet, sondern gemessen sind: Jede Stellgröße wurde im Modell um
+einen festen Schritt verschoben, und die Differenz zum Status quo ist das Gewicht. Alle
+Messwerte erzeugt \datei{docs/modell/messung.js}; ein Test meldet, wenn das Dokument nicht
+mehr zur Engine passt.
+\end{abstract}
+
+\tableofcontents
+\clearpage
+
+\section*{Zum Gebrauch}
+\addcontentsline{toc}{section}{Zum Gebrauch}
+
+\textbf{Für wen.} Für Lehrende, die das Planspiel einsetzen und seine Ergebnisse im
+Debriefing erklären müssen, und für Fachleute, die das Modell prüfen. Teil~I setzt kein
+Vorwissen voraus, Teil~II volkswirtschaftliches Grundstudium.
+
+\textbf{Was gilt.} Maßgeblich ist der Code. Wo dieses Dokument und die Engine voneinander
+abweichen, irrt das Dokument. Die Zahlen in Teil~III und im Anhang sind aus der Engine
+erzeugt und damit aktuell, solange \datei{tests/modelldoku.test.js} grün ist.
+
+\textbf{Einheiten.} Geldgrößen des Staates in Mrd.\,\euro{} je Jahr, Geldgrößen der
+Haushalte in \euro{} je Haushalt und Jahr, in Preisen von 2025. Sätze in Prozent, Änderungen
+von Sätzen in Prozentpunkten (\Pp). Emissionen in Mt \COz-Äquivalenten. Der Gini-Koeffizient
+wird in Teil~III in Gini-Punkten angegeben (1 Punkt = 0,01).
+
+\textbf{Status quo.} Alle Wirkungen sind Differenzen gegenüber dem Status quo, dem
+Rechtsstand 2026 (\datei{docs/RECHTSSTAND.md}). In der ersten Periode (2025--2028) liefert er
+einen Saldo von \SQsaldo\,\Mrd{} je Jahr (\SQsaldoPct\,\% des BIP), einen Gini von \SQgini{},
+eine Armutsrisikoquote von \SQarmut\,\% und Emissionen von \SQemiss\,Mt. Bis zur fünften
+Periode (2041--2044) steigt die Schuldenquote ohne Politikänderung auf \SQschuldEnde\,\%.
+
+\clearpage
+\part{Das Modell in Worten}
+\input{teil1.tex}
+
+\clearpage
+\part{Das Modell in Formeln}
+\input{teil2.tex}
+
+\clearpage
+\part{Das Modell als Wirkungsgraph}
+\input{teil3.tex}
+
+\clearpage
+\appendix
+\part*{Anhang}
+\addcontentsline{toc}{part}{Anhang}
+\input{anhang.tex}
+
+\end{document}

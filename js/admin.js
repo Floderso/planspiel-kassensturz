@@ -337,7 +337,7 @@ async function createSession() {
   const perioden_laenge_jahre = laengenParsed.length === 1 ? laengenParsed[0] : laengenParsed;
 
   const LERNZIEL_DEFS = [
-    { id: 'saldo', kpi: 'saldo_bip_pct', label: 'Haushaltssaldo',   operator: '>=' },
+    { id: 'saldo', kpi: 'struktureller_saldo_pct', label: 'Struktureller Saldo', operator: '>=' },
     { id: 'schuld', kpi: 'schuldenquote', label: 'Schuldenquote',    operator: '<=' },
     { id: 'gini',   kpi: 'gini',          label: 'Gini-Koeffizient', operator: '<=' },
     { id: 'co2',    kpi: 'co2_kumulat',   label: 'CO₂-Kumulat',     operator: '<=' },

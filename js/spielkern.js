@@ -99,7 +99,14 @@ export function schockDerRunde(runde, kurs = STANDARDKURS) {
 }
 
 /** Der Zustand, mit dem eine Runde gerechnet wird: der Anfangszustand samt Ereignis. */
-const wirksam = (zustand, runde, kurs) => applySchock(zustand, schockDerRunde(runde, kurs));
+// Die Engine mittelt Rechtsstand-Pfade (KSt-Senkung, Verteidigung, Sondervermögen) über die
+// Jahre der Runde — sie braucht Startjahr und Länge. Ohne die Länge rechnete der Tisch bei
+// ungleichen Runden andere Zahlen als simulierePfad().
+const wirksam = (zustand, runde, kurs) => ({
+  ...applySchock(zustand, schockDerRunde(runde, kurs)),
+  jahr:   jahreDerRunde(runde, kurs).von,
+  laenge: laengeDerRunde(runde, kurs),
+});
 
 /**
  * Was ein Ereignis bewirkt, als Klartext — und ob das Modell es rechnet.
@@ -141,11 +148,12 @@ export const RESSORTS = [
   ]},
   { id: 'wir', name: 'Wirtschaft und Unternehmen', kurz: 'Wirtschaft', kennzahl: 'bip', stell: [
     { key: 'kst',   bez: 'Körperschaftsteuer',     einheit: '%', min: 0, max: 40, nk: 1, quelle: 'dynamisches_scoring', modul: 'kst' },
-    { key: 'gewst', bez: 'Gewerbesteuer-Messzahl', einheit: '%', min: 0, max: 30, nk: 1, quelle: 'dynamisches_scoring', modul: 'kst' },
+    { key: 'gewst', bez: 'Gewerbesteuer, effektiv', einheit: '%', min: 0, max: 30, nk: 1, quelle: 'dynamisches_scoring', modul: 'kst' },
   ]},
   { id: 'soz', name: 'Arbeit und Soziales',        kurz: 'Soziales',  kennzahl: 'gini', stell: [
     { key: 'rv', bez: 'Rentenversicherung',  einheit: '%',       min: 10, max: 30,   nk: 1, quelle: 'sv_beitraege', modul: 'sv' },
     { key: 'kv', bez: 'Krankenversicherung', einheit: '%',       min: 10, max: 25,   nk: 1, quelle: 'sv_beitraege', modul: 'sv' },
+    { key: 'rentenniveau', bez: 'Rentenniveau', einheit: '%',   min: 40, max: 53,   nk: 1, quelle: 'rv_ausgaben',  modul: 'sv' },
     { key: 'bg', bez: 'Bürgergeld',          einheit: '€/Monat', min: 0,  max: 1500, nk: 0, quelle: 'armutsrisiko', modul: 'transfers' },
     { key: 'kg', bez: 'Kindergeld',          einheit: '€/Monat', min: 0,  max: 1000, nk: 0, quelle: 'armutsrisiko', modul: 'transfers' },
   ]},

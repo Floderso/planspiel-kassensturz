@@ -8,27 +8,70 @@
 
 const DEZILE = [
   // D1–D9: je 4,1 Mio. Haushalte (SOEP v40, Destatis Mikrozensus 2024)
-  { d:1,  idx:0,  label:'D1',   brutto: 14000,  kapital: 0.01, konsum: 1.00, gewicht: 1.3, vermoegen: 1000,    anzahl: 4.1 },
-  { d:2,  idx:1,  label:'D2',   brutto: 21000,  kapital: 0.01, konsum: 0.99, gewicht: 1.4, vermoegen: 5000,    anzahl: 4.1 },
-  { d:3,  idx:2,  label:'D3',   brutto: 27000,  kapital: 0.02, konsum: 0.96, gewicht: 1.5, vermoegen: 15000,   anzahl: 4.1 },
-  { d:4,  idx:3,  label:'D4',   brutto: 33000,  kapital: 0.02, konsum: 0.92, gewicht: 1.6, vermoegen: 35000,   anzahl: 4.1 },
-  { d:5,  idx:4,  label:'D5',   brutto: 40000,  kapital: 0.03, konsum: 0.88, gewicht: 1.7, vermoegen: 70000,   anzahl: 4.1 },
-  { d:6,  idx:5,  label:'D6',   brutto: 48000,  kapital: 0.03, konsum: 0.85, gewicht: 1.8, vermoegen: 120000,  anzahl: 4.1 },
-  { d:7,  idx:6,  label:'D7',   brutto: 58000,  kapital: 0.04, konsum: 0.82, gewicht: 1.9, vermoegen: 200000,  anzahl: 4.1 },
-  { d:8,  idx:7,  label:'D8',   brutto: 72000,  kapital: 0.05, konsum: 0.78, gewicht: 2.0, vermoegen: 340000,  anzahl: 4.1 },
-  { d:9,  idx:8,  label:'D9',   brutto: 95000,  kapital: 0.07, konsum: 0.72, gewicht: 2.0, vermoegen: 620000,  anzahl: 4.1 },
+  { d:1,  idx:0,  label:'D1',   brutto: 14000,  kapital: 0.01, konsum: 1.00, gewicht: 1.3, vermoegen: 1000,    anzahl: 4.1, rente_anteil: 0.42 },
+  { d:2,  idx:1,  label:'D2',   brutto: 21000,  kapital: 0.01, konsum: 0.99, gewicht: 1.4, vermoegen: 5000,    anzahl: 4.1, rente_anteil: 0.462 },
+  { d:3,  idx:2,  label:'D3',   brutto: 27000,  kapital: 0.02, konsum: 0.96, gewicht: 1.5, vermoegen: 15000,   anzahl: 4.1, rente_anteil: 0.42 },
+  { d:4,  idx:3,  label:'D4',   brutto: 33000,  kapital: 0.02, konsum: 0.92, gewicht: 1.6, vermoegen: 35000,   anzahl: 4.1, rente_anteil: 0.353 },
+  { d:5,  idx:4,  label:'D5',   brutto: 40000,  kapital: 0.03, konsum: 0.88, gewicht: 1.7, vermoegen: 70000,   anzahl: 4.1, rente_anteil: 0.286 },
+  { d:6,  idx:5,  label:'D6',   brutto: 48000,  kapital: 0.03, konsum: 0.85, gewicht: 1.8, vermoegen: 120000,  anzahl: 4.1, rente_anteil: 0.218 },
+  { d:7,  idx:6,  label:'D7',   brutto: 58000,  kapital: 0.04, konsum: 0.82, gewicht: 1.9, vermoegen: 200000,  anzahl: 4.1, rente_anteil: 0.151 },
+  { d:8,  idx:7,  label:'D8',   brutto: 72000,  kapital: 0.05, konsum: 0.78, gewicht: 2.0, vermoegen: 340000,  anzahl: 4.1, rente_anteil: 0.101 },
+  { d:9,  idx:8,  label:'D9',   brutto: 95000,  kapital: 0.07, konsum: 0.72, gewicht: 2.0, vermoegen: 620000,  anzahl: 4.1, rente_anteil: 0.067 },
   // D10 aufgespalten in P90–95, P95–99, Top-1% (Basis: SOEP v40, DINA-DE, DIW Vermögensbericht 2024)
-  { d:10, idx:9,  label:'D10a', brutto: 125000, kapital: 0.08, konsum: 0.60, gewicht: 2.0, vermoegen: 450000,  anzahl: 2.05 },
-  { d:10, idx:10, label:'D10b', brutto: 220000, kapital: 0.18, konsum: 0.52, gewicht: 2.0, vermoegen: 1500000, anzahl: 1.64 },
-  { d:10, idx:11, label:'D10c', brutto: 700000, kapital: 0.45, konsum: 0.40, gewicht: 2.0, vermoegen: 7000000, anzahl: 0.41 },
+  { d:10, idx:9,  label:'D10a', brutto: 125000, kapital: 0.08, konsum: 0.60, gewicht: 2.0, vermoegen: 850000,  anzahl: 2.05, rente_anteil: 0.042 },
+  { d:10, idx:10, label:'D10b', brutto: 220000, kapital: 0.18, konsum: 0.52, gewicht: 2.0, vermoegen: 1500000, anzahl: 1.64, rente_anteil: 0.025 },
+  { d:10, idx:11, label:'D10c', brutto: 700000, kapital: 0.45, konsum: 0.40, gewicht: 2.0, vermoegen: 7000000, anzahl: 0.41, rente_anteil: 0.008, pareto_alpha: 1.5 },
 ];
 // D10c = Top 1% (0,41 Mio. Haushalte). Brutto 700k ist Durchschnitt — echte Spitze deutlich höher.
 // Kapitalanteil D10c: ~45% des Einkommens aus Kapital (DINA-DE, Bach/Buggeln 2024).
+// vermoegen D10a: 850.000 € (vorher 450.000 € und damit unter D9 mit 620.000 € — PRUEFUNG-2.md IV);
+// zwischen D9 und D10b gesetzt, Näherung. Wirkt auf die Inzidenz der Vermögensteuern.
+// pareto_alpha D10c: Einkommen im obersten Prozent Pareto-verteilt (FORMEL_QUELLEN_EST.spitzenzone).
+
+// ── HAUSHALTSPROFILE — eine Quelle für Haushalte UND Staat (PRUEFUNG-2.md I.4) ──
+// Bis 24.09.2026 rechneten beide Seiten mit verschiedenen Zahlen: 36,5 Mio. Kinder bei den
+// Haushalten gegen 17 Mio. beim Staat, 60,8 Mrd. € CO₂-Last gegen 18 Mrd. € Aufkommen,
+// 26,3 gegen 37,2 Mrd. € Bürgergeld. Jetzt bucht der Staat die Summe über die Haushalte.
+
+// Kindergeldkinder je Haushalt. Profil (mehr Kinder in der Mitte) aus Mikrozensus 2024
+// (vorher 0,80 · 1,10 · 1,20 · 1,15 · 1,05 · 0,95 · 0,85 · 0,75 · 0,65 · 0,50 · 0,35 · 0,20),
+// auf rund 17 Mio. Kinder mit Kindergeldanspruch skaliert (Familienkasse / BA).
+const KINDERGELD_KINDER = 17; // Mio.
+const KINDER_JE_HH = (() => {
+  const profil = [0.80, 1.10, 1.20, 1.15, 1.05, 0.95, 0.85, 0.75, 0.65, 0.50, 0.35, 0.20];
+  const summe = profil.reduce((a, q, i) => a + q * DEZILE[i].anzahl, 0);
+  return profil.map(q => q * KINDERGELD_KINDER / summe);
+})();
+
+// Bürgergeld: Regelsatz-Jahresäquivalente je Haushalt (D1 0,60 … D4 0,02), zusammen 3,9 Mio.
+// Der Regler wirkt nur auf den Regelbedarf; Unterkunft, Mehrbedarfe und übrige Leistungen
+// stehen fest in STAATSAUSGABEN.grundsicherung_fix.
+const BUERGERGELD_QUOTE = [0.60, 0.25, 0.08, 0.02, 0, 0, 0, 0, 0, 0, 0, 0];
+
+// CO₂-Last: Profil als Anteil am Bruttoeinkommen (regressiv, 4,0 % in D1 bis 1,0 % in D10c),
+// normiert zu einem Gewicht je Haushalt mit Σ anzahl × Gewicht = 1. Das Bruttoaufkommen wird
+// vollständig auf die Haushalte überwälzt; D10c trägt bei 55 €/t rund 2.100 € statt 7.000 €.
+const CO2_GEWICHT = (() => {
+  const profil = [0.040, 0.038, 0.036, 0.034, 0.032, 0.030, 0.028, 0.025, 0.022, 0.018, 0.015, 0.010];
+  const summe = DEZILE.reduce((a, d, i) => a + d.anzahl * d.brutto * profil[i], 0);
+  return DEZILE.map((d, i) => d.brutto * profil[i] / summe);
+})();
+// rente_anteil: Anteil der gesetzlichen Rente am Bruttoeinkommen des Dezils. NÄHERUNG, keine
+// Tabellenwerte — Primärquellen (Destatis, DRV) waren beim Anlegen nicht erreichbar (24.09.2026).
+// Herleitung: Anteil Rentnerhaushalte je Dezil h = 0,50 · 0,55 · 0,50 · 0,42 · 0,34 · 0,26 · 0,18 ·
+// 0,12 · 0,08 · 0,05 · 0,03 · 0,01 (fallend, Schwerpunkt unten; SVR JG 2014/15 Kap. 9 auf SOEP-Basis:
+// GRV-Anteil sinkt über die Dezile), zusammen 12,3 Mio. Haushalte. Renten sind 92 % des Einkommens
+// reiner Rentnerhaushalte (Destatis, EU-SILC 2024). rente_anteil = 0,92 × h × 0,913; der Faktor
+// kalibriert die Summe über alle Haushalte auf die Rentenzahlungen der GRV: ~362 Mrd. € = 90 % von
+// 402,8 Mrd. € Gesamtausgaben (BMAS Rentenversicherungsbericht 2025). Durch eine Tabelle nach
+// Einkommensdezil (EVS/SOEP) ersetzen, sobald verfügbar (PRUEFUNG-2.md I.1, Stufe 2).
 
 // Staatsausgaben 2025 (Gesamtstaat, grob aggregiert)
 const STAATSAUSGABEN = {
-  sozial:        850,  // inkl. Rente/GKV/Pflege/Bürgergeld (SV + Bund)
-  gesundheit:    320,
+  sozial:        850,  // soziale Sicherung: Rente, Pflege, Arbeitslosigkeit u. a. (die GKV-
+                       // Sachleistungen stehen unter gesundheit; siehe sonstige_einnahmen)
+  gesundheit:    341,  // 320 + 21: der durchschnittliche Zusatzbeitrag stieg 2026 auf 2,9 % (KV 17,5 %),
+                       // weil die GKV-Ausgaben stiegen — 1,2 Pp. × 1.750 Mrd. Lohnsumme (Referenzjahr 2026)
   bildung:       180,
   verteidigung:   90,
   infrastruktur: 120,
@@ -38,6 +81,16 @@ const STAATSAUSGABEN = {
                        // Modell den Gesamtstaat abbildet (PRUEFUNG.md A4).
                        // Entspricht ZINS_EFFEKTIV × Schuldenstand (2,0 % × 2.688).
   sonstiges:     140,
+  // Grundsicherung außerhalb des Regelsatz-Reglers: Kosten der Unterkunft, Mehrbedarfe,
+  // einmalige Leistungen. Die bisherige Buchung (5,5 Mio. Personen × 563 € = 37,2 Mrd.) minus
+  // dem Regelbedarf, der jetzt über die Haushalte gebucht wird (26,3 Mrd.). Hält den
+  // Status-quo-Saldo, ohne den Ausgleichsposten zu vergrößern (PRUEFUNG-2.md I.4)
+  grundsicherung_fix: 10.8,
+  // CO₂-Einnahmen fließen in den Klima- und Transformationsfonds (KTF) und werden dort
+  // ausgegeben (Förderung, EEG-Finanzierung) — ein Klimageld wurde nie eingeführt. 70 % des
+  // Aufkommens bei 55 €/t, bis 25.09.2026 als Klimageld im Status quo gebucht (PRUEFUNG.md B5).
+  // Schrumpft im Modell mit dem Emissionspfad (berechne.js). Nicht bei den Haushalten abgebildet.
+  klimafonds:     12.6,
   // Gegenposten: staatliche Einnahmen, die das Modell nicht als Steuer/SV abbildet
   // (Gebühren, Verkäufe, Vermögenseinkommen, Bundesbankgewinn; Destatis VGR 2024:
   // ~290 Mrd. € sonstige Einnahmen, hier anteilig für den modellierten Sektor).
@@ -47,11 +100,13 @@ const STAATSAUSGABEN = {
   // Bundes- (30) auf die Gesamtstaatsgröße (54) korrigiert, der Ausgleichsposten
   // fängt die 24 Mrd. auf, damit der Status-quo-Saldo weiter den VGR-Wert trifft.
   //
-  // OFFEN: Dieser Posten wächst damit auf 144 Mrd. und verdeckt in dieser Größe
-  // mögliche Strukturfehler auf der Ausgabenseite — etwa die Frage, ob die GKV
-  // sowohl in `sozial` als auch in `gesundheit` steckt. Siehe PRUEFUNG.md C3;
-  // das gehört bei der Ausgabenstruktur aufgelöst, nicht hier.
-  sonstige_einnahmen: -144
+  // Am 25.09.2026 von −144 auf −221,4: Die allgemeine Verwaltung (140) zählt wieder voll,
+  // statt von den errechneten Erhebungskosten ersetzt zu werden (PRUEFUNG-2.md II). Damit
+  // nähert sich der Posten seiner Bedeutung — rund 290 Mrd. € sonstige Einnahmen in der
+  // VGR — statt ihr fernzubleiben. Das spricht gegen die in PRUEFUNG.md C3 vermutete
+  // Doppelzählung der GKV: Müsste sie heraus, wäre der Posten über 500 Mrd. groß.
+  // OFFEN: ein Abgleich Posten für Posten mit der VGR (Primärdaten waren nicht erreichbar).
+  sonstige_einnahmen: -221.4
 };
 const AUSGABEN_TOTAL = Object.values(STAATSAUSGABEN).reduce((a,b)=>a+b,0);
 
@@ -63,12 +118,13 @@ const BASIS_AUFKOMMEN = {
   mwst:           303,
   kst:             45,
   gewst:           75,
-  solz_abgelt:     12,   // Abgeltung+Soli
+  solz_abgelt:     12,   // nur Solidaritätszuschlag (~12–13 Mrd.). Die Abgeltungsteuer rechnet die
+                         // ESt über die Kapitalanteile; vorher stand sie hier ein zweites Mal (PRUEFUNG-2.md IV)
   energie:         37,
   co2:             18,   // BEHG + EU-ETS (nationaler Anteil)
   tabak:           15,
   grundst:         16,
-  erbschaft:        8,
+  erbschaft:       12,   // BMF-Ist 2024 (vorher 8 — veraltet, PRUEFUNG.md C1)
   kfz:             10,
   sonstige:        35,   // Versicherung, Stromsteuer, Luftverkehr, etc.
   rv_beitrag:     310,
@@ -80,11 +136,19 @@ const BASIS_AUFKOMMEN = {
 // Quellen: Destatis VGR, BMF Finanzplan 2025, Deutsche Rentenversicherung Rentenbericht 2024
 const BASIS_MAKRO = {
   bip:               4470,  // BIP Deutschland 2025, Mrd. € (nominal; abgeleitet: Schuldenstand 2.838 Mrd. ÷ 63,5 % · Bundesbank/Destatis Feb 2026)
-  gewinn:             400,  // Unternehmensgewinne vor Steuern, Mrd. €
+  // Getrennte Bemessungsgrundlagen für KSt und GewSt, kalibriert auf BASIS_AUFKOMMEN
+  // (KSt 45 Mrd. bei 15 %, GewSt 75 Mrd. bei 14 % effektiv). Vorher eine gemeinsame Größe
+  // (400 Mrd.): KSt +34 %, GewSt −25 % daneben, die Fehler hoben sich nur in der Summe auf
+  // (PRUEFUNG.md C1). Die GewSt-Basis ist breiter: Personengesellschaften zahlen GewSt,
+  // aber keine KSt.
+  gewinn_kst:        300,  // Mrd. € — 45 / 0,15
+  gewinn_gewst:      536,  // Mrd. € — 75 / 0,14
   emissions:          327,  // CO₂-bepreiste Emissionen (aufkommensrelevanter Scope: BEHG + DE-ETS-Anteil); kalibriert auf BASIS_AUFKOMMEN.co2=18 Mrd. bei 55 €/t (327×55/1000≈18)
   erb_masse:          400,  // Erbschaftsmasse pro Jahr, Mrd. €
   boden_wert:        5000,  // Bodenwert Deutschland gesamt, Mrd. €
   verm_basis:        3500,  // Steuerpflichtiges Vermögen > 2 Mio €, Mrd. €
+  milliardaersvermoegen: 600,   // Vermögen der Milliardäre in DE, Mrd. € — Näherung (Reichenlisten, EU Tax Observatory)
+  milliardaere_est_quote: 0.3,  // gezahlte Einkommensteuer in % ihres Vermögens (Zucman 2024, G20-Bericht)
   lohnsumme_sv:      1750,  // Sozialversicherungspflichtige Lohnsumme, Mrd. €
   mwst_basis_faktor: 1.68,  // MwSt-Basis-Korrektur: Dezil-Konsumbasis (~1,37 Bio. €) erfasst nur ~60 % der
                             // tatsächlichen MwSt-Basis — privater Konsum lt. VGR 2,14 Bio. € plus nicht-
@@ -94,7 +158,10 @@ const BASIS_MAKRO = {
                             // 400–500 T€ je Kind/Ehegatte) steuerpflichtig bleibt. Kalibriert auf
                             // ErbSt-Ist ~12 Mrd. €/Jahr (BMF 2024; Destatis ErbSt-Statistik)
   rv_ausgaben_sq:     430,  // RV-Gesamtausgaben inkl. Bundeszuschuss (Status quo), Mrd. €
-  kv_bbg_kv_sq:     66150,  // Beitragsbemessungsgrenze KV/PV 2025, € p.a. (GKV-Beitragsbemessungsgrenze 2025)
+  rentenniveau_sq:     48,  // Sicherungsniveau vor Steuern, % (§ 154 Abs. 3 SGB VI). Haltelinie 48 % bis
+                            // 2031 mit dem Rentenpaket 2025 (Bundestag 05.12.2025, BMAS). Die RV-Ausgaben
+                            // folgen diesem Niveau, nicht dem Beitragssatz (PRUEFUNG-2.md I.1)
+  kv_bbg_kv_sq:     69750,  // Beitragsbemessungsgrenze KV/PV 2026, € p.a. (Sozialversicherungs-Rechengrößenverordnung 2026)
   kv_bbg_frei_bonus:   18,  // Aufkommensgewinn kv_bbg_frei bei kv=16,3 %, Mrd. €
   kv_kapital_bonus:     8,  // Aufkommensgewinn kv_kapital bei kv=16,3 %, Mrd. €
 };
@@ -111,7 +178,9 @@ const ADMIN_QUOTE = {
   erbschaft: 0.080,
   grundst: 0.020,
   verm: 0.050,
-  klein: 0.200,      // Kleinverbrauchsteuern sehr teuer
+  klein: 0.020,      // Verbrauchsteuern über den Zoll: wenige große Steuerpflichtige (Raffinerien,
+                     // Tabakhersteller). Vorher 20 % — zehnfach zu hoch, die Abschaffung sparte 22 Mrd.
+                     // Erhebungskosten und begünstigte den Kirchhof-Pfad (PRUEFUNG-2.md II). Näherung
   sv: 0.015,
   transfer: 0.050
 };
@@ -145,31 +214,144 @@ const ZINS_EFFEKTIV = 0.020;
  */
 const BIP_WACHSTUM_NOMINAL_JAHR = 0.025;
 
+/**
+ * Emissionsbasispfad Deutschland ohne zusätzliche Politik (Mt CO₂e, alle Treibhausgase).
+ * Anker: 1990 rund 1.252 Mt, 2025 rund 649 Mt (UBA, Treibhausgas-Emissionen in
+ * Deutschland). 2030 −63 % und 2040 −80 % gegenüber 1990 nach dem Mit-Maßnahmen-Szenario
+ * des Projektionsberichts 2025 (UBA/Öko-Institut u. a.). 2045 mit −85 % fortgeschrieben —
+ * eigene Annahme; der Bericht sieht die Neutralität 2045 verfehlt. Das Klimaschutzgesetz
+ * verlangt −65 % / −88 % / Neutralität: die Lücke dazu ist Absicht, Teams können sie
+ * schließen. Zwischen den Ankern linear. Bis 24.09.2026 blieben die Emissionen im Status
+ * quo 20 Jahre konstant (PRUEFUNG-2.md I.5).
+ */
+/**
+ * Nachfrage und öffentliches Kapital (PRUEFUNG-2.md I.3). Bis 25.09.2026 wirkte nur der
+ * Investitionsimpuls auf das BIP — als dauerhafter, kumulierender Niveaueffekt 1 + I·n·μ/BIP
+ * mit μ ≈ 1,2 × (Konsumquote/0,45), ohne Abschreibung. Steuern und Transfers hatten keinen
+ * Nachfrageeffekt: Konsolidierung kostete kein Wachstum.
+ *
+ * Jetzt: Nachfrage als Strom je Periode, symmetrisch. Die Einkommensänderung der Haushalte
+ * gegenüber dem Status quo wirkt mit dezilspezifischer Grenzkonsumneigung, öffentliche
+ * Investitionen mit einem Investitionsmultiplikator — nur in der laufenden Periode. Dauerhaft
+ * wirkt allein der öffentliche Kapitalstock, mit Abschreibung.
+ */
+// Grenzkonsumneigung je Dezil: Mittel ~0,48, unten ~0,65, ganz oben niedrig
+// (Jappelli/Pistaferri 2014, AEJ: Macro 6(4): MPC nach Liquidität 0,35–0,65; Fagereng/Holm/
+// Natvik 2021, AEJ: Macro, zum Gefälle nach Vermögen). Profil über die Dezile: Näherung.
+// Ersetzt DEZILE[i].konsum, eine DURCHSCHNITTLICHE Konsumquote (PRUEFUNG.md C4).
+const MPC_DEZIL = [0.65, 0.62, 0.58, 0.55, 0.52, 0.48, 0.45, 0.42, 0.38, 0.32, 0.25, 0.15];
+const MPC_MITTEL = 0.48;
+// Steuer- und Transfermultiplikator bei durchschnittlicher MPC; je Dezil skaliert mit MPC/0,48
+// (Gechert 2015, Oxford Economic Papers 67(3), Meta-Analyse: ~0,6–0,7)
+const MULTIPLIKATOR_STEUER_TRANSFER = 0.6;
+// Kurzfristiger Multiplikator öffentlicher Investitionen (Gechert 2015: ~1,0)
+const MULTIPLIKATOR_INVEST = 1.0;
+// Produktionselastizität öffentlichen Kapitals (Bom/Ligthart 2014, J. of Economic Surveys
+// 28(5): ~0,08, Kerninfrastruktur ~0,12)
+const OEFF_KAPITAL_ELASTIZITAET = 0.08;
+// Öffentliches Nettoanlagevermögen, Mrd. € — 1.338 Mrd. 2015 zu Wiederbeschaffungspreisen
+// (Wirtschaftsdienst 1/2019), auf 2025 fortgeschrieben: Näherung
+const OEFF_KAPITALSTOCK = 1600;
+// Abschreibungsrate öffentlichen Kapitals p. a. (Näherung: Abschreibungen des Staates
+// ~4–5 % des Nettoanlagevermögens, Destatis VGR)
+const OEFF_ABSCHREIBUNG = 0.04;
+// Angebotsseite als NIVEAU, nicht als Wachstumsrate: Kapital- und Arbeitsanteil der
+// Produktion (Cobb-Douglas; Lohnquote DE ~0,65, Destatis VGR) und die Geschwindigkeit, mit
+// der sich der private Kapitalstock an ein neues Steuerniveau anpasst (Abschreibungsrate
+// privater Ausrüstungen und Bauten ~7 % p. a., Destatis Vermögensrechnung; Näherung).
+// Vorher kumulierten beide Effekte je Periode: KSt 30 % senkte das BIP jede Periode um
+// weitere 0,9 % ohne Ende (PRUEFUNG-2.md VI.3, offen gebliebener Punkt).
+const KAPITALANTEIL = 0.35;
+const PRIVAT_ANPASSUNG = 0.07;
+
+/**
+ * Rechtsstand 2026, Teil 2 (docs/RECHTSSTAND.md, PRUEFUNG-2.md III).
+ *
+ * Verteidigung: NATO-Quote 2025 rund 2,4 % BIP, Plan 2,6 % (2026), 3,0 % (2027), 3,3 % (2028),
+ * 3,5 % ab 2029 (Finanzplan der Bundesregierung 2025; BMVg). Das Modell bucht den ANSTIEG über
+ * 2025 zusätzlich — die Basis steckt in STAATSAUSGABEN.verteidigung.
+ * Sondervermögen Infrastruktur: 500 Mrd. € über 12 Jahre (Art. 143h GG, März 2025); hier ab
+ * 2026 gleichmäßig 500/11 Mrd. € nominal bis 2036. Wirkt als öffentliche Investition.
+ * Schuldenbremse 2025: Bund 0,35 % + Länder 0,35 % BIP strukturell; Verteidigung über 1 % BIP
+ * und das Sondervermögen ausgenommen (Art. 109, 115, 143h GG).
+ */
+const NATO_QUOTE_2025 = 2.4;
+const VERTEIDIGUNG_PLAN = [[2025, 2.4], [2026, 2.6], [2027, 3.0], [2028, 3.3], [2029, 3.5]];
+function verteidigungQuote(jahr) {
+  if (jahr <= VERTEIDIGUNG_PLAN[0][0]) return VERTEIDIGUNG_PLAN[0][1];
+  for (let i = 1; i < VERTEIDIGUNG_PLAN.length; i++) {
+    const [j0, q0] = VERTEIDIGUNG_PLAN[i - 1], [j1, q1] = VERTEIDIGUNG_PLAN[i];
+    if (jahr <= j1) return q0 + (q1 - q0) * (jahr - j0);
+  }
+  return VERTEIDIGUNG_PLAN[VERTEIDIGUNG_PLAN.length - 1][1];
+}
+const SONDERVERMOEGEN_JAHR = 500 / 11;                // Mrd. € nominal, 2026–2036
+const sondervermoegen = jahr => (jahr >= 2026 && jahr <= 2036) ? SONDERVERMOEGEN_JAHR : 0;
+// KSt-Senkung: 15 % → je 1 Pp. pro Jahr ab 2028 → 10 % ab 2032 (§ 23 Abs. 1 KStG, Gesetz für ein
+// steuerliches Investitionssofortprogramm, BGBl. 18.07.2025). Wirkt zusätzlich zum Regler.
+const kstSenkung = jahr => Math.max(0, Math.min(5, jahr - 2027));
+// RV-Beitragssatz nach geltendem Recht: Er folgt den Ausgaben (§ 158 SGB VI). BMAS
+// Rentenversicherungsbericht 2025, Mitte der Modellvarianten: 18,6 % bis 2027, 20,1 % (2030),
+// 21,15 % (2039), danach gehalten. Wirkt zusätzlich zum Regler. Vorher blieb der Satz bis 2041
+// bei 18,6 %, und die ganze Demografie landete im Defizit statt bei den Beitragszahlern.
+const RV_SATZ_PFAD = [[2027, 18.6], [2030, 20.1], [2039, 21.15]];
+function rvAnstieg(jahr) {
+  const p = RV_SATZ_PFAD;
+  if (jahr <= p[0][0]) return 0;
+  for (let i = 1; i < p.length; i++) {
+    if (jahr <= p[i][0]) return p[i - 1][1] + (p[i][1] - p[i - 1][1]) * (jahr - p[i - 1][0]) / (p[i][0] - p[i - 1][0]) - p[0][1];
+  }
+  return p[p.length - 1][1] - p[0][1];
+}
+const SCHULDENBREMSE_STRUKTURELL = 0.70;              // % BIP, Bund 0,35 + Länder 0,35
+const VERTEIDIGUNG_AUSNAHME_AB = 1.0;                 // % BIP, darüber ausgenommen
+// Budget-Semielastizität: Änderung des Saldos je Prozent Produktionslücke, % BIP
+// (EU-Kommission, Mourre et al. 2019, European Economy DP 100: DE ~0,5)
+const BUDGET_SEMIELASTIZITAET = 0.5;
+
+const EMISSIONEN_1990 = 1252;
+const EMISSIONS_ANKER = [
+  [2025, 649], [2030, EMISSIONEN_1990 * 0.37], [2040, EMISSIONEN_1990 * 0.20], [2045, EMISSIONEN_1990 * 0.15],
+];
+function emissionsBasis(jahr) {
+  if (jahr <= EMISSIONS_ANKER[0][0]) return EMISSIONS_ANKER[0][1];
+  for (let i = 1; i < EMISSIONS_ANKER.length; i++) {
+    const [j0, e0] = EMISSIONS_ANKER[i - 1], [j1, e1] = EMISSIONS_ANKER[i];
+    if (jahr <= j1) return e0 + (e1 - e0) * (jahr - j0) / (j1 - j0);
+  }
+  return EMISSIONS_ANKER[EMISSIONS_ANKER.length - 1][1];
+}
+
 // Verhaltens-Elastizitäten (konservativ)
 const ELAST = {
   labor_supply: 0.20,      // Saez/Chetty konsens
-  capital_supply: 0.50,    // Kleven/Schultz
+  capital_supply: 0.50,    // Kleven/Schultz — IM MODELL NICHT VERWENDET (PRUEFUNG.md C5)
   consumption: -0.35,      // MwSt-Pass-Through
   co2: -0.30,              // BEHG Evaluation
-  evasion: 0.25,           // Schneider
+  evasion: 0.25,           // Schneider — IM MODELL NICHT VERWENDET (PRUEFUNG.md C5)
   investment: -0.40,       // Unternehmenssteuer
   // D10c (Top 1%): höhere Elastizitäten wegen Steuervermeidung, Einkommensverschiebung, Wegzug
-  d10c_labor: 0.40,        // Piketty/Saez/Stantcheva (2014): extensive margin höher
+  d10c_labor: 0.40,        // Elastizität des zu versteuernden Einkommens im obersten Prozent (inkl. Verlagerung)
   d10c_avoidance: 0.50,    // Einkommensverschiebung/Avoidance ab GS > 45% (Kleven/Schultz DK)
-  d10c_wegzug: 0.10        // Steuerbedingte Emigration bei GS > 60% (Brülhart et al. 2019)
+  d10c_wegzug: 0.10,       // Steuerbedingte Emigration bei GS > 60 % — Beleg ausstehend (PRUEFUNG-2.md IV)
+  // Ausweichreaktion der Vermögensteuer: Semi-Elastizität des deklarierten Vermögens je
+  // Prozentpunkt Steuersatz. Brülhart et al. (2022) finden für die Schweiz 43 % je Pp.,
+  // darunter Umzüge zwischen Kantonen, die es national nicht gibt — hier die Hälfte.
+  verm_ausweichen: 0.215
 };
 
 // Strukturierte Quellenmetadaten zu ELAST — Werte bleiben oben kompatibel
 const ELAST_QUELLEN = {
   labor_supply:   { ref: 'Saez/Chetty/Gruber Konsens · ifo Schnelldienst 01/2025',         range: '0,1–0,3', note: 'intensive margin, konservativ; extensive margin untere Dezile 0,2–0,5 (Meghir/Phillips)' },
-  capital_supply: { ref: 'Kleven/Schultz (2014) JPubEc',                                    range: '0,4–0,8', note: 'dänische Daten, auf DE übertragbar; hohe Elastizität wegen Ausweichoptionen' },
+  capital_supply: { ref: 'Kleven/Schultz (2014) JPubEc',                                    range: '0,4–0,8', note: 'Im Modell nicht verwendet — die Vermögensteuer rechnet ohne Ausweichreaktion (PRUEFUNG-2.md IV: Brülhart et al. 2022 finden starke Reaktionen). Dänische Daten.' },
   consumption:    { ref: 'Lewbel/Pendakur (2009) JPubEc · Metaanalyse Havranek et al. 2018',range: '−0,2 bis −0,5', note: 'MwSt-Pass-Through auf Konsum; getrennt für Regel- und Ermäßigungssatz' },
   co2:            { ref: 'EWI/DIW BEHG-Evaluation 2023 · Edenhofer/PIK 2024',               range: '−0,2 bis −0,4', note: 'kurzfristig konservativ; langfristig höher durch Infrastruktur-/Verhaltensanpassung' },
-  evasion:        { ref: 'Schneider (2023) Shadow Economy DE · IfW Kiel 2024',              range: '0,1–0,3', note: 'Schwarzarbeit/Schattenwirtschaft-Reaktion auf Gesamtsteuerlast' },
+  evasion:        { ref: 'Schneider (2023) Shadow Economy DE · IfW Kiel 2024',              range: '0,1–0,3', note: 'Im Modell nicht verwendet. Schwarzarbeit/Schattenwirtschaft-Reaktion auf Gesamtsteuerlast' },
   investment:     { ref: 'Gechert/Heimberger (2022) NIER · Neumeier SVR Arbeitspapier 03/2025', range: '−0,3 bis −0,5', note: 'KSt-Investitionselastizität; Effekte kleiner als oft behauptet (Meta-Analyse)' },
-  d10c_labor:     { ref: 'Piketty/Saez/Stantcheva (2014) AER',                              range: '0,3–0,5', note: 'extensive margin Top 1%: Stunden, Ruhestandsentscheidung, Einkommensverschiebung' },
+  d10c_labor:     { ref: 'Saez/Slemrod/Giertz (2012) JEL 50(1) · Piketty/Saez/Stantcheva (2014) AEJ: Economic Policy 6(1)', range: '0,25–0,5', note: 'Elastizität des zu versteuernden Einkommens der Spitzenverdiener — überwiegend Verlagerung und Verhandlung, nicht reales Arbeitsangebot: PSS finden nur eine kleine reale Angebotsreaktion (PRUEFUNG-2.md IV)' },
   d10c_avoidance: { ref: 'Kleven/Schultz (2014) JPubEc · Chetty/Friedman/Saez (2013)',      range: '0,3–0,7', note: 'Einkommensverschiebung/Avoidance ab Grenzsteuersatz > 45 %' },
-  d10c_wegzug:    { ref: 'Brülhart/Gruber/Krapf/Schmidheiny (2019) JPubEc',                 range: '0,05–0,15', note: 'steuerbedingte Emigration ab Grenzsteuersatz > 60 %; DE-Effekt kleiner als CH-Schätzung' }
+  d10c_wegzug:    { ref: 'Beleg ausstehend',                                                range: '0,05–0,15', note: 'steuerbedingte Emigration ab Grenzsteuersatz > 60 %. Bisher Brülhart et al. zitiert — die Studie behandelt aber die Schweizer Vermögensteuer (PRUEFUNG-2.md IV)' },
+  verm_ausweichen:{ ref: 'Brülhart/Gruber/Krapf/Schmidheiny (2022) AEJ: Economic Policy 14(4), Behavioral Responses to Wealth Taxes', range: '0,1–0,43 je Pp.', note: 'Schweiz: −1 Pp. Vermögensteuer → +43 % deklariertes Vermögen, teils durch Kantonswechsel; hier halbiert. Deklariertes Vermögen = Basis × exp(−0,215 × Satz in Pp.)' }
 };
 
 
@@ -181,9 +363,9 @@ const PRESETS = {
     synthetisch: false, abgeltung: 25,
     kst: 15, gewst: 14, gewst_aus: false,
     mwst: 19, mwst_erm: 7,
-    co2: 55, klimageld: true,
+    co2: 55, klimageld: false,
     erb: 20, betriebs: true, boden: 0.4, verm: 0, zucman: 0,
-    rv: 18.6, kv: 16.3, alpf: 6.2, buergerv: false, bbg: 90000,
+    rv: 18.6, kv: 17.5, alpf: 6.2, buergerv: false, bbg: 101400, rentenniveau: 48,
     bg: 563, kg: 259, neg_est: false, kleine_st: true,
     kapitalquote: 0, rendite_fonds: 7, startjahr: 2020,
     pkv_abschaffen: false, kv_kapital: false, kv_bbg_frei: false, anzahl_kv: 95, praevention: 0, bge: 0
@@ -207,7 +389,7 @@ const PRESETS = {
     mwst: 19, mwst_erm: 7,
     co2: 55, klimageld: true,
     erb: 10, betriebs: true, boden: 0.4, verm: 0, zucman: 0,
-    rv: 18.6, kv: 16.3, alpf: 6.2, buergerv: false, bbg: 90000,
+    rv: 18.6, kv: 17.5, alpf: 6.2, buergerv: false, bbg: 101400,
     bg: 563, kg: 255, neg_est: false, kleine_st: false,
     kapitalquote: 0, rendite_fonds: 7, startjahr: 2020,
     pkv_abschaffen: false, kv_kapital: false, kv_bbg_frei: false, anzahl_kv: 95, praevention: 0, bge: 0
@@ -231,7 +413,7 @@ const PRESETS = {
     mwst: 19, mwst_erm: 7,
     co2: 100, klimageld: true,
     erb: 30, betriebs: false, boden: 1.5, verm: 0, zucman: 0,
-    rv: 18.6, kv: 16.3, alpf: 6.2, buergerv: false, bbg: 90000,
+    rv: 18.6, kv: 17.5, alpf: 6.2, buergerv: false, bbg: 101400,
     bg: 600, kg: 280, neg_est: false, kleine_st: false,
     kapitalquote: 0, rendite_fonds: 7, startjahr: 2020,
     pkv_abschaffen: false, kv_kapital: false, kv_bbg_frei: false, anzahl_kv: 95, praevention: 0, bge: 0
@@ -255,7 +437,7 @@ const PRESETS = {
     mwst: 19, mwst_erm: 7,
     co2: 65, klimageld: true,
     erb: 20, betriebs: true, boden: 0.4, verm: 0, zucman: 0,
-    rv: 18.6, kv: 16.3, alpf: 6.2, buergerv: false, bbg: 90000,
+    rv: 18.6, kv: 17.5, alpf: 6.2, buergerv: false, bbg: 101400,
     bg: 550, kg: 259, neg_est: false, kleine_st: true,
     kapitalquote: 10, rendite_fonds: 7, startjahr: 2024,
     pkv_abschaffen: false, kv_kapital: false, kv_bbg_frei: false, anzahl_kv: 95, praevention: 3, bge: 0
@@ -272,7 +454,7 @@ const PRESETS = {
     mwst: 22, mwst_erm: 7,
     co2: 80, klimageld: false,
     erb: 30, betriebs: false, boden: 1.0, verm: 0, zucman: 0,
-    rv: 18.6, kv: 16.3, alpf: 6.2, buergerv: false, bbg: 90000,
+    rv: 18.6, kv: 17.5, alpf: 6.2, buergerv: false, bbg: 101400,
     bg: 0, kg: 255, neg_est: false, kleine_st: false,
     kapitalquote: 0, rendite_fonds: 7, startjahr: 2020,
     pkv_abschaffen: false, kv_kapital: false, kv_bbg_frei: false, anzahl_kv: 95, praevention: 0, bge: 1200
@@ -297,8 +479,8 @@ const CHALLENGES = [
     desc:'Arbeitsangebot-Index über 101',
     subs:[{ label:'Arbeit-Index', check:r=>r.behavior.labor>101, cur:r=>r.behavior.labor, tgt:101, refFn:()=>100, dir:'up', fmt:v=>v.toFixed(1) }]},
   { id:'armut_16', diff:'daily', title:'Armutsreduktion',
-    desc:'Armutsrisikoquote unter 8 %',
-    subs:[{ label:'Armutsrisiko', check:r=>r.armutsrisiko<8, cur:r=>r.armutsrisiko, tgt:8, refFn:ref=>ref.armutsrisiko, dir:'down', fmt:v=>v.toFixed(1)+' %' }]},
+    desc:'Armutsrisikoquote unter 13 %',
+    subs:[{ label:'Armutsrisiko', check:r=>r.armutsrisiko<13, cur:r=>r.armutsrisiko, tgt:13, refFn:ref=>ref.armutsrisiko, dir:'down', fmt:v=>v.toFixed(1)+' %' }]},
   { id:'co2_85', diff:'daily', title:'Klimakurs',
     desc:'CO₂-Emissionen auf Index unter 85',
     subs:[{ label:'CO₂-Index', check:r=>r.behavior.co2<85, cur:r=>r.behavior.co2, tgt:85, refFn:()=>100, dir:'down', fmt:v=>v.toFixed(1) }]},
@@ -308,9 +490,11 @@ const CHALLENGES = [
   { id:'invest_101', diff:'daily', title:'Standortpflege',
     desc:'Investitionsindex über 101',
     subs:[{ label:'Investition', check:r=>r.behavior.invest>101, cur:r=>r.behavior.invest, tgt:101, refFn:()=>100, dir:'up', fmt:v=>v.toFixed(1) }]},
-  { id:'palma_18', diff:'daily', title:'Einkommensschere',
-    desc:'Palma-Koeffizient unter 1,8 senken',
-    subs:[{ label:'Palma', check:r=>r.palma<1.8, cur:r=>r.palma, tgt:1.8, refFn:ref=>ref.palma, dir:'down', fmt:v=>v.toFixed(2).replace('.',',') }]},
+  // Palma auf Äquivalenzeinkommen: Status quo 1,25, DE amtlich ~1,2. Die
+  // frühere Grenze 1,8 war schon ohne jeden Spielzug erreicht (PRUEFUNG.md B3).
+  { id:'palma_12', diff:'daily', title:'Einkommensschere',
+    desc:'Palma-Koeffizient unter 1,2 senken',
+    subs:[{ label:'Palma', check:r=>r.palma<1.2, cur:r=>r.palma, tgt:1.2, refFn:ref=>ref.palma, dir:'down', fmt:v=>v.toFixed(2).replace('.',',') }]},
   { id:'dwl_50', diff:'daily', title:'Effizienzgewinn',
     desc:'Wohlfahrtsverlust des Steuersystems unter 50 Mrd. €',
     subs:[{ label:'Wohlfahrtsverlust', check:r=>r.dwl<50, cur:r=>r.dwl, tgt:50, refFn:ref=>ref.dwl, dir:'down', fmt:v=>v.toFixed(0)+' Mrd.' }]},
@@ -341,8 +525,8 @@ const CHALLENGES = [
     desc:'Investitionsindex über 104',
     subs:[{ label:'Investition', check:r=>r.behavior.invest>104, cur:r=>r.behavior.invest, tgt:104, refFn:()=>100, dir:'up', fmt:v=>v.toFixed(1) }]},
   { id:'armut_14', diff:'weekly', title:'Soziale Gerechtigkeit',
-    desc:'Armutsrisikoquote unter 5 %',
-    subs:[{ label:'Armutsrisiko', check:r=>r.armutsrisiko<5, cur:r=>r.armutsrisiko, tgt:5, refFn:ref=>ref.armutsrisiko, dir:'down', fmt:v=>v.toFixed(1)+' %' }]},
+    desc:'Armutsrisikoquote unter 11 %',
+    subs:[{ label:'Armutsrisiko', check:r=>r.armutsrisiko<11, cur:r=>r.armutsrisiko, tgt:11, refFn:ref=>ref.armutsrisiko, dir:'down', fmt:v=>v.toFixed(1)+' %' }]},
   { id:'schuld_neg', diff:'weekly', title:'Schuldenabbau',
     desc:'Schuldenquote jährlich sinkend (Δ < 0)',
     subs:[{ label:'Schulden-Δ', check:r=>r.schuldenquote_delta<0, cur:r=>r.schuldenquote_delta, tgt:0, refFn:ref=>ref.schuldenquote_delta, dir:'down', fmt:v=>v.toFixed(2)+' %' }]},
@@ -353,8 +537,8 @@ const CHALLENGES = [
     desc:'Verwaltungskosten unter 100 Mrd. €',
     subs:[{ label:'Verwaltung', check:r=>r.admin_kosten<100, cur:r=>r.admin_kosten, tgt:100, refFn:ref=>ref.admin_kosten, dir:'down', fmt:v=>v.toFixed(0)+' Mrd.' }]},
   { id:'schuldenbremse', diff:'weekly', title:'Schuldenbremse',
-    desc:'Strukturellen Saldo auf ≥ −0,35 % BIP bringen (Art. 109 GG)',
-    subs:[{ label:'Saldo % BIP', check:r=>r.saldo_bip_pct>=-0.35, cur:r=>r.saldo_bip_pct, tgt:-0.35, refFn:ref=>ref.saldo_bip_pct, dir:'up', fmt:v=>(v>=0?'+':'')+v.toFixed(2)+' %' }]},
+    desc:'Schuldenbremse 2025 einhalten: struktureller Saldo ≥ −0,70 % BIP (Verteidigung über 1 % und Sondervermögen ausgenommen)',
+    subs:[{ label:'Struktureller Saldo % BIP', check:r=>r.struktureller_saldo_pct>=-0.70, cur:r=>r.struktureller_saldo_pct, tgt:-0.70, refFn:ref=>ref.struktureller_saldo_pct, dir:'up', fmt:v=>(v>=0?'+':'')+v.toFixed(2)+' %' }]},
   { id:'metr_d1_70', diff:'weekly', title:'Armutsfalle durchbrechen',
     desc:'Grenzbelastung des untersten Dezils unter 70 % senken',
     subs:[{ label:'METR D1', check:r=>r.metr[0]<0.70, cur:r=>r.metr[0]*100, tgt:70, refFn:()=>99, dir:'down', fmt:v=>v.toFixed(0)+' %' }]},
@@ -386,9 +570,9 @@ const CHALLENGES = [
       { label:'CO₂ < 80',       check:r=>r.behavior.co2<80,    cur:r=>r.behavior.co2,  tgt:80,    refFn:()=>100,       dir:'down', fmt:v=>v.toFixed(1) }
     ]},
   { id:'sozmark', diff:'monthly', title:'Soziale Marktwirtschaft',
-    desc:'Armut < 6 %, Investitionen > 101, Saldo > −40 Mrd.',
+    desc:'Armut < 12 %, Investitionen > 101, Saldo > −40 Mrd.',
     subs:[
-      { label:'Armut < 6 %',    check:r=>r.armutsrisiko<6,      cur:r=>r.armutsrisiko,   tgt:6,   refFn:ref=>ref.armutsrisiko, dir:'down', fmt:v=>v.toFixed(1)+' %' },
+      { label:'Armut < 12 %',   check:r=>r.armutsrisiko<12,     cur:r=>r.armutsrisiko,   tgt:12,   refFn:ref=>ref.armutsrisiko, dir:'down', fmt:v=>v.toFixed(1)+' %' },
       { label:'Invest. > 101',  check:r=>r.behavior.invest>101, cur:r=>r.behavior.invest, tgt:101, refFn:()=>100,              dir:'up',   fmt:v=>v.toFixed(1) },
       { label:'Saldo > −40',    check:r=>r.saldo>-40,           cur:r=>r.saldo,           tgt:-40, refFn:ref=>ref.saldo,        dir:'up',   fmt:v=>v.toFixed(0)+' Mrd.' }
     ]},
@@ -441,8 +625,8 @@ const TOOLTIPS = {
   },
   synthetisch: {
     title: "Synthetisch vs. Dual",
-    text: "Synthetisch: Kapital- und Arbeitseinkommen zusammen progressiv besteuert (DE bis 2008). Dual (aktuell): Kapitalerträge pauschal mit Abgeltungsteuer. DIW (Bach/Sinclair 2026): synthetisch gerechter, mehr Aufkommen aus D10b/c. ifo: dual vermeidet Kapitalflucht (Elastizität 0,5).",
-    quelle: "§§ 32d, 43 EStG · Bach/Sinclair DIW Wochenbericht 4/2026 · Kleven/Schultz (2014)"
+    text: "Synthetisch: Kapital- und Arbeitseinkommen zusammen progressiv besteuert (DE bis 2008). Dual (aktuell): Kapitalerträge pauschal mit Abgeltungsteuer. Synthetisch: progressiver, mehr Aufkommen aus D10b/c. ifo: dual vermeidet Kapitalflucht (Elastizität 0,5).",
+    quelle: "§§ 32d, 43 EStG · Kleven/Schultz (2014) · Beleg für die DIW-Aussage ausstehend (der bisher zitierte Wochenbericht 4/2026 behandelt die Erbschaftsteuer)"
   },
   abgeltung: {
     title: "Abgeltungsteuer",
@@ -506,8 +690,8 @@ const TOOLTIPS = {
   },
   rv: {
     title: "Rentenversicherungsbeitrag",
-    text: "AN+AG je hälftig. Nur bis BBG (90.600 € West 2025) fällig — wirkt regressiv. SVR-Projektion: ohne Reform steigt Beitragssatz bis 2045 auf ~25%. Generationenkapital (Rentenpaket II 2024): 12 Mrd./Jahr in Staatsfonds ab 2024.",
-    quelle: "§ 158 SGB VI · 2025: 18,6% · BBG 90.600 € · Rentenpaket II BT-Drs. 20/10749 · DRV"
+    text: "AN+AG je hälftig. Nur bis zur BBG (101.400 € 2026, bundeseinheitlich) fällig — wirkt regressiv. Rentenpaket 2025: Haltelinie 48 % bis 2031, Mütterrente, Aktivrente. Rentenversicherungsbericht 2025: Beitragssatz 18,6 % bis 2027, danach 19,8–20,4 % (2030). Das Generationenkapital (Rentenpaket II) wurde nie beschlossen.",
+    quelle: "§ 158 SGB VI · 2026: 18,6 % · BBG 101.400 € (SV-Rechengrößenverordnung 2026) · Rentenpaket 2025 (Bundestag 05.12.2025) · BMAS Rentenversicherungsbericht 2025"
   },
   kv: {
     title: "Krankenversicherungsbeitrag",
@@ -516,8 +700,8 @@ const TOOLTIPS = {
   },
   alpf: {
     title: "Arbeitslosen- + Pflegeversicherung",
-    text: "ALV: 2,6% bis BBG 90.600 €. Pflegeversicherung: 3,6% (Kinderlose +0,6%) bis BBG 66.150 €. Pflegeversicherung unter massivem Reformdruck: Pflegebedürftige wachsen demografisch stark. Koalitionsvertrag 2025: Pflegereform für 2026 angekündigt.",
-    quelle: "§ 341 SGB III · § 55 SGB XI · 2025: 6,2% · Koalitionsvertrag CDU/SPD 2025 · BMG"
+    text: "ALV: 2,6% bis BBG 101.400 €. Pflegeversicherung: 3,6% (Kinderlose +0,6%) bis BBG 69.750 €. Pflegeversicherung unter massivem Reformdruck: Pflegebedürftige wachsen demografisch stark. Koalitionsvertrag 2025: Pflegereform für 2026 angekündigt.",
+    quelle: "§ 341 SGB III · § 55 SGB XI · 2026: 6,2% · Koalitionsvertrag CDU/SPD 2025 · BMG"
   },
   buergerv: {
     title: "Bürgerversicherung",
@@ -526,8 +710,8 @@ const TOOLTIPS = {
   },
   bg: {
     title: "Bürgergeld-Regelsatz",
-    text: "563 €/Monat für Alleinstehende (2025). ~5,5 Mio. Bedarfsgemeinschaften. ifo/Peichl (2025): Schlüsselreform ist METR-Senkung (Anrechnung 80% → 60%), nicht Regelsatz selbst. Simulation zeigt: METR D1 liegt bei 80%+ — stärkstes Arbeitsmarkthemmnis. ifo Forschungsbericht 159 (2025): Reformvariante mit 60% Anrechnungsquote senkt D1-METR auf ~64% und könnte das Arbeitsangebot im untersten Dezil spürbar steigern.",
-    quelle: "§ 20 SGB II · 2025: 563 € · Blömer/Fuest/Peichl ifo 01/2025 · ifo Forschungsbericht 159/2025 · ifo/ZEW METR-Simulation 2024"
+    text: "563 €/Monat für Alleinstehende (2026, Nullrunde). Seit 01.07.2026 Grundsicherungsgeld mit verschärften Sanktionen. ~5,5 Mio. Leistungsberechtigte (Personen, nicht Bedarfsgemeinschaften). Der Regler wirkt auf den Regelbedarf; Unterkunft und Mehrbedarfe stehen fest. ifo/Peichl (2025): Schlüsselreform ist METR-Senkung (Anrechnung 80% → 60%), nicht Regelsatz selbst. Simulation zeigt: METR D1 liegt bei 80%+ — stärkstes Arbeitsmarkthemmnis. ifo Forschungsbericht 159 (2025): Reformvariante mit 60% Anrechnungsquote senkt D1-METR auf ~64% und könnte das Arbeitsangebot im untersten Dezil spürbar steigern.",
+    quelle: "§ 20 SGB II · 2026: 563 € · Gesetz zur neuen Grundsicherung (Bundestag 2026) · Blömer/Fuest/Peichl ifo 01/2025 · ifo Forschungsbericht 159/2025 · ifo/ZEW METR-Simulation 2024"
   },
   kg: {
     title: "Kindergeld",
@@ -546,8 +730,8 @@ const TOOLTIPS = {
   },
   kapitalquote: {
     title: "Fondsquote Rentenversicherung",
-    text: "Anteil RV-Aufkommen in Staatsfonds (Generationenkapital). Rentenpaket II 2024: 12 Mrd./Jahr ab 2024 beschlossen (~4% des RV-Aufkommens). Modell zeigt: früherer Start hätte durch Zinseszins erheblich mehr Puffer erzeugt.",
-    quelle: "Rentenpaket II · BT-Drs. 20/10749 · Norges Bank NBIM 2024 · DRV Rentenversicherungsbericht"
+    text: "Anteil RV-Aufkommen in einem Staatsfonds (Generationenkapital) — ein Gedankenexperiment: Das Rentenpaket II mit 12 Mrd./Jahr wurde nie beschlossen, es scheiterte mit der Ampel. Modell zeigt: ein früherer Start hätte durch Zinseszins erheblich mehr Puffer erzeugt.",
+    quelle: "Entwurf Rentenpaket II, BT-Drs. 20/10749 (nicht beschlossen) · Norges Bank NBIM 2024 · BMAS Rentenversicherungsbericht 2025"
   },
   rendite_fonds: {
     title: "Erwartete Jahresrendite",
@@ -577,7 +761,7 @@ const TOOLTIPS = {
   bbg: {
     title: "Beitragsbemessungsgrenze (BBG)",
     text: "Bis zu dieser Einkommenshöhe werden SV-Beiträge fällig — darüber nicht. Wirkt stark regressiv: Wer mehr verdient als die BBG, zahlt keinen Grenzanteil mehr. Erhöhung würde Finanzierungsbasis verbreitern und Progressivität erhöhen. DIW: BBG-Anhebung = günstigste Reform zur SV-Finanzierung.",
-    quelle: "§ 6 SGB IV · RV-BBG 2025: 90.600 € · KV-BBG: 66.150 € · DIW Wochenbericht 2025"
+    quelle: "§ 6 SGB IV · RV-BBG 2026: 101.400 € · KV-BBG 2026: 69.750 € (SV-Rechengrößenverordnung 2026)"
   },
   zucman: {
     title: "Zucman-Mindeststeuer (Milliardäre)",
@@ -586,13 +770,13 @@ const TOOLTIPS = {
   },
   kv_kapital: {
     title: "Kapitalerträge KV-pflichtig",
-    text: "GKV-Mitglieder zahlen Beitrag auch auf Kapitalerträge (Dividenden, Zinsen, Mieteinnahmen). Derzeit: nur auf Arbeitseinkommen bis BBG (66.150 €). Reform würde Beitragsbasis strukturell verbreitern. ifo Forschungsbericht 159/2025: Mehreinnahmen ~8 Mrd. € / Jahr bei 16,3% Satz. Erfasst ca. 90% der unteren Dezile, nur ~8% im Spitzendezil (PKV-Quote).",
-    quelle: "§ 226 SGB V · ifo Forschungsbericht 159/2025 · GKV-SV Jahresbericht 2025 · DIW Wochenbericht 4/2026"
+    text: "GKV-Mitglieder zahlen Beitrag auch auf Kapitalerträge (Dividenden, Zinsen, Mieteinnahmen). Derzeit: nur auf Arbeitseinkommen bis BBG (69.750 € 2026). Reform würde Beitragsbasis strukturell verbreitern. ifo Forschungsbericht 159/2025: Mehreinnahmen ~8 Mrd. € / Jahr bei 16,3% Satz. Erfasst ca. 90% der unteren Dezile, nur ~8% im Spitzendezil (PKV-Quote).",
+    quelle: "§ 226 SGB V · ifo Forschungsbericht 159/2025 · GKV-SV Jahresbericht 2025"
   },
   kv_bbg_frei: {
     title: "KV-Beitragsbemessungsgrenze abschaffen",
-    text: "Aktuell: KV-Beiträge nur bis 66.150 € (2025). Darüber: kein weiterer Beitrag — wirkt stark regressiv. Abschaffung: alle Arbeitseinkommen KV-pflichtig ohne Deckel. DIW (2025): Mehreinnahmen ~18 Mrd. € / Jahr bei 16,3% Satz. Entlastet mittlere Einkommen nicht direkt, stärkt aber GKV-Finanzierungsbasis dauerhaft.",
-    quelle: "§ 6 Abs. 7 SGB V · KV-BBG 2025: 66.150 € · DIW Wochenbericht 4/2026 · GKV-SV Jahresbericht 2025"
+    text: "Aktuell: KV-Beiträge nur bis 69.750 € (2026). Darüber: kein weiterer Beitrag — wirkt stark regressiv. Abschaffung: alle Arbeitseinkommen KV-pflichtig ohne Deckel. Mehreinnahmen im Modell ~18 Mrd. € / Jahr (Beleg ausstehend). Entlastet mittlere Einkommen nicht direkt, stärkt aber GKV-Finanzierungsbasis dauerhaft.",
+    quelle: "§ 6 Abs. 7 SGB V · KV-BBG 2026: 69.750 € · GKV-SV Jahresbericht 2025"
   }
 };
 
@@ -743,6 +927,13 @@ const PERIOD_STATE_0 = {
   co2_kumulat:      0,      // Mio. t CO₂e kumuliert seit 2025
   lohnbasis_faktor: 1.0,    // Arbeitsmarkt-Zustandsindex (1,0 = Status quo 2025)
   renten_faktor:    1.0,    // wird per Periode aus DEMOGRAFIE_KURVE gesetzt
+  oeff_kapital:     0,
+  niveau_kapital:   1,      // Niveaueffekt des privaten Kapitals (1 = Status quo)
+  niveau_arbeit:    1,      // Niveaueffekt des Arbeitsangebots      // öffentliches Kapital über dem Status-quo-Pfad, Mrd. € (Preise 2025)
+  jahr:             2025,   // Startjahr der Periode
+  laenge:           4,      // Jahre der Periode — wird per Periode gesetzt (Emissionsbasispfad)
+  trend_faktor:     1.0,    // nominaler Trend seit 2025, (1 + BIP_WACHSTUM_NOMINAL_JAHR)^Jahre —
+                            // Preis- und Lohnniveau, an dem die Ausgaben wachsen (PRUEFUNG-2.md I.2)
 };
 
 // ── PLANSPIEL-KONFIGURATION ──
@@ -867,6 +1058,10 @@ const ZUKUNFTS_SZENARIEN = [
   },
 ];
 
-export { ZINS_EFFEKTIV, BIP_WACHSTUM_NOMINAL_JAHR };
+export { ZINS_EFFEKTIV, BIP_WACHSTUM_NOMINAL_JAHR, EMISSIONEN_1990, EMISSIONS_ANKER, emissionsBasis };
+export { kstSenkung, rvAnstieg, NATO_QUOTE_2025, verteidigungQuote, sondervermoegen, SCHULDENBREMSE_STRUKTURELL, VERTEIDIGUNG_AUSNAHME_AB, BUDGET_SEMIELASTIZITAET };
+export { KAPITALANTEIL, PRIVAT_ANPASSUNG };
+export { MPC_DEZIL, MPC_MITTEL, MULTIPLIKATOR_STEUER_TRANSFER, MULTIPLIKATOR_INVEST, OEFF_KAPITAL_ELASTIZITAET, OEFF_KAPITALSTOCK, OEFF_ABSCHREIBUNG };
 
+export { KINDER_JE_HH, KINDERGELD_KINDER, BUERGERGELD_QUOTE, CO2_GEWICHT };
 export { DEZILE, ELAST, ELAST_QUELLEN, BASIS_AUFKOMMEN, ADMIN_QUOTE, BASIS_MAKRO, STAATSAUSGABEN, PRESETS, MOD_DEFS, AUSGABEN_TOTAL, CHALLENGES, CHALLENGE_CTX, TOOLTIPS, REFORM_TOURS, KPI_BENCH, BGE_LABOR_EFF, DEMOGRAFIE_KURVE, PERIOD_STATE_0, ZUKUNFTS_SZENARIEN, KURS_KONFIG_DEFAULT, SCHOCK_BIBLIOTHEK };

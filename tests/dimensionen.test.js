@@ -97,6 +97,32 @@ test('Zinsen werden in der Schuldenfortschreibung nicht doppelt gezaehlt', () =>
     `${erwartet.toFixed(1)} Mrd. Differenz deutet auf doppelt gezaehlte Zinsen.`);
 });
 
+// ── Nominale Fortschreibung (PRUEFUNG-2.md I.2) ─────────────────────────────
+
+test('die Einnahmenquote bleibt im Status quo ueber den Pfad gleich', () => {
+  // Vorher blieben ESt und MwSt 20 Jahre nominal auf dem Stand von 2025, die
+  // Einnahmenquote schmolz von 37 auf 26 % BIP. Aufkommenselastizitaet 1 heisst:
+  // Ohne Politikaenderung bleibt der Anteil am BIP gleich.
+  const quoten = pfad.map(e => e.result.einnahmen_total / e.zustand.bip * 100);
+  const spanne = Math.max(...quoten) - Math.min(...quoten);
+  assert.ok(spanne < 0.5,
+    `Einnahmenquote schwankt um ${spanne.toFixed(2)} Pp. (${quoten.map(q => q.toFixed(1)).join(', ')})`);
+});
+
+test('eine Rezession senkt die Einnahmen, aber nicht die Ausgaben', () => {
+  const kurs = { perioden_laenge_jahre: 4, schocks: [{ periode: 1, effekte: { bip_malus: 0.05 } }] };
+  const mit = simulierePfad(Array.from({ length: 2 }, () => ({ ...PRESETS.status_quo })), kurs)[1].result;
+  const ohne = pfad[1].result;
+  assert.ok(Math.abs(mit.einnahmen_total / ohne.einnahmen_total - 0.95) < 0.01,
+    `Einnahmen sinken nur auf ${(mit.einnahmen_total / ohne.einnahmen_total * 100).toFixed(1)} %`);
+  // Erhebungskosten folgen dem Aufkommen (KSt/GewSt ueber den Gewinn) — das ist
+  // richtig und wird hier herausgerechnet; alle uebrigen Ausgaben bleiben gleich.
+  const trend = pfad[1].zustand.trend_faktor;
+  const ohneZins = r => r.ausgaben_total - r.zinsen_dyn - r.admin_kosten * trend;
+  assert.ok(Math.abs(ohneZins(mit) - ohneZins(ohne)) < 1e-6, 'Ausgaben reagieren auf die Rezession');
+  assert.ok(mit.saldo < ohne.saldo, 'automatischer Stabilisator: das Defizit steigt');
+});
+
 // ── Indikatoren muessen im Spielbereich etwas messen ────────────────────────
 
 test('der GGI-Schuldenteil reagiert ueber den ganzen Spielbereich', () => {

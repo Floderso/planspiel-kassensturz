@@ -1,50 +1,58 @@
 // SPDX-License-Identifier: CC-BY-4.0
-// Tests: Multi-Perioden-Übergänge, DICE-Klimaschaden, HANK-Multiplikator,
+// Tests: Multi-Perioden-Übergänge, Emissionspfad, Multiplikatoren,
 // abgeleitete Fiskalindikatoren (Domar, S2, GGI)
 //
-// Referenzen: Nordhaus (2023) PNAS, Kaplan/Moll/Violante (2018) AER,
+// Referenzen: UBA Projektionsbericht 2025, Kaplan/Moll/Violante (2018) AER,
 // Domar (1944), Blanchard (2019) AEA Presidential Address.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { simulierePfad, diceKlimaMalus, hankMultiplikator, berechneTransition, getDemoForYear } from '../js/rechner/transition.js';
+import { simulierePfad, konsumMultiplikator, berechneTransition, getDemoForYear } from '../js/rechner/transition.js';
 import { berechneAbgeleitet, CO2_BUDGET_DE } from '../js/rechner/abgeleitet.js';
 import { berechne } from '../js/rechner/berechne.js';
-import { PRESETS, PERIOD_STATE_0, DEZILE } from '../js/data.js';
+import { PRESETS, PERIOD_STATE_0, DEZILE, emissionsBasis, EMISSIONEN_1990 } from '../js/data.js';
 
 const SQ = PRESETS.status_quo;
 const sqParams = (n = 5) => Array.from({ length: n }, () => ({ ...SQ }));
 
-test('DICE-Klimaschaden: 1 bei null Zusatzemissionen, monoton fallend, begrenzt', () => {
-  assert.ok(Math.abs(diceKlimaMalus(0) - 1) < 1e-12);
-  // Hinweis: KLIMA_SENS_PER_MT (5e-4 °C/Mt) ist eine pädagogische Skalierung —
-  // DE-Emissionen stehen stellvertretend für globales Handeln. Physikalisch
-  // (TCRE ~0,45 °C je 1.000 Gt CO₂) wäre der Wert ~3 Größenordnungen kleiner.
-  let prev = 1;
-  for (const kumulat of [1000, 3000, 6600, 12000]) {
-    const malus = diceKlimaMalus(kumulat);
-    assert.ok(malus < prev, `Malus muss mit Kumulat fallen (${kumulat})`);
-    assert.ok(malus > 0.75, `Malus ${malus} außerhalb des Spielbereichs`);
-    prev = malus;
-  }
+test('Emissionsbasispfad: 649 Mt 2025, −63 % 2030 und −80 % 2040 gegenüber 1990', () => {
+  assert.equal(emissionsBasis(2025), 649);
+  assert.ok(Math.abs(emissionsBasis(2030) / EMISSIONEN_1990 - 0.37) < 1e-9);
+  assert.ok(Math.abs(emissionsBasis(2040) / EMISSIONEN_1990 - 0.20) < 1e-9);
+  for (let j = 2025; j < 2045; j++) assert.ok(emissionsBasis(j + 1) < emissionsBasis(j), `Pfad fällt ${j}`);
 });
 
-test('HANK-Multiplikator: Transfers an untere Dezile multiplizieren stärker', () => {
-  const basis = 1.2; // INVEST_MULTIPLIKATOR (Gechert/Heimberger)
-  assert.equal(hankMultiplikator(null), basis);
-  assert.equal(hankMultiplikator({ delta: Array(DEZILE.length).fill(0) }), basis);
+test('Im Status quo folgen die Emissionen dem Pfad, ein höherer CO₂-Preis senkt sie darunter', () => {
+  const pfad = simulierePfad(sqParams(5));
+  pfad.forEach(e => assert.ok(Math.abs(e.result.emissionen - emissionsBasis(e.jahr)) < 1e-6, e.label));
+  const teuer = simulierePfad(Array.from({ length: 5 }, () => ({ ...SQ, co2: 150 })));
+  teuer.forEach((e, i) => assert.ok(e.result.emissionen < pfad[i].result.emissionen, e.label));
+});
 
+test('Das CO₂-Budget (1,7 °C) ist im Status quo in den 2030ern aufgebraucht', () => {
+  const pfad = simulierePfad(sqParams(5));
+  assert.ok(pfad[2].zustand.co2_kumulat < CO2_BUDGET_DE, 'bis 2033 noch Budget übrig');
+  assert.ok(pfad[4].zustand.co2_kumulat > CO2_BUDGET_DE, 'bis 2041 aufgebraucht');
+});
+
+test('Konsummultiplikator: Transfers an untere Dezile multiplizieren stärker', () => {
+  const mittel = 0.6; // MULTIPLIKATOR_STEUER_TRANSFER (Gechert 2015)
+  assert.equal(konsumMultiplikator(null), mittel);
+  assert.equal(konsumMultiplikator({ delta: Array(DEZILE.length).fill(0) }), mittel);
   const anUnten = { delta: DEZILE.map((_, i) => (i === 0 ? 1000 : 0)) };
   const anOben = { delta: DEZILE.map((_, i) => (i === DEZILE.length - 1 ? 1000 : 0)) };
-  assert.ok(hankMultiplikator(anUnten) > hankMultiplikator(anOben),
-    'MPC-Gewichtung: unteres Dezil (MPC~1) > oberstes (MPC~0,4)');
+  assert.ok(konsumMultiplikator(anUnten) > konsumMultiplikator(anOben));
+  assert.ok(konsumMultiplikator(anUnten) < 1, 'kein Konsummultiplikator über 1 (C4: vorher bis 2,67)');
 });
 
-test('berechneTransition: höhere kumulierte Emissionen senken das Folge-BIP (DICE)', () => {
+test('berechneTransition: deutsche Emissionen verändern das deutsche BIP nicht', () => {
+  // Früher erwärmten deutsche Emissionen im Modell die Erde (Klimasensitivität
+  // 1.100-fach zu hoch), und ein CO₂-Preis von 250 €/t brachte +2,9 % BIP
+  // (PRUEFUNG.md A2, PRUEFUNG-2.md I.5).
   const r = berechne(SQ, PERIOD_STATE_0);
   const sauber = berechneTransition({ ...PERIOD_STATE_0, co2_kumulat: 0 }, r, 2029, 4);
   const belastet = berechneTransition({ ...PERIOD_STATE_0, co2_kumulat: 6000 }, r, 2029, 4);
-  assert.ok(belastet.bip < sauber.bip);
+  assert.equal(belastet.bip, sauber.bip);
 });
 
 test('berechneTransition: Defizit erhöht die Schuldenquote, Überschuss senkt sie', () => {
@@ -112,6 +120,59 @@ test('berechneAbgeleitet: Domar/S2/GGI-Konsistenz', () => {
     assert.ok(abl.ggi >= 0 && abl.ggi <= 1, `GGI ${abl.ggi}`);
     assert.ok(Math.abs(abl.ggi - (abl.ggi_schuld + abl.ggi_co2)) < 1e-12);
     assert.ok(abl.co2_budget_rest >= 0 && abl.co2_budget_rest <= CO2_BUDGET_DE);
-    assert.ok(abl.mu_hank > 0.5 && abl.mu_hank < 3, `HANK-Multiplikator ${abl.mu_hank}`);
+    assert.ok(abl.mu_hank > 0.1 && abl.mu_hank < 1, `Konsummultiplikator ${abl.mu_hank}`);
   }
+});
+
+// ── Nachfrage und öffentliches Kapital (PRUEFUNG-2.md I.3) ─────────────────
+
+test('Konsolidierung kostet Wachstum, Entlastung bringt welches — symmetrisch', () => {
+  const sq = berechne(SQ);
+  const spar = berechne({ ...SQ, bg: 400, kg: 200, mwst: 22 });
+  const entl = berechne({ ...SQ, freibetrag: 16000 });
+  assert.ok(spar.nachfrage_luecke < 0 && spar.bip_aktuell < sq.bip_aktuell, 'Sparkurs senkt das BIP der Periode');
+  assert.ok(entl.nachfrage_luecke > 0 && entl.bip_aktuell > sq.bip_aktuell, 'Entlastung hebt es');
+  // Vorher: Sparkurs BIP ±0, Konsolidierung war gratis
+  const saldoMechanisch = berechne({ ...SQ, bg: 400, kg: 200, mwst: 22 }, null, { ohneNachfrage: true }).saldo;
+  assert.ok(spar.saldo < saldoMechanisch, 'die Nachfragelücke frisst einen Teil der Konsolidierung');
+});
+
+test('Investitionsschub: Wirkung in der Größenordnung der Literatur, nicht +15 %', () => {
+  const pfad = i => simulierePfad([i, i, i, 0, 0].map(x => ({ ...SQ, invest_impuls: x })));
+  const sq = simulierePfad(sqParams(5)), inv = pfad(50);   // 600 Mrd. über 12 Jahre
+  const plus = inv[4].zustand.bip / sq[4].zustand.bip - 1;
+  assert.ok(plus > 0.005 && plus < 0.05, `BIP 2041 +${(plus * 100).toFixed(1)} % (vorher +15 %)`);
+  // nach dem Ende der Investitionen klingt der Effekt mit der Abschreibung ab
+  const plus3 = inv[3].zustand.bip / sq[3].zustand.bip - 1;
+  assert.ok(plus < plus3 + 1e-9, 'kein weiteres Wachstum aus einem Impuls, der aufgehört hat');
+});
+
+test('Die Nachfragelücke wird nicht fortgeschrieben', () => {
+  const einmal = simulierePfad([{ ...SQ, bg: 400, kg: 200, mwst: 22 }, ...sqParams(4)]);
+  const basis = simulierePfad(sqParams(5));
+  assert.ok(Math.abs(einmal[1].zustand.bip - basis[1].zustand.bip) / basis[1].zustand.bip < 0.001,
+    'ein Sparjahr senkt das Potenzial der Folgeperiode nicht');
+});
+
+test('Steuerpolitik verschiebt das BIP-Niveau, nicht die Wachstumsrate', () => {
+  // Vorher kumulierten die Angebotseffekte je Periode: KSt 30 % kostete jede Periode weitere
+  // 0,9 % BIP, ohne Ende. Jetzt nähert sich das Niveau einem Grenzwert (Kapitalanteil 0,35).
+  const lauf = p => simulierePfad(Array.from({ length: 12 }, () => ({ ...SQ, ...p })));
+  const sq = lauf({}), kst = lauf({ kst: 30 });
+  const abst = sq.map((e, i) => kst[i].zustand.bip / e.zustand.bip - 1);
+  const schritte = abst.slice(1).map((a, i) => a - abst[i]);
+  assert.ok(Math.abs(schritte[schritte.length - 1]) < Math.abs(schritte[0]) / 3, 'die Wirkung klingt ab');
+  assert.ok(abst[11] > -0.03, `langfristig ${(abst[11] * 100).toFixed(1)} % (Grenzwert ~−2 %)`);
+});
+
+test('Geltendes Recht über die Jahre: KSt-Senkung bis 2032, RV-Beitrag nach § 158 SGB VI', () => {
+  const pfad = simulierePfad(sqParams(5));
+  assert.equal(pfad[0].result.kst_senkung, 0.25);              // 2025–2028: nur 2028 schon gesenkt
+  assert.equal(pfad[2].result.kst_senkung, 5);                 // 2033–2036: 10 %
+  assert.equal(pfad[0].result.rv_anstieg > 0, true);           // 2028 beginnt der Anstieg
+  assert.ok(Math.abs(18.6 + pfad[4].result.rv_anstieg - 21.15) < 1e-9, 'ab 2039 21,15 %');
+  // Statisch (Kalibrierungsjahr 2025) gilt beides nicht
+  const statisch = berechne(SQ);
+  assert.equal(statisch.kst_senkung, 0);
+  assert.equal(statisch.rv_anstieg, 0);
 });

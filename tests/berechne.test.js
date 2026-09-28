@@ -123,15 +123,46 @@ test('BGE 1.200 € reduziert Arbeitsangebot und ersetzt Bürgergeld (RWI 2024)'
   assert.ok(r.bge_brutto > 900 && r.bge_brutto < 1100, `BGE-Bruttokosten ${r.bge_brutto} Mrd. (soll ~1.008)`);
 });
 
-test('Schuldenbremse-Indikator konsistent zum Saldo (Art. 109 GG, −0,35 % BIP)', () => {
+test('Schuldenbremse-Indikator folgt der Regel 2025 (strukturell −0,70 % BIP)', () => {
   const r = berechne(SQ);
-  assert.equal(r.schuldenbremse_ok, r.saldo_bip_pct >= -0.35);
+  assert.equal(r.schuldenbremse_ok, r.struktureller_saldo_pct >= -0.70);
 });
 
 test('Klimageld: Auszahlung ist 70 % des CO₂-Aufkommens, Abschalten erhöht Netto-Aufkommen', () => {
-  const mit = berechne(SQ);
-  const ohne = berechne({ ...SQ, klimageld: false });
+  // Seit 25.09.2026 ohne Klimageld im Status quo (nie eingeführt, PRUEFUNG.md B5)
+  const mit = berechne({ ...SQ, klimageld: true });
+  const ohne = berechne(SQ);
   assert.ok(Math.abs(mit.klimageld_auszahlung - (mit.rev.co2 + mit.klimageld_auszahlung) * 0.7) < 1e-9);
   assert.equal(ohne.klimageld_auszahlung, 0);
   assert.ok(ohne.rev.co2 > mit.rev.co2);
+});
+
+// Ausweichen und Wegzug im obersten Prozent: Bis 27.09.2026 wurde die Schwelle (45 % / 60 %)
+// mit dem Grenzsatz je Euro Haushaltsbrutto verglichen, der auch bei 75 % Spitzensatz nur ~36 %
+// erreichte — die Reaktion griff am Tisch nie (docs/modell, „Was das Modell nicht kann“). Jetzt
+// löst der tarifliche Spitzensatz sie aus, für den Einkommensanteil über der Grenze.
+test('Komparative Statik: Über 45 % Spitzensatz weichen Spitzenverdiener aus', () => {
+  const d10c = p => berechne({ ...SQ, spitze: p }).dezile_avoidance;
+  const saldo = p => berechne({ ...SQ, spitze: p }).saldo;
+  assert.equal(d10c(45), 1, 'im Status quo keine Ausweichreaktion');
+  assert.ok(d10c(60) < 1 && d10c(75) < d10c(60), 'Ausweichen setzt am Tisch ein und wächst mit dem Satz');
+  // Abnehmender Ertrag: Ein Punkt über 70 % bringt weniger als ein Punkt knapp über 45 %,
+  // aber im Reglerbereich noch etwas (Aufkommensmaximum oberhalb, vgl. Saez 2001)
+  const unten = saldo(46) - saldo(45), oben = saldo(75) - saldo(74);
+  assert.ok(oben < unten, `je Punkt: ${unten.toFixed(2)} bei 45 %, ${oben.toFixed(2)} bei 74 % (Mrd. €)`);
+  assert.ok(oben > 0, 'Aufkommensmaximum liegt im Reglerbereich');
+});
+
+// Das Arbeitsangebot reagiert auf den Grenzsteuersatz — die Kapitaleinkünfte nicht. Bis 28.09.2026
+// skalierte der Arbeitsangebotsfaktor das ganze Brutto: Ein höherer Spitzensatz senkte auch Zinsen
+// und Dividenden des obersten Prozents (45 % seines Einkommens), obwohl diese der Abgeltungsteuer
+// unterliegen und im Modell keine eigene Elastizität haben.
+test('Einkommensteuer-Regler ändern die Arbeits-, nicht die Kapitaleinkünfte', () => {
+  const sq = berechne(SQ);
+  for (const p of [{ spitze: 75 }, { eingang: 30 }, { freibetrag: 20000 }, { spitze: 60, grenze: 100000 }]) {
+    const r = berechne({ ...SQ, ...p });
+    assert.notEqual(r.avg_labor, sq.avg_labor, `${JSON.stringify(p)} bewegt das Arbeitsangebot nicht`);
+    assert.ok(Math.abs(r.kapitaleinkuenfte - sq.kapitaleinkuenfte) < 1e-9,
+      `${JSON.stringify(p)}: Kapitaleinkünfte ${sq.kapitaleinkuenfte.toFixed(1)} → ${r.kapitaleinkuenfte.toFixed(1)} Mrd. €`);
+  }
 });
