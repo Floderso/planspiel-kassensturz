@@ -1,14 +1,21 @@
 % SPDX-License-Identifier: CC-BY-4.0
 % Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
 %
-% Modelldokumentation der Rechenengine (js/rechner/, js/data.js)
+% Kassensturz: Ein kompaktes Mikro-Makro-Modell der deutschen Finanzpolitik
+% Modelldokumentation der Rechenengine (js/rechner/, js/data.js) als Paper.
+%
 % Übersetzen:  cd docs/modell && node messung.js && latexmk -pdf modell.tex
-% Alle Messwerte stammen aus generiert/ und werden von messung.js erzeugt.
+% Alle Messwerte stammen aus generiert/ und werden von messung.js erzeugt;
+% Zahlen im Fließtext stehen als Makros (\W, \Wb, generiert/makros.tex), nie
+% abgeschrieben. tests/modelldoku.test.js meldet, wenn sie veraltet sind.
 \documentclass[11pt,a4paper]{article}
 
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
-\usepackage{lmodern}
+\usepackage{amsmath,mathtools}
+\usepackage{newtxtext}
+\usepackage{newtxmath}
+\usepackage[scaled=0.92,varqu,var0]{inconsolata}   % Code: Null ohne Querstrich
 \usepackage{textcomp}
 \usepackage{newunicodechar}
 % Zeichen aus den Quellenobjekten der Engine (Anhang), für pdfLaTeX übersetzt
@@ -33,124 +40,117 @@
 \newunicodechar{≥}{\ensuremath{\geq}}
 \newunicodechar{≈}{\ensuremath{\approx}}
 \newunicodechar{→}{\ensuremath{\rightarrow}}
-\newcommand{\formelschrift}{\ttfamily\footnotesize}
+\newcommand{\formelschrift}{\ttfamily\small}
 \usepackage[ngerman]{babel}
 \usepackage[autostyle]{csquotes}
 \usepackage{microtype}
-\usepackage[margin=2.4cm]{geometry}
-\usepackage{amsmath,amssymb,mathtools}
-\numberwithin{equation}{section}
-\usepackage{booktabs,longtable,tabularx,array,multirow}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{booktabs,longtable,array}
 \usepackage{graphicx}
 \usepackage{eurosym}
 \usepackage[table]{xcolor}
-\usepackage{enumitem}
 \usepackage{tikz}
-\usetikzlibrary{positioning,arrows.meta,calc,fit,backgrounds,shapes.geometric}
+\usetikzlibrary{positioning,arrows.meta,backgrounds,calc}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
 \usepgfplotslibrary{groupplots}
-\usepackage{caption}
-\usepackage[hidelinks]{hyperref}
+\usepackage[font=small,labelfont=bf,labelsep=period,skip=5pt]{caption}
+\usepackage[section]{placeins}   % Tabellen bleiben in ihrem Abschnitt
+\usepackage{needspace}
+\usepackage[backend=biber,style=authoryear-comp,maxcitenames=2,maxbibnames=10,
+            uniquename=false,uniquelist=false,giveninits=true,dashed=false]{biblatex}
+\addbibresource{literatur.bib}
+\usepackage[hidelinks,pdfusetitle]{hyperref}
 
-\setlength{\parindent}{0pt}
-\setlength{\parskip}{0.55em}
-\setlist{itemsep=0.2em,topsep=0.3em}
+\DeclareNameAlias{sortname}{family-given}
+\renewcommand*{\bibfont}{\small}
+% Zeitschriftenartikel ohne „In:“
+\renewbibmacro{in:}{\ifentrytype{article}{}{\printtext{\bibstring{in}\intitlepunct}}}
 
 % Farben: positiv (Saldo verbessert / Größe steigt) und negativ, farbfehlsichtig unterscheidbar
 \definecolor{pos}{HTML}{1F6FB2}
 \definecolor{neg}{HTML}{C4501A}
 \definecolor{grau}{HTML}{6B6B6B}
-\definecolor{hell}{HTML}{EEF2F6}
+\definecolor{hell}{HTML}{E6EBF0}
 
 \newcommand{\COz}{CO\textsubscript{2}}
+\newcommand{\datei}[1]{\texttt{#1}}
+\newcommand{\hoch}[1]{^{\mathrm{#1}}}
 
-% Wirkungsgraphen (Teil III): Knoten und gemessene Kanten, erzeugt von messung.js
+% Wirkungsgraphen: Knoten der Ressortgraphen (Anhang) und gemessene Kanten, erzeugt von
+% messung.js. \wkante{von}{nach}{Farbe}{Stärke}{Wert}{Versatz}: waagerechter Ansatz an der
+% Stellgröße mit der Zahl, dann zum Kanal. \ukante{von}{nach}{Farbe}{Stärke}: Übersichtsgraph.
 \tikzset{
   stell/.style={draw=grau, rounded corners=2pt, fill=hell, align=center, font=\small,
                 text width=33mm, inner sep=3pt},
   kanal/.style={draw=grau, rounded corners=2pt, fill=white, align=left, font=\small,
                 text width=52mm, minimum height=6mm, anchor=west},
-  ziel/.style={draw=black, thick, rounded corners=2pt, fill=white, align=center, font=\small,
-               text width=30mm, minimum height=9mm},
   wlabel/.style={font=\scriptsize, fill=white, inner sep=0.8pt},
 }
-% Kante: waagerechter Ansatz an der Stellgröße (Versatz #6 cm) mit der Zahl, dann zum Kanal
 \newcommand{\wkante}[6]{%
   \draw[-{Stealth[length=2.2mm]}, color=#3, line width=#4pt, draw opacity=0.8]
     ($(L-#1.east)+(0,#6)$) -- node[wlabel, text=#3]{#5} ++(1.25,0) -- (K-#2.west);}
-\newcommand{\Mrd}{Mrd.\,\euro{}}
-\newcommand{\datei}[1]{\texttt{#1}}
-\newcommand{\Pp}{Pp.}
+\newcommand{\ukante}[4]{\draw[color=#3, line width=#4pt, opacity=0.55]
+  (s-#1.east) to[out=0, in=180] (k-#2.west);}
 
-% Merksätze am Ende eines Abschnitts
-\newenvironment{merksatz}{\par\medskip\noindent\begin{tabular}{@{}p{\linewidth}@{}}\toprule\textbf{Kern.}\ }{\\\bottomrule\end{tabular}\par\medskip}
+% Messwerte aus generiert/werte.tex: \W{bereich}{stellgröße}{größe} mit Vorzeichen,
+% \Wb{…} als Betrag. Ein fehlender Wert bricht die Übersetzung ab, statt still zu fehlen.
+\newcommand{\W}[3]{\ifcsname W@#1@#2@#3\endcsname\csname W@#1@#2@#3\endcsname
+  \else\PackageError{modell}{Messwert #1/#2/#3 fehlt}{node messung.js laufen lassen}\fi}
+\newcommand{\Wb}[3]{\ifcsname Wb@#1@#2@#3\endcsname\csname Wb@#1@#2@#3\endcsname
+  \else\PackageError{modell}{Messwert #1/#2/#3 fehlt}{node messung.js laufen lassen}\fi}
 
-% Einzelne Messwerte: \wert{bereich}{stellgröße}{feld}, abgelegt von messung.js
-\newcommand{\wertdef}[4]{\expandafter\def\csname wert-#1-#2-#3\endcsname{#4}}
-\newcommand{\wert}[3]{\ifcsname wert-#1-#2-#3\endcsname\csname wert-#1-#2-#3\endcsname\else\textbf{??}\fi}
 \input{generiert/makros.tex}
+\input{generiert/werte.tex}
 
-\title{Kassensturz Planspiel\\[0.3em]\large Die Rechenengine in Worten, in Formeln und als Wirkungsgraph}
-\author{Modelldokumentation zu \datei{js/rechner/} und \datei{js/data.js}}
-\date{Stand: 25.\,September 2026}
+\title{Kassensturz: Ein kompaktes Mikro-Makro-Modell\\der deutschen Finanzpolitik}
+\author{Florian Aram Feuerriegel\thanks{kassensturz.org. Modellcode:
+  \datei{js/rechner/} und \datei{js/data.js}; Tabellen, Abbildungen und
+  Kennzahlen erzeugt \datei{docs/modell/messung.js}.}}
+\date{28.~September 2026}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-\noindent Das Planspiel lässt Studierende Steuer- und Sozialpolitik einstellen und rechnet
-sofort die Folgen für Haushaltssaldo, Verteilung, Emissionen und Wirtschaftsleistung. Dieses
-Dokument beschreibt die Rechenengine dreimal: \emph{Teil~I} in Worten, für alle, die wissen
-wollen, was das Modell tut, ohne Code zu lesen; \emph{Teil~II} in Formeln, als vollständige
-Spezifikation mit Quellen; \emph{Teil~III} als gerichteten, gewichteten Graphen, dessen
-Kantengewichte nicht behauptet, sondern gemessen sind: Jede Stellgröße wurde im Modell um
-einen festen Schritt verschoben, und die Differenz zum Status quo ist das Gewicht. Alle
-Messwerte erzeugt \datei{docs/modell/messung.js}; ein Test meldet, wenn das Dokument nicht
-mehr zur Engine passt.
+\noindent Kassensturz ist ein Simulationsmodell der deutschen Finanzpolitik,
+das Haushaltssaldo, Einkommensverteilung, Emissionen und Wirtschaftsleistung
+gemeinsam fortschreibt und in einem Planspiel auf jede Entscheidung sofort
+antwortet. Zwölf Haushaltstypen tragen Einkommensteuer nach dem Tarif 2026,
+Sozialbeiträge, Umsatzsteuer, \COz-Last und die Inzidenz der Unternehmen- und
+Vermögensteuern; Arbeitsangebot, Konsum, Investitionen, Emissionen und
+Vermögen reagieren über Elastizitäten aus der Literatur. Ein Makrorahmen führt
+Einkommensänderungen über dezilspezifische Konsumneigungen in die Nachfrage
+und schreibt BIP, Schuldenquote und kumulierte Emissionen über fünf Perioden
+fort. Staat und Haushalte buchen dieselben Beträge, und Tests erzwingen diese
+Identität. Im Status quo, dem Rechtsstand 2026, steigt die Schuldenquote von
+\SQschuldStart\,\% auf \SQschuldEnde\,\% im Jahr 2041, und der strukturelle
+Saldo verfehlt die Schuldenbremse von der ersten Periode an. Die Wirkungen von
+21 Stellgrößen werden gemessen und in mechanische Wirkung, Verhaltensreaktion und
+Nachfrage zerlegt. Sie zeigen einen durchgehenden Zielkonflikt:
+Beitragssätze, Umsatzsteuer und \COz-Preis erhöhen die Ungleichheit, Steuern auf
+hohe Einkommen, Kapital und Vermögen senken sie, und jede Konsolidierung
+kostet Wachstum, langfristig am meisten über die Unternehmensteuern.
+
+\medskip
+\noindent\textbf{Schlagwörter:} Mikrosimulation, Steuer-Transfer-Modell,
+Inzidenz, Schuldenbremse, Planspiel\\
+\textbf{JEL:} A22, C63, D31, H23, H24, H62, H63
 \end{abstract}
 
-\tableofcontents
-\clearpage
+\input{einleitung.tex}
+\input{aufbau.tex}
+\input{kalibrierung.tex}
+\input{wirkungen.tex}
+\input{validierung.tex}
+\input{diskussion.tex}
 
-\section*{Zum Gebrauch}
-\addcontentsline{toc}{section}{Zum Gebrauch}
-
-\textbf{Für wen.} Für Lehrende, die das Planspiel einsetzen und seine Ergebnisse im
-Debriefing erklären müssen, und für Fachleute, die das Modell prüfen. Teil~I setzt kein
-Vorwissen voraus, Teil~II volkswirtschaftliches Grundstudium.
-
-\textbf{Was gilt.} Maßgeblich ist der Code. Wo dieses Dokument und die Engine voneinander
-abweichen, irrt das Dokument. Die Zahlen in Teil~III und im Anhang sind aus der Engine
-erzeugt und damit aktuell, solange \datei{tests/modelldoku.test.js} grün ist.
-
-\textbf{Einheiten.} Geldgrößen des Staates in Mrd.\,\euro{} je Jahr, Geldgrößen der
-Haushalte in \euro{} je Haushalt und Jahr, in Preisen von 2025. Sätze in Prozent, Änderungen
-von Sätzen in Prozentpunkten (\Pp). Emissionen in Mt \COz-Äquivalenten. Der Gini-Koeffizient
-wird in Teil~III in Gini-Punkten angegeben (1 Punkt = 0,01).
-
-\textbf{Status quo.} Alle Wirkungen sind Differenzen gegenüber dem Status quo, dem
-Rechtsstand 2026 (\datei{docs/RECHTSSTAND.md}). In der ersten Periode (2025--2028) liefert er
-einen Saldo von \SQsaldo\,\Mrd{} je Jahr (\SQsaldoPct\,\% des BIP), einen Gini von \SQgini{},
-eine Armutsrisikoquote von \SQarmut\,\% und Emissionen von \SQemiss\,Mt. Bis zur fünften
-Periode (2041--2044) steigt die Schuldenquote ohne Politikänderung auf \SQschuldEnde\,\%.
-
-\clearpage
-\part{Das Modell in Worten}
-\input{teil1.tex}
-
-\clearpage
-\part{Das Modell in Formeln}
-\input{teil2.tex}
-
-\clearpage
-\part{Das Modell als Wirkungsgraph}
-\input{teil3.tex}
+\printbibliography[title=Literatur]
 
 \clearpage
 \appendix
-\part*{Anhang}
-\addcontentsline{toc}{part}{Anhang}
+\counterwithin{table}{section}
+\counterwithin{figure}{section}
 \input{anhang.tex}
 
 \end{document}

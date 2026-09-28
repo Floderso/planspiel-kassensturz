@@ -29,3 +29,7 @@ docs/modell/*.fdb_latexmk
 docs/modell/*.fls
 docs/modell/*.out
 docs/modell/*.toc
+docs/modell/*.bbl
+docs/modell/*.bcf
+docs/modell/*.blg
+docs/modell/*.run.xml

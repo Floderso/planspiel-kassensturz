@@ -1,0 +1,56 @@
+% SPDX-License-Identifier: CC-BY-4.0
+% Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
+% Abschnitt 1 — Einleitung
+
+\section{Einleitung}
+\label{sec:einleitung}
+
+Finanzpolitische Entscheidungen verschieben mehrere Größen zugleich: den
+Haushaltssaldo, die Verteilung der verfügbaren Einkommen, die Emissionen und
+die Wirtschaftsleistung. Ein höherer Rentenbeitrag verbessert den Saldo und
+belastet die unteren Einkommen, ein höherer Grundfreibetrag entlastet fast
+alle Haushalte und vergrößert das Defizit, ein höherer \COz-Preis senkt die
+Emissionen und wirkt regressiv. Im Planspiel \emph{Kassensturz} treten diese
+Zielkonflikte gleichzeitig auf: Teams aus vier Ressorts entscheiden über
+Steuer-, Sozial- und Klimapolitik und tragen die Folgen über fünf
+Legislaturperioden.
+
+Das Modell dahinter muss fünf Anforderungen erfüllen. Es bildet die
+Instrumente der deutschen Finanzpolitik auf Einnahmen- und Ausgabenseite ab,
+verbindet Haushalte und Staat konsistent, schreibt mehrere Perioden fort,
+rechnet schnell genug, um auf jede Entscheidung sofort zu antworten, und nennt
+für jede Annahme eine Quelle. Die etablierten
+Steuer-Transfer-Mikrosimulationsmodelle für Deutschland -- STSM
+\parencite{steiner2012}, IZA$\Psi$MOD \parencite{peichl2010}, das Modell des
+ifo Instituts \parencite{bloemer2020} und EUROMOD \parencite{sutherland2013}
+-- rechnen mit Tausenden Haushalten aus Befragungsdaten wie SOEP und
+EU-SILC, die meisten mit strukturell geschätztem Arbeitsangebot. Sie sind das
+richtige Werkzeug für die Politikbewertung
+\parencite{bourguignon2006}, aber für ein Spiel weder schnell noch durchschaubar
+genug. Makro-Mikro-Verknüpfungen \parencite{bourguignon2008} lösen die
+Rückwirkung der Gesamtwirtschaft auf die Haushalte, nicht die Rechenzeit.
+
+Kassensturz geht den umgekehrten Weg: zwölf repräsentative Haushaltstypen,
+Verhalten in reduzierter Form über Elastizitäten aus der Literatur und ein
+einfacher Makrorahmen. Drei Eigenschaften unterscheiden das Modell von einer
+bloßen Vereinfachung. Erstens bucht der Staat, was bei den Haushalten
+ankommt: Transfers, Renten, \COz-Last und die Inzidenz der Unternehmen- und
+Vermögensteuern summieren sich über die Haushaltstypen zur Buchung des
+Staates, und Tests erzwingen diese Identität. Zweitens ist der Status quo der
+Rechtsstand 2026 mit seinen beschlossenen Pfaden: Senkung der
+Körperschaftsteuer, steigender Rentenbeitrag, Verteidigungsausgaben,
+Sondervermögen Infrastruktur und die Schuldenbremse in der Fassung von 2025.
+Drittens sind die Wirkungen der Stellgrößen gemessen, nicht behauptet: Jede
+Stellgröße wird um einen festen Schritt verschoben, das Modell rechnet den
+ganzen Pfad neu, und jede Saldowirkung zerfällt in mechanische Wirkung,
+Verhaltensreaktion und Nachfrage. Alle Tabellen, Abbildungen und Kennzahlen der
+Abschnitte~\ref{sec:kalibrierung} und~\ref{sec:wirkungen} entstehen aus dem
+Modellcode.
+
+Bezogen auf eine Milliarde Saldoverbesserung ordnen sich die Stellgrößen
+entlang zweier Preise. Einen Verteilungspreis haben Beitragssätze, Umsatzsteuer,
+\COz-Preis und Kürzungen bei Renten und Transfers; Steuern auf hohe
+Einkommen, Kapital und Vermögen senken die Ungleichheit. Einen Wachstumspreis
+haben alle, am geringsten die Steuern auf Haushalte mit niedriger
+Konsumneigung, langfristig am höchsten die Körperschaftsteuer, weil sie über
+das private Kapital wirkt.

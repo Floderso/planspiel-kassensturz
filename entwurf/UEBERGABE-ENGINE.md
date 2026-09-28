@@ -105,11 +105,15 @@ Zuletzt behoben (bei der Modelldokumentation gefunden):
 Modelldokumentation (`docs/modell/`):
 - `messung.js` misst jede Stellgröße per endlicher Differenz, zerlegt in
   mechanisch / Verhalten / Nachfrage, prüft Symmetrie und schreibt alles nach
-  `generiert/` (Tabellen, TikZ-Kanten, `\wertdef`-Makros, `messung.json`).
-- `modell.tex` + `teil1.tex`, `teil2.tex`, `teil3.tex`, `anhang.tex`.
-  Im Text ist keine Messzahl getippt, alles über `\wert{bereich}{key}{feld}`.
-- Setzen mit pdfLaTeX (lmodern, newunicodechar). LuaLaTeX funktioniert in der
-  Umgebung nicht (Schriftfehler). Fehlt `lmodern`: per apt nachinstallieren.
+  `generiert/` (Tabellen, TikZ-Kanten, Wertmakros in `werte.tex` und
+  `makros.tex`, `messung.json`).
+- Seit 28.09.2026 als Paper gegliedert: `modell.tex` (Präambel, Zusammenfassung)
+  mit `einleitung.tex`, `aufbau.tex`, `kalibrierung.tex`, `wirkungen.tex`,
+  `validierung.tex`, `diskussion.tex`, `anhang.tex`; Literatur in `literatur.bib`.
+  Im Text ist keine Messzahl getippt, alles über `\W{bereich}{key}{feld}` (mit
+  Vorzeichen), `\Wb{…}` (Betrag) oder die Makros aus `generiert/makros.tex`.
+- Setzen mit pdfLaTeX und biber: `latexmk -pdf modell.tex` (newtx, inconsolata,
+  newunicodechar). LuaLaTeX funktioniert in der Umgebung nicht (Schriftfehler).
 - Sichtprüfung der Seiten: `pip install pymupdf`, Seiten als PNG rendern.
 
 ## 7. Bekannte Fallstricke

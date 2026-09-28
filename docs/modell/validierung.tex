@@ -1,0 +1,60 @@
+% SPDX-License-Identifier: CC-BY-4.0
+% Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
+% Abschnitt 5 — Validierung (tests/)
+
+\section{Validierung}
+\label{sec:validierung}
+
+Ein vereinfachtes Modell kann ökonomisch unsinnig rechnen, ohne dass es
+auffällt: Jede Einzelformel ist plausibel, das Zusammenspiel nicht. Zwei
+Fachprüfungen im September 2026 fanden in früheren Fassungen Fehler dieser
+Art, die keiner der damaligen Tests erfassen konnte. Zinsen wurden in der
+Schuldenfortschreibung ein zweites Mal gezählt, der Primärsaldo war um den
+Faktor 100 verschoben, und eine Senkung des Rentenbeitrags verbesserte den
+Saldo und machte alle Haushalte reicher, weil die gekürzten Renten bei keinem
+Haushalt fehlten. Ein Test, der nur den Ist-Zustand festschreibt, bemerkt so
+etwas nicht. Die Tests in \datei{tests/} prüfen deshalb Eigenschaften, die
+jede zulässige Politik erfüllen muss:
+
+\begin{description}
+\item[Normierung.] Im Status quo ist das Arbeitsangebot unverändert,
+  $\lambda_i = 1$, und Inzidenz und Nachfragelücke sind null. Kennzahlen des
+  Staates und Nachfrage sind damit Differenzen zum Status quo derselben Periode.
+\item[Buchungsidentität.] Die Summe über die Haushalte entspricht der direkten
+  Buchung des Staates, ohne die Rückwirkung über die Nachfrage: exakt für
+  Kinder- und Bürgergeld, Renten, \COz-Last und Klimageld, Unternehmen- und
+  Vermögensteuern; auf 15\,\% genau für Umsatzsteuer, Beitragssätze und
+  Beitragsbemessungsgrenze, bei denen Staat und Haushalte verschiedene
+  Bemessungsgrundlagen haben.
+\item[Keine dominante Strategie.] Keine Stellgröße, geprüft an elf Werten über
+  ihren Spielraum, und kein Paar von Stellgrößen am Tisch an den Rändern ihres
+  Spielraums verbessert in der letzten Periode den Saldo und das Einkommen aller
+  Haushaltstypen, ohne Gini, Emissionen oder BIP-Niveau zu verschlechtern.
+\item[Komparative Statik.] Die Vorzeichen der Reaktionen entsprechen der
+  Theorie: Ein höherer \COz-Preis senkt die Emissionen, eine höhere
+  Körperschaftsteuer die Investitionen, ein höherer Eingangssatz das
+  Arbeitsangebot, ein Spitzensatz über 45\,\% das Einkommen im obersten Prozent.
+  Konsolidierung und Entlastung wirken über die Nachfrage betragsgleich mit
+  umgekehrtem Vorzeichen, und Steuerpolitik verschiebt das Niveau des BIP, nicht
+  seine Wachstumsrate.
+\item[Dimensionen.] Zinslast in Prozentpunkten des BIP, ein Zinssatz für
+  Haushalt und Schuldendynamik, keine doppelte Zählung von Zinsen, konstante
+  Einnahmenquote im Status quo.
+\item[Invarianten.] Alle Kennzahlen sind endlich und liegen in ihrem
+  Definitionsbereich, für alle Voreinstellungen, Extremwerte der Stellgrößen
+  und Pfade bis zu zwölf Perioden.
+\item[Kalibrierung.] Aufkommen je Steuerart, Gini und Palma liegen in der
+  Größenordnung der amtlichen Werte (Tabelle~\ref{tab:kalibrierung}).
+\item[Tarif.] Der Tarif weicht an keiner Stelle um mehr als 1\,\% von §\,32a
+  EStG 2026 ab, ist stetig und monoton, und der Grenzsteuersatz ist seine
+  Ableitung.
+\item[Dokumentation.] Jede Zahl in Text, Tabellen und Abbildungen entspricht
+  dem Modell, und jede Stellgröße am Tisch ist gemessen.
+\end{description}
+
+Die Buchungsidentität ist die wichtigste dieser Eigenschaften. Nur wenn der
+Staat bucht, was bei den Haushalten ankommt, sind Haushalts- und
+Verteilungswirkung derselben Politik vergleichbar. Die zweite ist das Fehlen
+einer dominanten Strategie: Ein Planspiel über Zielkonflikte, in dem eine
+Stellgröße alle Ziele zugleich verbessert, lehrt das Falsche. Findet der Test
+eine solche Politik, fehlt dem Modell ein Kanal, über den sie etwas kostet.

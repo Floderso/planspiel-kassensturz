@@ -1,0 +1,63 @@
+% SPDX-License-Identifier: CC-BY-4.0
+% Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
+% Abschnitt 3 — Kalibrierung und Status quo (Modellwerte aus generiert/makros.tex)
+
+\section{Kalibrierung und Status quo}
+\label{sec:kalibrierung}
+
+Die Bemessungsgrundlagen sind so gesetzt, dass das Modell im Jahr 2025 die
+amtlichen Aufkommen trifft (Tabelle~\ref{tab:kalibrierung}). Steuern liegen
+nahe an den Referenzwerten, die Beitragseinnahmen rund ein Achtel darüber;
+Satzänderungen der Sozialversicherung wirken im Modell entsprechend etwas zu
+stark. Die Ausgabenseite ist grob gegliedert. Ein Ausgleichsposten von \SQausgleich~Mrd.~\euro{}
+für nicht modellierte Einnahmen, etwa Gebühren, Verkäufe, Vermögenseinkommen
+und den Bundesbankgewinn, bringt den Saldo auf den Finanzierungssaldo der
+Volkswirtschaftlichen Gesamtrechnungen (Tabelle~\ref{tab:ausgaben}). Die
+Verteilungsmaße sind nicht kalibriert; sie folgen aus den Haushaltsdaten und
+liegen nahe an den Werten von EU-SILC.
+
+\begin{table}[t]
+\centering\small
+\caption{Kalibrierung im Jahr 2025. Aufkommen in Mrd.~\euro.}
+\label{tab:kalibrierung}
+\begin{tabular}{@{}lrrl@{}}
+\toprule
+ & Modell & Referenz & Quelle der Referenz \\
+\midrule
+Einkommensteuer einschl. Abgeltungsteuer & \KALest & 350 & BMF, Kassenjahr 2024 \\
+Umsatzsteuer einschl. Einfuhrumsatzsteuer & \KALmwst & 290 & BMF, Kassenjahr 2024 \\
+Körperschaftsteuer & \KALkst & 45 & BMF, Kassenjahr 2024 \\
+Gewerbesteuer & \KALgewst & 75 & Destatis 2024 \\
+Erbschaftsteuer & \KALerb & 12 & BMF, Kassenjahr 2024 \\
+\COz-Bepreisung (BEHG, nationaler ETS-Anteil) & \KALco & 18 & DEHSt 2024 \\
+Beiträge Rentenversicherung & \KALrv & 290 & DRV 2024 \\
+Beiträge Krankenversicherung & \KALkv & 270 & BAS 2024 \\
+\addlinespace
+Finanzierungssaldo & \KALsaldo & $-$118,8 & Destatis, VGR 2024 \\
+Gini-Koeffizient (Äquivalenzeinkommen) & \KALgini & 0,295 & EU-SILC 2024 \\
+Armutsrisikoquote (\%) & \KALarmut & 15,5 & EU-SILC 2024 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Ohne Politikänderung ist der Status quo nicht stabil
+(Tabelle~\ref{tab:verlauf}). In der ersten Periode, 2025 bis 2028, liegt der
+Saldo bei \SQsaldo~Mrd.~\euro{} je Jahr (\SQsaldoPct\,\% des BIP), weil die
+Verteidigungsausgaben steigen und das Sondervermögen ausgibt. Der strukturelle
+Saldo von \SQstruktur\,\% des BIP verfehlt die Grenze der Schuldenbremse von
+$-0{,}70\,\%$. In der letzten Periode, 2041 bis 2044, treiben Alterung und
+Zinsen das Defizit auf \SQsaldoPctEnde\,\% des BIP; die Schuldenquote steigt
+von \SQschuldStart\,\%
+auf \SQschuldEnde\,\%, und die kumulierten Emissionen überschreiten das
+deutsche Budget für 1,7\,°C in den 2030er Jahren. Die Teams entscheiden also
+nicht zwischen Beharren und Veränderung, sondern darüber, wer die Anpassung
+trägt.
+
+\begin{table}[t]
+\centering\small
+\caption{Status quo über fünf Perioden. BIP und Schuldenquote zu Beginn der
+Periode, übrige Größen als Jahreswert der Periode; \COz{} kumuliert seit 2025
+zu Periodenbeginn.}
+\label{tab:verlauf}
+\input{generiert/verlauf.tex}
+\end{table}
