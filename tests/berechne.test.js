@@ -152,3 +152,17 @@ test('Komparative Statik: Über 45 % Spitzensatz weichen Spitzenverdiener aus', 
   assert.ok(oben < unten, `je Punkt: ${unten.toFixed(2)} bei 45 %, ${oben.toFixed(2)} bei 74 % (Mrd. €)`);
   assert.ok(oben > 0, 'Aufkommensmaximum liegt im Reglerbereich');
 });
+
+// Das Arbeitsangebot reagiert auf den Grenzsteuersatz — die Kapitaleinkünfte nicht. Bis 28.09.2026
+// skalierte der Arbeitsangebotsfaktor das ganze Brutto: Ein höherer Spitzensatz senkte auch Zinsen
+// und Dividenden des obersten Prozents (45 % seines Einkommens), obwohl diese der Abgeltungsteuer
+// unterliegen und im Modell keine eigene Elastizität haben.
+test('Einkommensteuer-Regler ändern die Arbeits-, nicht die Kapitaleinkünfte', () => {
+  const sq = berechne(SQ);
+  for (const p of [{ spitze: 75 }, { eingang: 30 }, { freibetrag: 20000 }, { spitze: 60, grenze: 100000 }]) {
+    const r = berechne({ ...SQ, ...p });
+    assert.notEqual(r.avg_labor, sq.avg_labor, `${JSON.stringify(p)} bewegt das Arbeitsangebot nicht`);
+    assert.ok(Math.abs(r.kapitaleinkuenfte - sq.kapitaleinkuenfte) < 1e-9,
+      `${JSON.stringify(p)}: Kapitaleinkünfte ${sq.kapitaleinkuenfte.toFixed(1)} → ${r.kapitaleinkuenfte.toFixed(1)} Mrd. €`);
+  }
+});

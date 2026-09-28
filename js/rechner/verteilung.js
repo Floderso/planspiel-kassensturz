@@ -121,7 +121,9 @@ function berechneDezilDelta(dezile, params, est_dez, klima, bg, kg, zusatz = {})
     const est = est_dez[i].est;
     const brutto = d.brutto_adj;
     // K3: SV nur auf Arbeitseinkommen (nicht Kapital); KV-BBG (62.100 €) < RV/AL-BBG
-    const arbeit_dez = brutto * (1 - d.kapital);
+    // Arbeits- und Kapitaleinkünfte getrennt: Das Arbeitsangebot ändert nur die Arbeit (berechne.js)
+    const arbeit_dez = d.arbeit_adj ?? brutto * (1 - d.kapital);
+    const kapital_dez = d.kapital_adj ?? brutto * d.kapital;
     const bbg_rv_dez = params.bbg ?? PRESETS.status_quo.bbg;
     // kv_bbg_frei: kein KV-Beitragsdeckel → gesamtes Arbeitseinkommen KV-pflichtig
     const bbg_kv_dez = params.kv_bbg_frei ? Infinity : Math.round(bbg_rv_dez * (BASIS_MAKRO.kv_bbg_kv_sq / PRESETS.status_quo.bbg));
@@ -130,7 +132,7 @@ function berechneDezilDelta(dezile, params, est_dez, klima, bg, kg, zusatz = {})
     // kv_kapital: Kapitalerträge von GKV-Mitgliedern werden KV-pflichtig (Mieteinnahmen, Zinsen, Dividenden)
     // GKV-Quote sinkt in den oberen Dezilen (mehr PKV)
     const GKV_QUOTE = [0.95, 0.95, 0.95, 0.93, 0.90, 0.85, 0.80, 0.75, 0.70, 0.55, 0.30, 0.08];
-    const sv_kapital = params.kv_kapital ? brutto * d.kapital * params.kv / 100 * 0.5 * GKV_QUOTE[i] : 0;
+    const sv_kapital = params.kv_kapital ? kapital_dez * params.kv / 100 * 0.5 * GKV_QUOTE[i] : 0;
     // Arbeitgeberanteil einer Beitragsänderung: langfristig über die Löhne überwiegend von den
     // Beschäftigten getragen (Melguizo/González-Páramo 2013, Int. Tax and Public Finance 20:
     // Meta-Analyse). Nur die Änderung gegenüber dem Status quo — das Niveau bleibt beim

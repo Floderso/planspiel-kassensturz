@@ -55,11 +55,11 @@ aus \datei{berechne.js}):
   \tag{R}\\
 \lambda_i &= \Lambda_i\bigl(M_i(\tilde\theta)-M_i(\theta^{SQ})\bigr)
   \tag{1}\\
-T_i &= T^{HH}_i\bigl(\lambda_iB_i(1-\kappa_i)\bigr) + \tfrac{t_A}{100}\lambda_iB_i\kappa_i
+T_i &= T^{HH}_i\bigl(\lambda_iB_i(1-\kappa_i)\bigr) + \tfrac{t_A}{100}B_i\kappa_i
   \tag{2}\\
 \mathcal{R}^0 &= \bigl(R^0_k\bigr)_{k\in\mathcal K}
   \tag{3--8}\\
-Y^H_i &= \lambda_iB_i - T_i - SV_i - U_i - L^{\text{CO}_2}_i + \mathit{Tr}_i + \Delta P_i - Z_i,
+Y^H_i &= \tilde B_i - T_i - SV_i - U_i - L^{\text{CO}_2}_i + \mathit{Tr}_i + \Delta P_i - Z_i,
   \qquad \Delta_i = Y^H_i - Y^{H,SQ_0}_i
   \tag{10}\\
 J &= \tfrac{0{,}6}{0{,}48}\,\mathcal{S}\bigl[m\,(\Delta-\Delta^{SQ,t})\bigr] + 1{,}0\,(I-I^{SQ}),\qquad
@@ -160,10 +160,10 @@ vom tariflichen Spitzensatz $t_5$ und gewichtet mit dem Einkommensanteil der Ste
 (im Status quo rund 0,48):
 \begin{gather}
 \omega=\max\bigl(0{,}40,\;1-s^G\bigl(0{,}50\,[t_5-0{,}45]^+ +0{,}10\,[t_5-0{,}60]^+\bigr)\bigr),\\
-\Omega_{12}=1-(1-\omega)(1-\kappa_{12}),\qquad\Omega_i=1\text{ sonst}.
+\Omega_{12}=\omega,\qquad\Omega_i=1\text{ sonst}.
 \end{gather}
-Der letzte Schritt beschränkt die Reaktion auf die Arbeitseinkünfte; die Kapitaleinkünfte
-unterliegen der Abgeltungsteuer, nicht dem Spitzensatz. Für die Betroffenen entspricht das
+Wie alle Verhaltensfaktoren wirkt $\Omega_{12}$ nur auf die Arbeitseinkünfte (siehe unten); die
+Kapitaleinkünfte unterliegen der Abgeltungsteuer, nicht dem Spitzensatz. Für die Betroffenen entspricht das
 einer Elastizität des zu versteuernden Einkommens von rund $0{,}5\,(1-t_5)\approx0{,}25$--$0{,}3$.
 Bis 27.09.2026 stand statt $t_5$ der Haushaltsgrenzsatz $M_{12}$ (höchstens 0,36 am Tisch), und
 die Reaktion griff nie.
@@ -171,8 +171,13 @@ und mit einem Grundeinkommen $b^{G}$ (nur klassische Fläche) der Faktor $\psi_i
 \begin{equation}
 \lambda_i=\max\Bigl(0{,}55,\;\operatorname{clip}(\lambda^{\text{roh}}_i,0{,}55,1{,}25)\,\Omega_i\,\bigl(1-\psi_i\min(1{,}67,b^G/1200)\bigr)\Bigr).
 \end{equation}
-Das angepasste Bruttoeinkommen ist $\tilde B_i=\lambda_iB_i$, der Durchschnitt
-$\bar\lambda=\sum_iN_i\lambda_i/\sum_iN_i$.
+Der Faktor wirkt nur auf die Arbeitseinkünfte; die Kapitaleinkünfte bleiben wie in den Daten,
+weil für sie keine belegte Elastizität vorliegt:
+\begin{equation}
+\tilde W_i=\lambda_iB_i(1-\kappa_i),\qquad K_i=B_i\kappa_i,\qquad \tilde B_i=\tilde W_i+K_i,
+\end{equation}
+der Durchschnitt ist $\bar\lambda=\sum_iN_i\lambda_i/\sum_iN_i$. Bis 28.09.2026 galt
+$\tilde B_i=\lambda_iB_i$: Eine höhere Einkommensteuer senkte auch Zinsen und Dividenden.
 
 \textbf{Investitionen} (\datei{kapitalUndVermoegensteuern()}):
 \begin{equation}
@@ -192,7 +197,7 @@ Prozentpunkt (Brülhart u.\,a. 2022, halbiert).
 
 \section{Einnahmen in Größen von 2025}
 
-\textbf{Einkommensteuer} (2): $T_i=T^{HH}_i(\tilde B_i(1-\kappa_i))+\frac{t_A}{100}\tilde B_i\kappa_i$,
+\textbf{Einkommensteuer} (2): $T_i=T^{HH}_i(\tilde W_i)+\frac{t_A}{100}K_i$,
 Aufkommen $R^0_{\text{ESt}}=\mathcal S[T]$. (Bei synthetischer Besteuerung:
 $T_i=T^{HH}_i(\tilde B_i)$ auf das ganze Einkommen, Kapitalteil nicht negativ.)
 
@@ -205,7 +210,7 @@ R^0_K=300\,\pi\,\frac{t_K}{100},\qquad R^0_G=536\,\pi\,\frac{t_G}{100}.
 \begin{equation}
 SV^{AN}_i=\tfrac12\Bigl[\min(W_i,\bar B)\,\frac{\beta_R+0{,}42\beta_A}{100}+\min(W_i,\bar B_K)\,\frac{\beta_K+0{,}58\beta_A}{100}\Bigr]
 \end{equation}
-mit $W_i=\tilde B_i(1-\kappa_i)$ und $\bar B_K=\bar B\cdot69.750/101.400$
+mit $W_i=\tilde W_i$ und $\bar B_K=\bar B\cdot69.750/101.400$
 ist das Vornetto $N^v_i=\tilde B_i-T_i-SV^{AN}_i$ und
 \begin{equation}
 R^0_U=\Phi_U\,\mathcal S\Bigl[c\,N^v\Bigl(0{,}7\frac{v_R}{100+v_R}f_R+0{,}3\frac{v_E}{100+v_E}f_E\Bigr)\Bigr],\qquad

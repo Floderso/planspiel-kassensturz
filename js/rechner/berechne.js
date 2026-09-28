@@ -196,22 +196,25 @@ function berechne(params, zustand = null, optionen = {}) {
     }
 
     const labor_factor_raw = 1 + elas * (delta_nettolohn / Math.max(0.0001, 1 - gs_sq));
-    // Ausweichen betrifft nur, was dem Spitzensatz unterliegt: die Arbeitseinkünfte. Kapital-
-    // einkünfte (in D10c 45 %) tragen die Abgeltungsteuer; wirkte der Faktor auf das ganze
-    // Brutto, wäre die Reaktion fast doppelt so stark wie ihre Elastizität
-    const avoidance_brutto = 1 - (1 - avoidance) * (1 - d.kapital);
-    const lf_tax = Math.max(0.55, Math.min(1.25, labor_factor_raw)) * avoidance_brutto;
+    const lf_tax = Math.max(0.55, Math.min(1.25, labor_factor_raw)) * avoidance;
     // BGE: Substitutionseffekt — skaliert mit BGE/1200 und Dezil (RWI/ZEW)
     const lf = Math.max(0.55, lf_tax * (1 - BGE_LABOR_EFF[idx] * bge_labor_scale));
-    return { ...d, labor_factor: lf, brutto_adj: d.brutto * lf, gs_neu, avoidance };
+    // Der Faktor wirkt nur auf die Arbeitseinkünfte; die Kapitaleinkünfte bleiben wie in den Daten
+    // (keine belegte Elastizität, ELAST.capital_supply ist ungenutzt). Bis 28.09.2026 skalierte er
+    // das ganze Brutto: Eine höhere Einkommensteuer senkte auch Zinsen und Dividenden, in D10c
+    // (45 % Kapitalanteil) fast doppelt so stark wie ihre Elastizität. Nachgelagert gilt daher
+    // arbeit_adj / kapital_adj statt brutto_adj × (1 − kapital) — der Anteil ändert sich mit lf.
+    const arbeit_adj = d.brutto * (1 - d.kapital) * lf;
+    const kapital_adj = d.brutto * d.kapital;
+    return { ...d, labor_factor: lf, arbeit_adj, kapital_adj, brutto_adj: arbeit_adj + kapital_adj, gs_neu, avoidance };
   });
 
   // ---------- 2. EINKOMMENSTEUER ----------
   let est_aufkommen = 0;
   let est_pro_dezil = [];
   for (const d of dezile) {
-    const arbeit = d.brutto_adj * (1 - d.kapital);
-    const kapital = d.brutto_adj * d.kapital;
+    const arbeit = d.arbeit_adj;
+    const kapital = d.kapital_adj;
     const est_arbeit = estHaushalt(arbeit, params.freibetrag, params.eingang, params.spitze, params.grenze, d.pareto_alpha);
     let est_kap;
     if (params.synthetisch) {
@@ -242,7 +245,7 @@ function berechne(params, zustand = null, optionen = {}) {
   for (const d of dezile) {
     // Netto nach ESt und SV (SV-Basis = Arbeitseinkommen, K3-Vorkorrektur hier vereinfacht)
     const est_d = est_pro_dezil.find(x => x.d === d.d).est;
-    const arbeit_mwst = d.brutto_adj * (1 - d.kapital);
+    const arbeit_mwst = d.arbeit_adj;
     const bbg_kv_mwst = params.kv_bbg_frei ? Infinity : Math.round((params.bbg ?? BBG_SQ) * (BASIS_MAKRO.kv_bbg_kv_sq / BBG_SQ));
     const sv_d = Math.min(arbeit_mwst, params.bbg ?? BBG_SQ) * (params.rv + params.alpf * 0.42) / 100 * 0.5
                + Math.min(arbeit_mwst, bbg_kv_mwst) * (params.kv + params.alpf * 0.58) / 100 * 0.5;
@@ -301,7 +304,7 @@ function berechne(params, zustand = null, optionen = {}) {
   const sv_bbg_staat = BASIS_MAKRO.lohnsumme_sv * lohnbasis_faktor * (bbg_lohnsumme_factor - 1)
                      * (params.rv + params.kv * buerger_boost + params.alpf) / 100;           // Mrd. €
   const sv_bbg_roh = dezile.map(d => {
-    const w = d.brutto_adj * (1 - d.kapital);
+    const w = d.arbeit_adj;
     return (Math.min(w, bbg) - Math.min(w, BBG_SQ)) * (params.rv + params.alpf * 0.42) / 100
          + (Math.min(w, bbgKV(bbg)) - Math.min(w, bbgKV(BBG_SQ))) * (params.kv + params.alpf * 0.58) / 100;
   });                                                                                         // €/Haushalt
@@ -543,8 +546,7 @@ function berechne(params, zustand = null, optionen = {}) {
   // ---------- 20. METR (Marginal Effective Tax Rate) je Dezil ----------
   // METR = ESt-Grenzsteuersatz + SV-Grenzbelastung (AN-Anteil) + Transfer-Entzug
   const metr = dezile.map((d, i) => {
-    const brutto = d.brutto_adj;
-    const arbeit = brutto * (1 - d.kapital);
+    const arbeit = d.arbeit_adj;
     const gs_est = grenzsteuersatzHaushalt(arbeit, params.freibetrag, params.eingang, params.spitze, params.grenze, d.pareto_alpha);
     // K3: Separate BBG für KV/PV (62.100 €) und RV/AL (params.bbg).
     // RV+AL Grenzbelastung fällt weg sobald Arbeitseinkommen ≥ RV-BBG
@@ -566,7 +568,7 @@ function berechne(params, zustand = null, optionen = {}) {
   // E[gs²] ≥ E[gs]², daher unterschätzt avg_gs²-Ansatz den DWL systematisch.
   // Korrekt: ∑ 0.5 × ε × gs_i² / (1−gs_i) × Lohnsumme_i  (Harberger-Dreieck je Dezil)
   const dwl = dezile.reduce((a, d) => {
-    const arbeit_dwl = d.brutto_adj * (1 - d.kapital);
+    const arbeit_dwl = d.arbeit_adj;
     const gs = grenzsteuersatzHaushalt(arbeit_dwl, params.freibetrag, params.eingang, params.spitze, params.grenze, d.pareto_alpha);
     const lohnsumme_d = arbeit_dwl * d.anzahl / 1000; // Mrd.
     return a + 0.5 * ELAST.labor_supply * (gs * gs) / Math.max(0.01, 1 - gs) * lohnsumme_d;
@@ -606,6 +608,7 @@ function berechne(params, zustand = null, optionen = {}) {
     dynamisch_kst, dynamisch_est, dynamisch_delta,
     investment_factor, avg_labor,
     dezile_avoidance: dezile[dezile.length - 1].avoidance,   // Ausweichfaktor D10c (Tests, Doku)
+    kapitaleinkuenfte: dezile.reduce((a, d) => a + d.anzahl * d.kapital_adj, 0) / 1000,   // Mrd. €
     // GKV-Reform-Boni (für GKV-Panel-Darstellung)
     kv_bbg_frei_bonus, kv_kapital_bonus,
     // Multi-Perioden-Felder
