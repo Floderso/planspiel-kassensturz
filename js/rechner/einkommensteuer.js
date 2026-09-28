@@ -24,7 +24,7 @@ const FORMEL_QUELLEN_EST = {
   },
   spitzenzone: {
     formel: 'Zuschlag_D10c = (r5 − r4) × E[max(0, x − Grenze)],  x ~ Pareto(α = 1,5) mit dem zvE-Mittel des Dezils',
-    ref:    'Atkinson/Piketty/Saez (2011) JEL 49(1), Top Incomes in the Long Run of History · Bartels/Jenderny (2015) DIW Discussion Paper 1508',
+    ref:    'Atkinson/Piketty/Saez (2011) JEL 49(1), Top Incomes in the Long Run of History · Bartels/Jenderny (2015) World Top Incomes Database Working Paper 2015/1',
     note:   'Für Deutschland liegt der invertierte Pareto-Koeffizient β bei etwa 2,5–3, also α = β/(β−1) ≈ 1,5–1,7; α = 1,5 ist der untere Rand (schwerer Rand). Statisch, ohne Verhaltensreaktion der Spitzenverdiener. Näherung (PRUEFUNG.md B2)'
   },
   estHaushalt: {

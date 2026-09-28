@@ -147,7 +147,7 @@ const TOOLTIP_FALLBACK = {
   invest_impuls: {
     title: 'Öffentlicher Investitionsimpuls',
     text: 'Zusätzliche öffentliche Investitionen pro Jahr, wirken über den Fiskalmultiplikator auf das BIP-Wachstum der Folgeperiode.',
-    quelle: 'Gechert/Heimberger (2022) NIER · ECB WP 1267',
+    quelle: 'Gechert (2015) Oxford Economic Papers 67(3) · ECB WP 1267',
   },
   bge: {
     title: 'Bedingungsloses Grundeinkommen (BGE)',
@@ -1712,7 +1712,7 @@ function renderDomarPanel(z, abl) {
         ? 'Schulden automatisch stabil (r − g < 0)'
         : 'Primärüberschuss erforderlich (r − g > 0)'}
     </div>
-    <div class="domar-ref">Domar (1944) Rev.Econ.Stat. · Blanchard (2019) AEA Presidential Address</div>`;
+    <div class="domar-ref">Domar (1944) AER 34(4) · Blanchard (2019) AER 109(4), AEA Presidential Address</div>`;
 }
 
 function renderCo2Panel(z, abl) {

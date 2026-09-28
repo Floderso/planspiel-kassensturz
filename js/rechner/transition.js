@@ -21,7 +21,7 @@
 //   Öffentl. Kapital:   Bom/Ligthart (2014) J. of Economic Surveys · Wirtschaftsdienst 1/2019
 //   Emissionspfad:      UBA Projektionsbericht 2025 · emissionsBasis() in data.js
 //   Zinssatz:           Bundesbank DP 28/2018 · BMF Finanzplan 2025–2029
-//   Demografie:         Destatis 14. Bev.-Vorausberechnung 2021 · DEMOGRAFIE_KURVE in data.js
+//   Demografie:         Destatis 14. Bev.-Vorausberechnung 2019 · DEMOGRAFIE_KURVE in data.js
 
 import { DEZILE, DEMOGRAFIE_KURVE, PERIOD_STATE_0, KURS_KONFIG_DEFAULT, PRESETS,
          ZINS_EFFEKTIV, BIP_WACHSTUM_NOMINAL_JAHR, emissionsBasis,

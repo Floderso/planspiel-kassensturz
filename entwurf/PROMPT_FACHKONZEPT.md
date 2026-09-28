@@ -216,7 +216,7 @@ Rentenbeiträge 310 · Krankenversicherungsbeiträge 290 · Arbeitslosen-/Pflege
 Sozial 850 · Gesundheit 320 · Bildung 180 · Verteidigung 90 · Infrastruktur 120 ·
 Verwaltung 140 · Zinsen 54 (Gesamtstaat) · Sonstiges 140 · Gegenposten
 nichtsteuerliche Einnahmen −144. Der Status-quo-Saldo ist so kalibriert, dass er
-dem VGR-Finanzierungssaldo entspricht (−118,8 Mrd. €, −2,7 % BIP).
+dem VGR-Finanzierungssaldo entspricht (−118,8 Mrd. €, −2,8 % BIP).
 
 ### Demografiepfad 2025–2045
 Jahresweise interpoliert: Rentenlast-Faktor von 1,000 (2025) über 1,140 (2033)
@@ -490,7 +490,7 @@ Zielwert und Referenzwert:
 
 Zu jeder Kennzahl werden internationale und historische Vergleichswerte
 mitgeführt, etwa: Gini Deutschland 0,295, Dänemark 0,281, Schweden 0,273,
-USA 0,395; Armutsrisiko Deutschland 14,8 % (EU-SILC 2023), EU-Durchschnitt
+USA 0,395; Armutsrisiko Deutschland 15,5 % (EU-SILC 2024), EU-Durchschnitt
 16,5 %; Defizit Deutschland 2025 −119 Mrd. € bzw. −2,7 % BIP; Schuldenquote
 63,5 % gegen Maastricht-Grenze 60 %; Zahl der Steuerarten in Deutschland rund
 40; Verwaltungskosten rund 2 % des Steueraufkommens (OECD-Durchschnitt);

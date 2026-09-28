@@ -39,7 +39,7 @@ const FORMEL_QUELLEN_VERT = {
   },
   armutsrisiko: {
     formel: 'pov_i = pov_sq_i × (y_i/y_sq_i ÷ PL/PL_sq)^(−1,5)',
-    ref:    'Bourguignon (2003) · EU-SILC DE 2023 (14,8 % Kalibrierung) · SOEP v40 · IAB Kurzbericht 2024',
+    ref:    'Bourguignon (2003) · EU-SILC DE 2024: 15,5 % (Destatis) · SOEP v40 · IAB Kurzbericht 2024',
     note:   'Elastizität −1,5: +1 % Einkommen → −1,5 % Armutsanteil. Intra-Dezil: D1 90 %, D2 62 %, D3 5 % (SOEP). Übertragene Elastizität: Bourguignon schätzt sie für absolute Armut in Entwicklungsländern; für eine relative Armutsquote ist sie eine Näherung (PRUEFUNG-2.md IV)'
   },
   berechneNettoSQ: {
@@ -134,7 +134,7 @@ function berechneDezilDelta(dezile, params, est_dez, klima, bg, kg, zusatz = {})
     const GKV_QUOTE = [0.95, 0.95, 0.95, 0.93, 0.90, 0.85, 0.80, 0.75, 0.70, 0.55, 0.30, 0.08];
     const sv_kapital = params.kv_kapital ? kapital_dez * params.kv / 100 * 0.5 * GKV_QUOTE[i] : 0;
     // Arbeitgeberanteil einer Beitragsänderung: langfristig über die Löhne überwiegend von den
-    // Beschäftigten getragen (Melguizo/González-Páramo 2013, Int. Tax and Public Finance 20:
+    // Beschäftigten getragen (Melguizo/González-Páramo 2013, SERIEs 4:
     // Meta-Analyse). Nur die Änderung gegenüber dem Status quo — das Niveau bleibt beim
     // Arbeitnehmeranteil. Vorher spürten Haushalte nur die Hälfte dessen, was der Staat bucht.
     // Auf der Grenze des Status quo: Die Wirkung einer anderen BBG steht vollständig in sv_bbg.

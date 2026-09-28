@@ -20,7 +20,7 @@ import { aequivalenzEinkommen, berechneGini, berechneMedianGewichtet, berechnePa
 const FORMEL_QUELLEN_BERECHNE = {
   arbeitsangebot: {
     formel: 'labor_factor = 1 + ε × Δ(1 − GS) / (1 − GS_SQ)',
-    ref:    'Saez/Chetty/Gruber Konsens · ifo Schnelldienst 01/2025 · Piketty/Saez/Stantcheva (2014) AER',
+    ref:    'Saez/Chetty/Gruber Konsens · ifo Schnelldienst 01/2025 · Piketty/Saez/Stantcheva (2014) AEJ: Economic Policy 6(1)',
     note:   'ε = 0,20 (intensive margin, konservativ); D10c: ε = 0,40, dazu Ausweichen (0,50 je Pp. Spitzensatz über 45 %) und Wegzug (0,10 je Pp. über 60 %), ausgelöst vom tariflichen Spitzensatz und gewichtet mit dem Einkommensanteil über der Grenze (Pareto-Rand, ~0,48 im Status quo). Für die Betroffenen entspricht das einer Elastizität des zu versteuernden Einkommens von rund 0,25–0,3 (Saez/Slemrod/Giertz 2012: 0,12–0,4)'
   },
   bge_arbeitsangebot: {
@@ -30,7 +30,7 @@ const FORMEL_QUELLEN_BERECHNE = {
   },
   mwst_konsumanteil: {
     formel: 'MwSt = Konsum × (0,70 × t_reg/(1+t_reg) + 0,30 × t_erm/(1+t_erm))',
-    ref:    'Destatis VGR 2024 (ca. 70 % Regelsatz-Konsum) · Lewbel/Pendakur (2009) JPubEc',
+    ref:    'Destatis VGR 2024 (ca. 70 % Regelsatz-Konsum) · Lewbel/Pendakur (2009) AER 99(3)',
     note:   '70/30-Split grob; feiner auflösbar mit EVS-Einzeldaten. VAT-Gap-Korrekturfaktor 0,963 (CASE 2024)'
   },
   co2_emissionen: {
@@ -65,7 +65,7 @@ const FORMEL_QUELLEN_BERECHNE = {
   },
   deadweight_loss: {
     formel: 'DWL = ∑ᵢ 0,5 × ε × GS_i² / (1 − GS_i) × Lohnsumme_i  (Harberger-Dreieck je Dezil)',
-    ref:    'Harberger (1964) · Saez (2001) JPubEc · Chetty (2009) AER P&P',
+    ref:    'Harberger (1964) · Saez (2001) Review of Economic Studies 68(1) · Chetty (2009) AEJ: Economic Policy 1(2)',
     note:   'M2: Dezil-Summierung statt Durchschnitts-GS — Jensen-Ungleichung: E[GS²] ≥ E[GS]²'
   },
   dynamisches_scoring: {
@@ -519,7 +519,7 @@ function berechne(params, zustand = null, optionen = {}) {
   };
 
   // ---------- 18. ARMUTSRISIKOQUOTE ----------
-  // Kontinuierliches Intra-Dezil-Modell — kalibriert auf EU-SILC DE 2023 (14,8 %)
+  // Kontinuierliches Intra-Dezil-Modell — Referenz EU-SILC DE 2024: 15,5 % (Destatis; 2023: 14,4 %)
   // Intra-Dezil-Armutsanteile SQ: D1 90 %, D2 62 %, D3 5 % (SOEP v40, IAB Kurzbericht 2024)
   // Dezil-Durchschnitte überschätzen Nettoeinkommen des untersten Quintils → binärer Schwellen-
   // ansatz würde armutsrisiko ≈ 0 % ergeben. Power-Law-Approximation bildet Streuung ab.

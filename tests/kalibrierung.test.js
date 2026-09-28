@@ -11,7 +11,7 @@
 //     da die Dezil-Konsumbasis nur ~60 % der MwSt-Basis erfasst.
 //   - ErbSt: Freibetragsquote 0,45 (BASIS_MAKRO.erb_stpfl_quote, § 16 ErbStG).
 //   - Saldo: STAATSAUSGABEN.sonstige_einnahmen als Gegenposten nicht
-//     modellierter Einnahmen; Ziel VGR-Finanzierungssaldo −2,7 % BIP.
+//     modellierter Einnahmen; Ziel VGR-Finanzierungssaldo 2024: −118,8 Mrd. € (Destatis: −2,8 % BIP).
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -27,7 +27,7 @@ function imBand(ist, soll, toleranz, name) {
 
 test('Gesamtsaldo Status quo entspricht dem VGR-Korridor (−1,5 bis −3,5 % BIP)', () => {
   assert.ok(r.saldo_bip_pct > -3.5 && r.saldo_bip_pct < -1.5,
-    `Saldo ${r.saldo_bip_pct.toFixed(2)} % BIP (Destatis 2024: −2,7 %)`);
+    `Saldo ${r.saldo_bip_pct.toFixed(2)} % BIP (Destatis 2024: −2,8 %)`);
 });
 
 test('ESt-Aufkommen in amtlicher Größenordnung (~350 Mrd. inkl. Kapitalerträge)', () => {

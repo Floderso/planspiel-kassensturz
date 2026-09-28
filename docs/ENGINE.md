@@ -39,7 +39,7 @@ Enthält alle statischen Konstanten. Keine Berechnung, nur Daten.
 | `KURS_KONFIG_DEFAULT` | Objekt | Standard-Kurskonfiguration: Periodenzahl, Team-Größe, Sandbox-Modus. |
 | `SCHOCK_BIBLIOTHEK` | Array | 10 vordefinierte Schockereignisse (Energie, Nachfrage, Finanz, Geopolitisch). |
 | `PERIOD_STATE_0` | Objekt | Anfangszustand 2025: Schuldenquote, BIP, CO₂-Kumulat, Zinsen. |
-| `DEMOGRAFIE_KURVE` | Array | Jahreswerte 2025–2045: Renten-Faktor, Altersquotient. Quelle: Destatis 14. Bev.-Vorausberechnung. |
+| `DEMOGRAFIE_KURVE` | Array | Jahreswerte 2025–2045: Renten-Faktor, Altersquotient. Quelle: Destatis 14. Bev.-Vorausberechnung (2019). |
 
 ---
 
@@ -266,12 +266,12 @@ Rentenreform-Steuerung vorgesehen.
 
 | Mechanismus | Primärquelle |
 |---|---|
-| Einkommensteuer-Tarif | § 32a EStG 2025 |
+| Einkommensteuer-Tarif | § 32a EStG 2026 |
 | Arbeitsangebots-Elastizität | Saez/Chetty/Gruber · ifo Schnelldienst 01/2025 |
 | Multiplikatoren, öffentliches Kapital | Gechert (2015) · Jappelli/Pistaferri (2014) · Bom/Ligthart (2014) |
-| Fiskalmultiplikator Investitionen | Gechert/Heimberger (2022) NIER |
+| Investitionsreaktion auf Unternehmensteuern | Gechert/Heimberger (2022) European Economic Review 147 |
 | Domar-Schuldbedingung | Domar (1944) · Blanchard (2019) AEA Presidential Address |
 | Emissionspfad, CO₂-Budget | UBA Projektionsbericht 2025 · Forster et al. (2026) IGCC 2025, ESSD |
 | Dezil-Datenbasis | SOEP v40 · DINA-DE · DIW Vermögensbericht 2024 |
 | CO₂-Emissionsreaktion | EWI/DIW BEHG-Evaluation 2023 · Edenhofer/PIK 2024 |
-| Demografie | Destatis 14. Bev.-Vorausberechnung 2021 · DRV Rentenbericht 2024 |
+| Demografie | Destatis 14. Bev.-Vorausberechnung 2019 · DRV Rentenbericht 2024 |

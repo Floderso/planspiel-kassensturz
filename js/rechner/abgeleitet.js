@@ -20,7 +20,7 @@
 //   mu_hank       Konsummultiplikator der letzten Periode (MPC-gewichtet, transition.js)
 //
 // Quellen:
-//   Domar (1944) Rev.Econ.Stat. · Blanchard (2019) AEA Presidential Address
+//   Domar (1944) AER 34(4) · Blanchard (2019) AER 109(4), AEA Presidential Address
 //   IPCC AR6 WG3 Ch.3 · SRU (2022) Wege zur ressourcenschonenden Treibhausgasneutralität
 //   IMF Fiscal Monitor 2024 · SVR Jahresgutachten 2024/25
 

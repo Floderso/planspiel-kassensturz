@@ -95,7 +95,7 @@ const STAATSAUSGABEN = {
   // (Gebühren, Verkäufe, Vermögenseinkommen, Bundesbankgewinn; Destatis VGR 2024:
   // ~290 Mrd. € sonstige Einnahmen, hier anteilig für den modellierten Sektor).
   // Kalibriert so, dass der Status-quo-Saldo dem VGR-Finanzierungssaldo entspricht
-  // (Destatis 2024: −118,8 Mrd. € = −2,7 % BIP).
+  // (Destatis 2024: −118,8 Mrd. € = −2,8 % BIP).
   // Am 12.09.2026 von −120 auf −144 angepasst: Die Zinsausgaben wurden von der
   // Bundes- (30) auf die Gesamtstaatsgröße (54) korrigiert, der Ausgleichsposten
   // fängt die 24 Mrd. auf, damit der Status-quo-Saldo weiter den VGR-Wert trifft.
@@ -306,7 +306,7 @@ function rvAnstieg(jahr) {
 const SCHULDENBREMSE_STRUKTURELL = 0.70;              // % BIP, Bund 0,35 + Länder 0,35
 const VERTEIDIGUNG_AUSNAHME_AB = 1.0;                 // % BIP, darüber ausgenommen
 // Budget-Semielastizität: Änderung des Saldos je Prozent Produktionslücke, % BIP
-// (EU-Kommission, Mourre et al. 2019, European Economy DP 100: DE ~0,5)
+// (EU-Kommission, Mourre et al. 2019, European Economy Discussion Paper 098: DE ~0,5)
 const BUDGET_SEMIELASTIZITAET = 0.5;
 
 const EMISSIONEN_1990 = 1252;
@@ -343,13 +343,13 @@ const ELAST = {
 // Strukturierte Quellenmetadaten zu ELAST — Werte bleiben oben kompatibel
 const ELAST_QUELLEN = {
   labor_supply:   { ref: 'Saez/Chetty/Gruber Konsens · ifo Schnelldienst 01/2025',         range: '0,1–0,3', note: 'intensive margin, konservativ; extensive margin untere Dezile 0,2–0,5 (Meghir/Phillips)' },
-  capital_supply: { ref: 'Kleven/Schultz (2014) JPubEc',                                    range: '0,4–0,8', note: 'Im Modell nicht verwendet — die Vermögensteuer rechnet ohne Ausweichreaktion (PRUEFUNG-2.md IV: Brülhart et al. 2022 finden starke Reaktionen). Dänische Daten.' },
-  consumption:    { ref: 'Lewbel/Pendakur (2009) JPubEc · Metaanalyse Havranek et al. 2018',range: '−0,2 bis −0,5', note: 'MwSt-Pass-Through auf Konsum; getrennt für Regel- und Ermäßigungssatz' },
+  capital_supply: { ref: 'Kleven/Schultz (2014) AEJ: Economic Policy 6(4)',                 range: '0,4–0,8', note: 'Im Modell nicht verwendet — die Vermögensteuer rechnet ohne Ausweichreaktion (PRUEFUNG-2.md IV: Brülhart et al. 2022 finden starke Reaktionen). Dänische Daten.' },
+  consumption:    { ref: 'Lewbel/Pendakur (2009) AER 99(3) · Metaanalyse Havranek et al. 2018',range: '−0,2 bis −0,5', note: 'MwSt-Pass-Through auf Konsum; getrennt für Regel- und Ermäßigungssatz' },
   co2:            { ref: 'EWI/DIW BEHG-Evaluation 2023 · Edenhofer/PIK 2024',               range: '−0,2 bis −0,4', note: 'kurzfristig konservativ; langfristig höher durch Infrastruktur-/Verhaltensanpassung' },
   evasion:        { ref: 'Schneider (2023) Shadow Economy DE · IfW Kiel 2024',              range: '0,1–0,3', note: 'Im Modell nicht verwendet. Schwarzarbeit/Schattenwirtschaft-Reaktion auf Gesamtsteuerlast' },
-  investment:     { ref: 'Gechert/Heimberger (2022) NIER · Neumeier SVR Arbeitspapier 03/2025', range: '−0,3 bis −0,5', note: 'KSt-Investitionselastizität; Effekte kleiner als oft behauptet (Meta-Analyse)' },
+  investment:     { ref: 'Gechert/Heimberger (2022) European Economic Review 147 · Neumeier SVR Arbeitspapier 03/2025', range: '−0,3 bis −0,5', note: 'KSt-Investitionselastizität; Effekte kleiner als oft behauptet (Meta-Analyse)' },
   d10c_labor:     { ref: 'Saez/Slemrod/Giertz (2012) JEL 50(1) · Piketty/Saez/Stantcheva (2014) AEJ: Economic Policy 6(1)', range: '0,25–0,5', note: 'Elastizität des zu versteuernden Einkommens der Spitzenverdiener — überwiegend Verlagerung und Verhandlung, nicht reales Arbeitsangebot: PSS finden nur eine kleine reale Angebotsreaktion (PRUEFUNG-2.md IV)' },
-  d10c_avoidance: { ref: 'Kleven/Schultz (2014) JPubEc · Chetty/Friedman/Saez (2013)',      range: '0,3–0,7', note: 'Einkommensverschiebung/Avoidance ab Grenzsteuersatz > 45 %' },
+  d10c_avoidance: { ref: 'Kleven/Schultz (2014) AEJ: Economic Policy 6(4) · Chetty/Friedman/Saez (2013)', range: '0,3–0,7', note: 'Einkommensverschiebung/Avoidance ab Grenzsteuersatz > 45 %' },
   d10c_wegzug:    { ref: 'Beleg ausstehend',                                                range: '0,05–0,15', note: 'steuerbedingte Emigration ab Grenzsteuersatz > 60 %. Bisher Brülhart et al. zitiert — die Studie behandelt aber die Schweizer Vermögensteuer (PRUEFUNG-2.md IV)' },
   verm_ausweichen:{ ref: 'Brülhart/Gruber/Krapf/Schmidheiny (2022) AEJ: Economic Policy 14(4), Behavioral Responses to Wealth Taxes', range: '0,1–0,43 je Pp.', note: 'Schweiz: −1 Pp. Vermögensteuer → +43 % deklariertes Vermögen, teils durch Kantonswechsel; hier halbiert. Deklariertes Vermögen = Basis × exp(−0,215 × Satz in Pp.)' }
 };
@@ -616,7 +616,7 @@ const TOOLTIPS = {
   spitze: {
     title: "Spitzensteuersatz",
     text: "42% ab ~66.760 € (Eckwert), 45% ab 277.826 € (Reichensteuer). DIW/Bach: Erhöhung auf 49–52% kaum Aufkommensverlust, hoher Verteilungseffekt. ifo/Fuest: ab ~55% sinkt Aufkommen durch Verhaltensreaktion (Laffer-Kurve sichtbar im Modell).",
-    quelle: "§ 32a Nr. 4+5 EStG · Piketty/Saez/Stantcheva (2014) AER · ifo Schnelldienst 01/2025"
+    quelle: "§ 32a Nr. 4+5 EStG · Piketty/Saez/Stantcheva (2014) AEJ: Economic Policy 6(1) · ifo Schnelldienst 01/2025"
   },
   grenze: {
     title: "Einkommen ab Spitzensatz",
@@ -827,7 +827,7 @@ const KPI_BENCH = {
   admin:  'DE ~2 % Steueraufkommen (OECD-Ø)',
   nst:    'DE aktuell: ~40 Steuerarten',
   arb:    'Elastizitäten: Saez/Chetty/Gruber',
-  armut:  'DE 2023: 14,8 % (EU-SILC) · EU-Ø: 16,5 %',
+  armut:  'DE 2024: 15,5 % (EU-SILC, Destatis) · EU-Ø: 16,5 %',
   schuld: 'DE Schuldenquote 2025: 63,5 % BIP · Schuldenstand: 2.838 Mrd. € (Bundesbank Feb 2026) · Maastricht-Grenze: 60 %',
   dwl:    'Schätzung: 5–15 % des Steueraufkommens',
   zins:   'Bund 2025: 7,7 Ct/€ (30,2 Mrd.) · Projektion 2029: 17,2 Ct/€ (66,5 Mrd.) · Tief 2021: 4,6 Ct · Quelle: IW Köln (Hentze 2025) · BMF Finanzplan 2025–2029 (Abbildung 4)',
@@ -835,7 +835,7 @@ const KPI_BENCH = {
 const CHALLENGE_CTX = {
   'Saldo':            'DE 2025: −119 Mrd. € (VGR/Maastricht, Destatis Feb 2026) · Defizitquote −2,7 % BIP',
   'Gini':             'DE heute: 0,295 · Dänemark: 0,281',
-  'Armutsrisiko':     'DE 2023: 14,8 % (EU-SILC)',
+  'Armutsrisiko':     'DE 2024: 15,5 % (EU-SILC, Destatis)',
   'Verwaltung':       'DE ~2 % Steueraufkommen (OECD)',
   'Arbeit-Index':     'Indexbasis = 100 (Status quo)',
   'Steuerarten':      'Kirchhof-Ideal: 4–5 Steuerarten',
@@ -886,10 +886,10 @@ const BGE_LABOR_EFF = [0.15, 0.12, 0.09, 0.06, 0.04, 0.025, 0.015, 0.01, 0.005, 
 
 // ── MULTI-PERIODEN SIMULATION ──
 
-// Demografische Entwicklung 2025–2041 (Destatis 14. koordinierte Bev.-Vorausberechnung 2021)
+// Demografische Entwicklung 2025–2041 (Destatis 14. koordinierte Bev.-Vorausberechnung 2019)
 // renten_faktor: Multiplikator auf den RV-Ausgabenanteil (~390 Mrd.) — Basis 1,0 im Jahr 2025
 // altersquotient: Bevölkerung 65+ / Bevölkerung 20–64
-// Jährliche Interpolation zwischen Destatis-Ankerpunkten (14. Bev.-Vorausberechnung 2021)
+// Jährliche Interpolation zwischen Destatis-Ankerpunkten (14. Bev.-Vorausberechnung 2019)
 // IIFE erzeugt 21 Einträge: 2025–2045, indexierbar via DEMOGRAFIE_KURVE[jahr - 2025]
 const DEMOGRAFIE_KURVE = (() => {
   const anchors = [
@@ -1032,7 +1032,7 @@ const ZUKUNFTS_SZENARIEN = [
     id: 'demografie_baseline',
     name: 'Demografie-Baseline',
     beschreibung: 'Status-quo-Politik — aber steigende Rentenlasten durch die Baby-Boomer-Rentenwelle erhöhen die Staatsausgaben automatisch.',
-    quelle: 'Destatis 14. Bev.-Vorausberechnung 2021 · DRV Rentenbericht 2024',
+    quelle: 'Destatis 14. Bev.-Vorausberechnung 2019 · DRV Rentenbericht 2024',
     perioden_params: Array.from({ length: 5 }, () => ({ ...PRESETS.status_quo })),
   },
   {
