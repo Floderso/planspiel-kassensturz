@@ -49,9 +49,9 @@ const FORMEL_QUELLEN_BERECHNE = {
     note:   'Mindeststeuer auf Milliardäre mit Anrechnung: gezahlte Einkommensteuer (~0,3 % des Vermögens) und eine gleichzeitige Vermögensteuer werden angerechnet. Basis ~600 Mrd. € (Näherung, Reichenlisten). Avoidance 15 % bei 2 %'
   },
   sv_beitraege: {
-    formel: 'SV = Lohnsumme_sv × Satz%  (nur bis BBG)',
+    formel: 'SV = Lohnsumme_sv × (1 + 0,12 · (BBG − BBG_SQ) / BBG_SQ) × Satz%',
     ref:    '§ 158 SGB VI · § 241 SGB V · § 341 SGB III · § 55 SGB XI · DRV Beitragssätze 2025',
-    note:   'Lohnsumme kalibriert auf das Ist-Aufkommen bei der BBG des Status quo; eine andere BBG ändert die Basis im Verhältnis Σ N_i × min(Lohn_i, BBG) über die Dezile (SOEP v40, Mikrozensus 2024), getrennt für RV/AL und KV/PV — dieselbe Rechnung wie bei den Haushalten. Näherung: jeder Haushalt zählt als eine beitragspflichtige Person; Mehrverdienerhaushalte liegen seltener über der Grenze. Nahe dem Status quo entspricht das der früheren Faustregel (+12 % Lohnsumme je Verdopplung der BBG). Der Satz wirkt nur auf die Einnahmen; die Ausgaben hängen am Leistungsniveau (rv_ausgaben). Der RV-Regler zeigt den Satz 2026; nach § 158 SGB VI steigt er zusätzlich mit den Ausgaben — 20,1 % (2030), 21,15 % (2039), BMAS Rentenversicherungsbericht 2025'
+    note:   'Lohnsumme kalibriert auf das Ist-Aufkommen bei der BBG des Status quo. Eine andere BBG ändert sie nach einer Faustregel (Näherung ohne Primärtabelle): Rund 12 % der sv-pflichtigen Löhne liegen zwischen der Grenze und knapp ihrem Doppelten, eine um x % andere Grenze ändert die Lohnsumme um 0,12·x %, in beide Richtungen. Nicht aus den Dezilen gerechnet: Die Grenze gilt je Person, die Dezile sind Haushaltseinkommen, und Mehrverdienerhaushalte lägen fälschlich über ihr. Die Haushalte tragen die ganze Änderung, verteilt nach ihrer Lohnmasse zwischen alter und neuer Grenze. Der Satz wirkt nur auf die Einnahmen; die Ausgaben hängen am Leistungsniveau (rv_ausgaben). Der RV-Regler zeigt den Satz 2026; nach § 158 SGB VI steigt er zusätzlich mit den Ausgaben — 20,1 % (2030), 21,15 % (2039), BMAS Rentenversicherungsbericht 2025'
   },
   rv_ausgaben: {
     formel: 'ΔRente_i = Brutto_i × rente_anteil_i × renten_faktor × (Rentenniveau/48 % − 1);  ΔRV-Ausgaben = Σ Haushalte ΔRente_i;  KV, AL, PV fest',
