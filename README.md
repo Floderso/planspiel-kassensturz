@@ -24,9 +24,10 @@ Privates Repo — nicht öffentlich zugänglich.
 ## Projektstruktur
 
 ```text
-index.html              → Planspiel-UI (statisch, kein Build-Schritt)
+index.html              → Spielfläche: der Verhandlungstisch (statisch, kein Build-Schritt)
 js/
-  planspiel.js          → UI-Controller, URL-Config, API-Sync
+  verhandlungstisch.js  → UI-Steuerung der Spielfläche
+  spielkern.js          → Übersetzung zur Engine: Stellgrößen, Kennzahlen, Runden
   data.js               → Wirtschaftsdaten, Kurskonfiguration, Schock-Bibliothek
   rechner/
     berechne.js         → Hauptsimulation (eine Periode)
@@ -39,6 +40,7 @@ api/
   src/index.ts          → Hono.js API (Cloudflare Workers)
   wrangler.toml         → Cloudflare-Konfiguration
   package.json
+archiv/                 → abgelöste Oberflächen und Gestaltungsentwürfe
 docs/
   ARCHITECTURE.md
   ENGINE.md

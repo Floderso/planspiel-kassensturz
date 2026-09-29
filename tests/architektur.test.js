@@ -151,24 +151,7 @@ const REGELN = {
  * Eintrag ueberfluessig geworden ist. Eine Ausnahme kann ihren Grund hier
  * nicht ueberleben — genau daran ist die alte Luecke gescheitert.
  */
-const AUSNAHMEN = {
-  'demo.html': {
-    regeln: ['fetch', 'adressen'],
-    grund:  'Wird im Redesign gestrichen (Entscheidung 16.09.2026). Die Seite ' +
-            'laedt konfig.js nicht und spricht direkt mit der API.',
-    befunde: [
-      'demo.html:523 — Adresse der ausgerollten API als Zeichenkette',
-      'demo.html:536 — fetch() ausserhalb js/dienste/',
-    ],
-  },
-  'news_portal_mockup.html': {
-    regeln: ['adressen'],
-    grund:  'Mockup, wird nicht ausgeliefert und im Redesign ersetzt.',
-    befunde: [
-      'news_portal_mockup.html:7 — Tailwind von gstatic.com statt aus dem Projekt',
-    ],
-  },
-};
+const AUSNAHMEN = {};
 
 const istAusgenommen = (datei, regel) => AUSNAHMEN[datei]?.regeln.includes(regel) ?? false;
 
@@ -256,17 +239,17 @@ test('jede Ausnahme wird noch gebraucht', () => {
 //
 // Stand 22.09.2026: `js/dienste/speicher.js` existiert jetzt — das Ziel
 // dieses Schritts ist also gebaut. Was noch fehlt, ist die Umstellung der
-// sieben Fundstellen in der KLASSISCHEN Flaeche:
+// fuenf Fundstellen in den Seiten der Lehrperson, die noch aus der
+// klassischen Flaeche stammen:
 //
-//   js/admin.js:22,25,55,76 · js/debriefing.js:71 · js/planspiel.js:82,103
+//   js/admin.js:22,25,55,76 · js/debriefing.js:74
 //
-// Sie bleiben liegen, bis entschieden ist, wie lange index-klassisch.html
-// noch gebraucht wird (siehe entwurf/PLANUNG-AUSBAU.md, Abschnitt 15). Der
-// Verhandlungstisch selbst haelt die Regel bereits ein.
+// Die klassische Spielflaeche selbst liegt seit 29.09.2026 in archiv/ und
+// wird hier nicht mehr geprueft. Der Verhandlungstisch haelt die Regel ein.
 //
-// Sobald die sieben umgestellt sind: `todo` entfernen — nicht vorher, denn
+// Sobald die fuenf umgestellt sind: `todo` entfernen — nicht vorher, denn
 // ein Test, der rot ist und rot bleiben darf, wird nach zwei Wochen ignoriert.
 
-test('localStorage nur in js/dienste/', { todo: 'noch 7 Fundstellen in der klassischen Flaeche' }, () => {
+test('localStorage nur in js/dienste/', { todo: 'noch 5 Fundstellen in admin.js und debriefing.js' }, () => {
   assert.deepEqual(befunde('speicher'), []);
 });

@@ -31,7 +31,7 @@ Diese Datei wiederholt das nicht. Sie hält nur fest, was sonst nirgends steht.
 npm start          # statischer Server auf :8000 (werkzeug/entwicklungsserver.js)
                    # sendet no-store — python3 -m http.server tat das nicht,
                    # und veraltete Module haben dadurch Seiten zerschossen (ADR 005)
-npm test           # node --test tests/*.test.js  → aktuell 157 Tests (1 todo)
+npm test           # node --test tests/*.test.js  → aktuell 152 Tests (1 todo)
 ```
 
 Unterprojekte haben eigene `package.json`:
@@ -124,8 +124,10 @@ Modell ökonomisch unsinnig wird.
 
 ```
 index.html            Spielfläche — Der Verhandlungstisch (seit 20.09.2026)
-index-klassisch.html  die vorherige Spielfläche, bleibt als Rückfallebene
-admin.html · debriefing.html · demo.html                Oberflächen, statisch
+einrichtung.html · leitung.html · aufstellung.html     Kurs anlegen, leiten, Teams aufstellen
+auswertung.html · buehne.html                           Auswertung und Bühne je Team
+admin.html · debriefing.html  aus der klassischen Fläche, noch gebraucht:
+                      Lernziele, Teilnahmeliste, Debriefing am Kursende
 konfig.js             Laufzeitkonfiguration — wird beim Ausrollen ersetzt
 css/schriften.css     lokale Schriften (fonts/), kein Google
 js/konfig.js          liest konfig.js, ergänzt Vorgaben
@@ -133,7 +135,6 @@ js/dienste/server.js  der EINZIGE Ort mit fetch()
 js/verhandlungstisch.js  UI-Steuerung der Spielfläche
 js/spielkern.js       Übersetzung zur Engine — Stellgrößen, Kennzahlen, Runden
 js/felder.js          Eingabe und Fehlerverhalten
-js/planspiel.js       UI-Steuerung der klassischen Fläche
 js/data.js            Wirtschaftsdaten, Kurskonfiguration, Schocks
 js/data/              ausgelagerte Datensätze (presse_pool.js)
 js/rechner/           die Engine — siehe docs/ENGINE.md
@@ -141,7 +142,10 @@ api/src/index.ts      Hono.js auf Cloudflare Workers (eigenes npm-Projekt)
 makro-planspiel/      eigenständiges Teilprojekt mit eigenen Tests
 tests/                node --test
 docs/                 Architektur, Engine, API, Deployment, ADRs
-entwurf/ansaetze/     zehn Gestaltungsentwürfe, fünf davon bedienbar
+entwurf/              Fachprüfungen, Planung, Übergaben (nur Texte)
+archiv/               abgelöst seit 29.09.2026: klassische Fläche, demo,
+                      kabinett, registerband, haushaltsplan, alle Gestaltungs-
+                      entwürfe — nicht gepflegt, nicht von npm test geprüft
 ```
 
 **Die Spielfläche ist der Verhandlungstisch.** Vier Ressorts, ein Gerät je

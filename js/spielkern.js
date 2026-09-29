@@ -31,7 +31,8 @@ import { PRESETS, PERIOD_STATE_0, KURS_KONFIG_DEFAULT, MOD_DEFS,
 // rechnete damit auch dann, wenn der Kurs anders angelegt war.
 //
 // Ohne Sitzung gilt der Standardkurs. RUNDEN und JAHRE_JE_RUNDE bleiben als
-// seine Werte stehen, weil die Entwuerfe in js/entwurf/ sie lesen.
+// seine Werte stehen, weil die archivierten Entwuerfe in archiv/js/entwurf/
+// sie lesen.
 
 const STARTJAHR = 2025;
 

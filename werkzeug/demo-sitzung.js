@@ -145,8 +145,6 @@ async function main() {
   process.stdout.write(`  ${w}/buehne.html?session=${id}&team=Team%2001\n\n`);
   process.stdout.write('Als Lehrperson:\n');
   process.stdout.write(`  ${w}/leitung.html?session=${id}#token=${token}\n\n`);
-  process.stdout.write('Die zehn Gestaltungsentwürfe:\n');
-  process.stdout.write(`  ${w}/entwurf/ansaetze/index.html\n`);
 }
 
 main().catch((f) => {

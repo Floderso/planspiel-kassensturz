@@ -334,7 +334,8 @@ async function zeigeBeitritt() {
 
   try {
     // Die Antwort liefert { team_names, team_groesse, belegung } — keine
-    // fertige Teamliste. Genauso liest es js/planspiel.js seit jeher.
+    // fertige Teamliste. Genauso las es die klassische Flaeche
+    // (archiv/js/planspiel.js).
     sitzung.mitglieder = await holeMitglieder(SITZUNG_ID);
     const namen   = sitzung.mitglieder?.team_names ?? [];
     const groesse = sitzung.mitglieder?.team_groesse ?? 0;

@@ -20,7 +20,7 @@ js/data.js
   │    ↓
   ├─ js/rechner/abgeleitet.js       (Fiskal- + Klimaindikatoren)
   │    ↓
-  └─ js/planspiel.js                (UI-Controller)
+  └─ js/spielkern.js                (Übersetzung für die Spielfläche)
 ```
 
 ---
