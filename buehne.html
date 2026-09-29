@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kassensturz — Die Bühne</title>
+<link rel="stylesheet" href="css/schriften.css">
+<style>
+:root{
+  --filz:#3C4D46; --filz-tief:#33423C; --papier:#FBF8F0; --tinte:#161A16;
+  --grau:#585F54; --zettel:#F3E483; --fin:#17406B;
+  --gut:#125C36; --schlecht:#8E2418;
+  --buehne:#141A17; --buehne-schrift:#F6F3EA; --buehne-matt:#AEBCB3;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--filz);color:var(--papier);font-family:Inter,system-ui,sans-serif;
+  font-size:16px;line-height:1.45;font-variant-numeric:tabular-nums}
+body[data-ansicht="buehne"]{background:var(--buehne);overflow:hidden}
+:focus-visible{outline:3px solid var(--zettel);outline-offset:3px;border-radius:2px}
+[hidden]{display:none !important}
+
+/* ── D2 · Die Regie ─────────────────────────────────────────────────────── */
+.kopf{padding:22px 24px 14px;max-width:1080px;margin:0 auto}
+.kopf .zurueck{font-size:13px;margin-bottom:10px}
+.kopf .zurueck a{color:var(--zettel)}
+.kopf h1{font-family:Newsreader,serif;font-size:31px;font-weight:500}
+.kopf p{color:#C8D2CB;font-size:14px;margin-top:4px;max-width:72ch}
+#laedt{max-width:1080px;margin:0 auto;padding:30px 24px;color:#C8D2CB;font-size:15px;max-width:60ch}
+main{max-width:1080px;margin:0 auto;padding:0 24px 56px}
+
+.regiefeld{display:grid;gap:18px;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
+@media(max-width:52rem){.regiefeld{grid-template-columns:1fr}}
+.spalte{background:var(--papier);color:var(--tinte);padding:18px 20px 20px;
+  box-shadow:0 8px 24px rgba(0,0,0,.34)}
+.spalte > h2{font-family:Newsreader,serif;font-size:21px;font-weight:500;margin-bottom:3px;
+  display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.spalte > .bu{font-size:12.5px;color:var(--grau);margin-bottom:14px}
+.zaehler{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--grau);font-weight:400}
+.qgruppe{margin-bottom:16px}
+.qgruppe h3{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--grau);
+  margin-bottom:6px;border-bottom:1px solid #D5CEBC;padding-bottom:4px}
+.qz{display:grid;grid-template-columns:auto 1fr;gap:2px 9px;align-items:baseline;
+  padding:6px 5px;margin:0 -5px;cursor:pointer;border-radius:2px}
+.qz:hover{background:#F1ECDE}
+.qz input{grid-row:span 2;width:17px;height:17px;accent-color:var(--fin);cursor:pointer}
+.qn{font-size:13.5px;font-weight:600}
+.qw{font-size:11.5px;color:var(--grau)}
+.fz{display:flex;justify-content:space-between;gap:9px;align-items:center;
+  border:1px solid #D5CEBC;border-left:4px solid var(--fin);background:#FDFBF5;
+  padding:8px 10px;margin-bottom:7px}
+.fn{font-size:13px;font-weight:600}
+.fk{display:flex;gap:4px}
+.fk button{font:inherit;font-size:12px;width:26px;height:26px;border:1px solid #C6BEA8;
+  background:var(--papier);cursor:pointer;border-radius:2px;color:var(--tinte)}
+.fk button:hover:not(:disabled){border-color:var(--tinte)}
+.fk button:disabled{opacity:.35;cursor:not-allowed}
+.leer{font-size:13px;color:var(--grau);font-style:italic}
+#los{font:inherit;font-weight:700;font-size:16px;background:var(--zettel);color:#2B2605;
+  border:0;padding:13px 26px;cursor:pointer;margin-top:16px;width:100%;border-radius:2px}
+#los:hover:not(:disabled){background:#F7EA9A}
+#los:disabled{background:#C6BEA8;color:#6E6A5E;cursor:not-allowed}
+.tasten{font-size:12.5px;color:var(--grau);margin-top:10px;line-height:1.5}
+.tasten kbd{font-family:'JetBrains Mono',monospace;font-size:11.5px;background:#EDE7D6;
+  border:1px solid #C6BEA8;border-radius:3px;padding:1px 5px}
+
+/* ── D1 · Die Bühne ─────────────────────────────────────────────────────── */
+#buehne{position:fixed;inset:0;background:var(--buehne);color:var(--buehne-schrift);
+  display:grid;grid-template-rows:1fr auto;padding:clamp(24px,5vw,64px)}
+#buehne:focus{outline:none}
+#buehne-inhalt{display:grid;align-content:center;justify-items:start;gap:14px;
+  max-width:24ch;margin:0 auto;width:100%;max-width:min(100%,1100px)}
+.b-titel{font-family:Newsreader,serif;font-size:clamp(40px,8vw,88px);font-weight:500;
+  line-height:1.02;letter-spacing:-.02em}
+.b-unter{font-size:clamp(15px,2vw,22px);color:var(--buehne-matt)}
+.b-aussage{font-family:Newsreader,serif;font-size:clamp(26px,4.4vw,52px);line-height:1.25;
+  max-width:26ch}
+.b-zahl{font-family:'JetBrains Mono',monospace;font-size:clamp(62px,14vw,180px);
+  font-weight:700;line-height:.94;letter-spacing:-.03em}
+.b-zahl em{font-style:normal;font-size:.26em;font-weight:400;color:var(--buehne-matt)}
+.b-satz{font-size:clamp(18px,2.6vw,30px);color:var(--buehne-schrift)}
+.b-klein,.b-quelle{font-size:clamp(13px,1.6vw,17px);color:var(--buehne-matt)}
+.b-reihe{display:flex;gap:clamp(14px,3vw,38px);flex-wrap:wrap;margin-top:6px}
+.b-reihe span{font-family:'JetBrains Mono',monospace;font-size:clamp(16px,2.2vw,26px)}
+.b-reihe b{display:block;font-size:.55em;font-weight:400;color:var(--buehne-matt);
+  font-family:Inter,sans-serif;letter-spacing:.08em}
+.b-stueck{width:100%;background:var(--papier);color:var(--tinte);padding:clamp(14px,2vw,24px);
+  border-radius:3px;max-height:70vh;overflow:auto}
+
+.leiste{display:flex;justify-content:space-between;align-items:center;gap:16px;
+  padding-top:18px;border-top:1px solid #2C3630}
+#buehne-stand{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--buehne-matt)}
+.leiste .knoepfe{display:flex;gap:8px}
+.leiste button{font:inherit;font-size:13px;background:transparent;color:var(--buehne-matt);
+  border:1px solid #3C4841;padding:7px 14px;cursor:pointer;border-radius:2px}
+.leiste button:hover{color:var(--buehne-schrift);border-color:var(--buehne-matt)}
+.verborgen{position:absolute;left:-9999px}
+
+/* Der Schaukasten auf der Bühne — heller Grund, groessere Schrift */
+.b-stueck .sk-stueck{border:0;background:transparent;padding:0}
+.b-stueck .sk-kopf{font-size:clamp(14px,1.8vw,20px)}
+.b-stueck .sk-kopf span{font-size:clamp(12px,1.5vw,16px)}
+.b-stueck .sk-balken{padding-top:20px}
+.b-stueck .sk-bal i{background:var(--fin)}
+.b-stueck .sk-bal[data-vz="minus"] i{background:var(--schlecht)}
+.b-stueck .sk-w{font-family:'JetBrains Mono',monospace;font-size:clamp(11px,1.3vw,14px)}
+.b-stueck .sk-n{font-size:clamp(10px,1.2vw,13px);color:var(--grau)}
+.b-stueck .sk-tab{font-size:clamp(13px,1.5vw,16px)}
+.b-stueck .sk-tab th{text-align:left;font-weight:600;padding:5px 12px 5px 0;
+  border-bottom:1px dotted #D5CEBC}
+.b-stueck .sk-tab td{padding:5px 0;border-bottom:1px dotted #D5CEBC;
+  font-family:'JetBrains Mono',monospace}
+.b-stueck .sk-tab .sk-d{text-align:right;color:var(--grau)}
+.b-stueck .sk-tab .sk-d[data-richtung="besser"]{color:var(--gut)}
+.b-stueck .sk-tab .sk-d[data-richtung="schlechter"]{color:var(--schlecht)}
+.b-stueck .sk-gross{font-family:'JetBrains Mono',monospace;
+  font-size:clamp(42px,8vw,96px);font-weight:700;line-height:1}
+.b-stueck .sk-gross[data-richtung="besser"]{color:var(--gut)}
+.b-stueck .sk-gross[data-richtung="schlechter"]{color:var(--schlecht)}
+.b-stueck .sk-gross em{font-style:normal;font-size:.34em;font-weight:400;color:var(--grau)}
+.b-stueck .sk-gross-n{font-size:clamp(13px,1.6vw,18px);color:var(--grau);margin-top:4px}
+.b-stueck figcaption{font-family:Newsreader,serif;font-size:clamp(16px,2.2vw,26px);
+  line-height:1.4;margin-top:14px;padding-top:12px;border-top:1px solid #E2DCCB;max-width:52ch}
+.b-stueck .sk-nr{display:none}
+.b-stueck .sk-fuss{font-size:clamp(11px,1.3vw,14px);color:var(--grau);margin-top:10px}
+.b-stueck .sk-leer{font-size:15px;color:var(--grau);font-style:italic}
+</style>
+</head>
+<body data-ansicht="regie">
+
+<div id="regie">
+  <header class="kopf">
+    <p class="zurueck"><a href="auswertung.html">← Zur Auswertung</a></p>
+    <h1 id="regie-titel" tabindex="-1">Die Regie</h1>
+    <p>Was soll vorne gezeigt werden, und in welcher Reihenfolge? Die Stücke kommen aus den
+       Schaukästen — wer etwas anderes zeigen will, ändert dort.</p>
+  </header>
+
+  <p id="laedt">Wird geladen …</p>
+
+  <main>
+    <div class="regiefeld">
+      <div class="spalte">
+        <h2>Was es gibt</h2>
+        <p class="bu">Anhaken, was auf die Bühne soll.</p>
+        <div id="quellen"></div>
+      </div>
+      <div class="spalte">
+        <h2>Die Reihenfolge <span id="folge-zahl" class="zaehler"></span></h2>
+        <p class="bu">So läuft der Vortrag ab.</p>
+        <div id="folge"></div>
+        <button type="button" id="los">Bühne betreten</button>
+        <p class="tasten">Auf der Bühne: <kbd>→</kbd> <kbd>Leertaste</kbd> weiter ·
+           <kbd>←</kbd> zurück · <kbd>Pos1</kbd> <kbd>Ende</kbd> springen ·
+           <kbd>Esc</kbd> verlassen.</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="buehne" hidden tabindex="-1" aria-labelledby="buehne-melder">
+  <p id="buehne-melder" class="verborgen" role="status" aria-live="polite"></p>
+  <div id="buehne-inhalt"></div>
+  <div class="leiste">
+    <span id="buehne-stand"></span>
+    <span class="knoepfe">
+      <button type="button" id="zurueck">← Zurück</button>
+      <button type="button" id="vor">Weiter →</button>
+      <button type="button" id="raus">Verlassen (Esc)</button>
+    </span>
+  </div>
+</div>
+
+<script src="konfig.js"></script>
+<script type="module" src="js/buehne.js"></script>
+</body>
+</html>

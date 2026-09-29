@@ -10,7 +10,8 @@ sofort die ökonomischen Konsequenzen. Eine Lehrperson verwaltet Sessions.
 ┌─────────────────────────────────────────────────────┐
 │                  Browser (Client)                   │
 │                                                     │
-│  index.html ──→ js/planspiel.js (UI-Controller)     │
+│  index.html ──→ js/verhandlungstisch.js             │
+│                 └→ js/spielkern.js · js/felder.js   │
 │                      │                              │
 │              js/rechner/ (Engine)                   │
 │         berechne · transition · abgeleitet          │
@@ -35,7 +36,7 @@ sofort die ökonomischen Konsequenzen. Eine Lehrperson verwaltet Sessions.
 │          GET  /api/sessions/:id/results             │
 │                      │                              │
 │         Cloudflare KV (Session-Storage)             │
-│         Key: "session:{id}" · TTL: 24 h             │
+│    Key: "session:{id}" · TTL: 180 Tage (~1 Semester) │
 └─────────────────────────────────────────────────────┘
 ```
 

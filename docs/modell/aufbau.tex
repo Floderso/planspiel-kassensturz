@@ -1,0 +1,464 @@
+% SPDX-License-Identifier: CC-BY-4.0
+% Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
+% Abschnitt 2 — Das Modell (js/rechner/berechne.js, einkommensteuer.js,
+% verteilung.js, transition.js, abgeleitet.js; Daten in js/data.js)
+
+\section{Modell}
+\label{sec:modell}
+
+\subsection{Aufbau}
+\label{sec:aufbau}
+
+Das Modell verbindet eine statische Mikrosimulation mit einem dynamischen
+Makrorahmen. Zwölf Haushaltstypen $i = 1,\dots,12$ stehen für die
+Einkommensdezile D1 bis D9 und drei Teile des obersten Dezils (D10a: 90.
+bis 95.~Perzentil, D10b: 95. bis 99., D10c: oberstes Prozent); $N_i$ ist die
+Zahl der Haushalte des Typs in Millionen, zusammen rund 41~Millionen. Die Zeit
+läuft in Perioden $t = 1,\dots,5$ zu je $n = 4$ Jahren von 2025 bis 2044;
+$j_t$ ist das erste Jahr der Periode. Innerhalb einer Periode gilt ein
+Politikvektor $\theta$ unverändert. Der Status quo $\theta^0$ ist der
+Rechtsstand 2026 (Tabelle~\ref{tab:stellgroessen}).
+
+Jede Periode durchläuft die Schritte in Abbildung~\ref{fig:ablauf}. Aus dem
+Politikvektor und dem Zustand zu Periodenbeginn entstehen Einkommen, Steuern
+und Transfers je Haushaltstyp, daraus Aufkommen, Ausgaben und Saldo des
+Staates, die Nachfragewirkung und die Verteilungsmaße. Der Übergang schreibt
+BIP, Schuldenquote, kumulierte Emissionen und die Kapitalniveaus in die
+nächste Periode fort. Ergebnisse sind Differenzen zum Status quo derselben
+Periode, $\Delta x_t = x_t(\theta) - x_t(\theta^0)$.
+
+Geldgrößen des Staates stehen in Mrd.~\euro{} je Jahr, Geldgrößen der
+Haushalte in \euro{} je Haushalt und Jahr, beide in Preisen von 2025, soweit
+nicht anders angegeben. Sätze sind Anteile; Änderungen werden in
+Prozentpunkten (Pp.) berichtet. Summen $\sum_i N_i x_i$ über Größen $x_i$ in
+Euro je Haushalt sind in Mrd.~\euro{} angegeben; der Faktor $10^{-3}$ wird
+nicht geschrieben.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  node distance=3.5mm and 4mm,
+  box/.style={draw=grau, rounded corners=2pt, fill=hell, align=center, font=\footnotesize,
+              minimum height=8.5mm, text width=26mm},
+  pfeil/.style={-{Stealth[length=1.8mm]}, semithick, grau}]
+\node[box] (a) {1 Geltendes Recht\\einrechnen};
+\node[box, right=of a] (b) {2 Arbeitsangebot};
+\node[box, right=of b] (c) {3 Einkommensteuer};
+\node[box, right=of c] (d) {4 Weitere Steuern};
+\node[box, below=of d] (e) {5 Sozialbeiträge};
+\node[box, left=of e] (f) {6 Transfers\\und Renten};
+\node[box, left=of f] (g) {7 Haushalte:\\Netto, Verteilung};
+\node[box, left=of g] (h) {8 Nachfrage\\der Periode};
+\node[box, below=of h] (i) {9 Fortschreibung\\in Euro der Periode};
+\node[box, right=of i] (j) {10 Saldo,\\Schuldenbremse};
+\node[box, right=of j, fill=white, text width=56mm] (k) {Übergang zur nächsten Periode:\\BIP, Schulden, Emissionen, Kapital};
+\draw[pfeil] (a)--(b); \draw[pfeil] (b)--(c); \draw[pfeil] (c)--(d); \draw[pfeil] (d)--(e);
+\draw[pfeil] (e)--(f); \draw[pfeil] (f)--(g); \draw[pfeil] (g)--(h); \draw[pfeil] (h)--(i);
+\draw[pfeil] (i)--(j); \draw[pfeil] (j)--(k);
+\end{tikzpicture}
+\caption{Ablauf einer Periode (\datei{berechne()}) und Übergang (\datei{berechneTransition()}).}
+\label{fig:ablauf}
+\end{figure}
+
+\paragraph{Geltendes Recht.} Beschlossene Änderungen, die über die Jahre
+wirken, kommen zu den Stellgrößen hinzu, gemittelt über die Jahre $j$ der
+Periode. Die Körperschaftsteuer sinkt ab 2028 um einen Prozentpunkt je Jahr
+bis auf 10\,\% (§\,23 Abs.~1 KStG), der Beitragssatz der Rentenversicherung
+folgt nach §\,158 SGB~VI den Ausgaben, 18,6\,\% bis 2027, 20,1\,\% im Jahr 2030
+und 21,15\,\% ab 2039 \parencite{bmas2025}:
+\begin{gather}
+  \tau\hoch{KSt}_t = \max\Bigl\{0,\ \tau\hoch{KSt} - \frac1n\sum_{j\in t}\min\bigl\{0{,}05,\ \max\{0,\ (j-2027)/100\}\bigr\}\Bigr\},\\
+  \beta\hoch{RV}_t = \beta\hoch{RV} + \frac1n\sum_{j\in t}\bigl(\bar\beta\hoch{RV}(j) - 0{,}186\bigr),
+\end{gather}
+mit $\bar\beta\hoch{RV}(j)$ linear zwischen den genannten Stützstellen. Die
+Stellgrößen zeigen die Werte von 2026.
+
+\subsection{Haushalte}
+\label{sec:haushalte}
+
+Ein Haushaltstyp ist beschrieben durch das Bruttoeinkommen $B_i$, den
+Kapitalanteil $\kappa_i$, die durchschnittliche Konsumquote $c_i$, das
+Bedarfsgewicht $w_i$ der neuen OECD-Skala, das Vermögen $V_i$ und den Anteil
+$\rho_i$ der gesetzlichen Rente am Einkommen (Tabelle~\ref{tab:dezile} im
+Anhang). Grundlage sind SOEP~v40, der Mikrozensus 2024, die
+Verteilungsrechnung DINA-DE und der Vermögensbericht des DIW. Arbeits- und
+Kapitaleinkommen sind $A_i = (1-\kappa_i)B_i$ und $K_i = \kappa_i B_i$. Das
+oberste Dezil ist dreigeteilt, weil sich dort Spitzensteuersatz und
+Vermögensteuern konzentrieren: D10c hat im Mittel 700.000\,\euro{}
+Bruttoeinkommen, davon 45\,\% aus Kapital, und 7~Mio.\,\euro{} Vermögen.
+
+Haushalte und Staat benutzen dieselben Profile: Kindergeldkinder $k_i$
+(zusammen 17~Mio.), Bürgergeld-Regelsatzjahre $q_i$ (zusammen 3,9~Mio., nur
+D1 bis D4), die Grenzkonsumneigung $m_i$ von 0,65 in D1 bis 0,15 in D10c
+\parencite{jappelli2014,fagereng2021} und das Gewicht $\omega_i$ der
+\COz-Last mit $\sum_i N_i\omega_i = 1$. Es verteilt die Last regressiv: Bei
+55\,\euro/t trägt D1 \LastDeins\,\% seines Bruttoeinkommens, D10c \LastDzehnc\,\%.
+
+\subsection{Arbeitsangebot}
+\label{sec:arbeit}
+
+Das Einkommen reagiert auf den Anteil $1-\mu_i$, der vom letzten verdienten
+Euro bleibt:
+\begin{equation}
+  \lambda_i = \max\Bigl\{0{,}55,\ a_i\cdot\min\Bigl\{1{,}25,\ \max\Bigl\{0{,}55,\ 1 + \varepsilon_i\,\frac{\mu_i^0 - \mu_i}{1 - \mu_i^0}\Bigr\}\Bigr\}\Bigr\},
+  \qquad \tilde A_i = \lambda_i A_i .
+\end{equation}
+Dabei ist $\mu_i$ der Grenzsteuersatz des Haushalts (Abschnitt~\ref{sec:est})
+unter $\theta$ und $\mu_i^0$ im Status quo, beide am Arbeitseinkommen $A_i$
+ausgewertet. Die Elastizität $\varepsilon_i = 0{,}20$ entspricht dem Konsens
+zur intensiven Marge \parencite{gruber2002,saez2012}. Für D10c gilt
+$\varepsilon_{12} = 0{,}40$, weil Spitzeneinkommen vor allem durch Verlagerung
+und Verhandlung reagieren \parencite{piketty2014,kleven2014}. Dazu kommt ein
+Ausweichfaktor, den der tarifliche Spitzensatz $r_5$ auslöst: Steuervermeidung
+oberhalb von 45\,\%, Wegzug oberhalb von 60\,\%, beides nur für den Anteil
+$\varsigma = \min\{1,\ (x_m/x^S)^{\alpha-1}\}$ des Einkommens, der im Pareto-Rand
+über der Grenze der Spitzenzone liegt (Abschnitt~\ref{sec:est}; im Status quo rund
+die Hälfte):
+\begin{equation}
+  a_{12} = \max\bigl\{0{,}40,\ 1 - \varsigma\,\bigl(0{,}5\max\{0,\ r_5-0{,}45\} + 0{,}1\max\{0,\ r_5-0{,}60\}\bigr)\bigr\};
+\end{equation}
+für alle übrigen Typen ist $a_i = 1$. Die Reaktion betrifft nur die
+Arbeitseinkünfte; Kapitaleinkünfte bleiben wie in den Daten, weil für sie keine
+belegte Elastizität vorliegt, und $\tilde B_i = \tilde A_i + K_i$.
+
+\subsection{Einkommensteuer}
+\label{sec:est}
+
+Der Tarif ist der Formeltarif des §\,32a EStG 2026, geschrieben als Integral
+einer stückweise linearen Grenzsteuerrate $r(x)$ über das zu versteuernde
+Einkommen $x$. Mit dem Grundfreibetrag $F$, dem Beginn der Spitzenzone $x^S$,
+dem Eingangssatz $r_0$, dem Spitzensatz $r_5$ und $\xi = x - F$ gilt
+\begin{equation}
+  r(x) = \begin{cases}
+    0 & \xi \le 0,\\
+    r_0 + (r_m - r_0)\,\xi/b_2 & 0 < \xi \le e_2,\\
+    r_m + (r_4 - r_m)\,(\xi - e_2)/b_3 & e_2 < \xi \le e_3,\\
+    r_4 & e_3 < \xi \le x^S - F,\\
+    r_5 & \xi > x^S - F,
+  \end{cases}
+  \qquad T(x) = \int_0^x r(z)\,dz,
+\end{equation}
+mit den Zonenbreiten von 2026, $b_2 = 5.451$\,\euro{} und $b_3 = 52.079$\,\euro,
+den Zonenenden $e_2 = \min\{b_2,\ x^S - F\}$ und
+$e_3 = \min\{b_2 + b_3,\ x^S - F\}$, $r_4 = \min\{0{,}42,\ r_5\}$ und
+$r_m = r_0 + 0{,}35607\,(r_4 - r_0)$. Im Status quo ($F = 12.348$\,\euro,
+$r_0 = 14\,\%$, $r_5 = 45\,\%$, $x^S = 277.826$\,\euro) weicht $T$ an keiner
+Stelle um mehr als 1\,\% vom amtlichen Tarif ab. Jede Stellgröße wirkt nur auf
+ihre Zone: $F$ verschiebt die Zonen~2 bis~4, $r_0$ den Beginn der Progression,
+$r_5$ die Zone oberhalb von $x^S$ und $x^S$ nur deren Beginn. Liegt $r_5$
+unter 42\,\%, wird die Proportionalzone auf $r_5$ gedeckelt.
+
+Die Daten sind Haushaltseinkommen, der Tarif gilt je Steuerpflichtigem. Mit
+dem Anteil $\zeta = 0{,}79$ des zu versteuernden Einkommens am Brutto
+(Werbungskosten, Vorsorgeaufwand) und $\eta = 1{,}6$ Tarifeinheiten je
+Haushalt (Einzelpersonen und zusammenveranlagte Paare) ist
+\begin{equation}
+  T_i = \eta\,T\bigl(\zeta\tilde A_i/\eta\bigr) + \tau\hoch{Abg}K_i,
+  \qquad \mu_i = \zeta\,r\bigl(\zeta A_i/\eta\bigr),
+\end{equation}
+mit der Abgeltungsteuer $\tau\hoch{Abg}$ auf Kapitaleinkommen. Die Steuer
+greift auf das Einkommen nach, der Grenzsteuersatz auf das Einkommen vor der
+Reaktion des Arbeitsangebots zu. Im obersten Prozent liegt das mittlere zu
+versteuernde Einkommen, rund 190.000\,\euro, unter $x^S$; mit dem
+Durchschnitt allein zahlte niemand den Spitzensatz. Die Einkommen in D10c
+folgen deshalb einer Pareto-Verteilung mit dem Exponenten $\alpha = 1{,}5$,
+dem schweren Rand der Schätzungen für Deutschland
+\parencite{atkinson2011,bartels2015}. Mit dem Mittelwert $\bar x$ der
+Verteilung, ihrem Skalenparameter $x_m = \bar x(\alpha-1)/\alpha$, der unter
+$x^S$ liegt, und dem Tarif ohne Spitzenzone $T_{\le 4}$ gilt
+\begin{equation}
+  T_{12} = \eta\Bigl[T_{\le 4}(\bar x) + (r_5 - r_4)\,\frac{x_m^{\alpha}\,(x^S)^{1-\alpha}}{\alpha - 1}\Bigr] + \tau\hoch{Abg}K_{12},
+  \qquad
+  \mu_{12} = \zeta\Bigl[r_{\le 4}(\bar x) + (r_5 - r_4)\Bigl(\frac{x_m}{x^S}\Bigr)^{\alpha}\Bigr];
+\end{equation}
+der Bruch ist der erwartete Einkommensteil oberhalb von $x^S$, der letzte
+Faktor der Anteil der Veranlagungen dort. Das Aufkommen ist
+$R\hoch{ESt} = \sum_i N_i T_i$.
+
+\subsection{Weitere Steuern und Beiträge}
+\label{sec:steuern}
+
+\paragraph{Umsatzsteuer.} Der Konsum eines Haushalts ist
+$C_i = c_i\,(\tilde B_i - T_i - \tfrac12\sigma_i)$ mit dem Sozialbeitrag
+$\sigma_i$ (unten). 70\,\% davon tragen den Regelsatz $\tau\hoch{USt}$,
+30\,\% den ermäßigten Satz $\tau\hoch{erm}$. Der besteuerte Konsum reagiert
+mit der Semi-Elastizität $\varepsilon_C = -0{,}35$ je Einheit des Satzes:
+\begin{equation}
+\begin{split}
+  R\hoch{USt} &= \varphi\,(1-\gamma)\sum_i N_i C_i
+  \Bigl[0{,}7\,\frac{\tau\hoch{USt}}{1+\tau\hoch{USt}}\,\chi\bigl(\Delta\tau\hoch{USt}\bigr)
+      + 0{,}3\,\frac{\tau\hoch{erm}}{1+\tau\hoch{erm}}\,\chi\bigl(\Delta\tau\hoch{erm}\bigr)\Bigr],\\
+  \chi(\Delta) &= \min\{1{,}1,\ \max\{0{,}85,\ 1 + \varepsilon_C\Delta\}\}.
+\end{split}
+\end{equation}
+Der Konsum der Haushalte erfasst nur rund 60\,\% der Bemessungsgrundlage; der
+Faktor $\varphi = 1{,}68$ ergänzt die Käufe von Staat, Wohnungsbau und
+befreiten Branchen, $\gamma = 3{,}7\,\%$ ist die Umsatzsteuerlücke.
+
+\paragraph{Unternehmensteuern.} Körperschaft- und Gewerbesteuer haben
+getrennte Bemessungsgrundlagen, $B\hoch{KSt} = 300$ und
+$B\hoch{GewSt} = 536$~Mrd.~\euro{}, weil auch Personengesellschaften
+Gewerbesteuer zahlen. Beide schrumpfen mit dem Investitionsfaktor
+\begin{equation}
+\begin{split}
+  I &= 1 + \varepsilon_I\bigl(\tau\hoch{KSt} + \tau\hoch{GewSt} - 0{,}30\bigr),
+  \qquad \bar I = \min\{1{,}2,\ \max\{0{,}7,\ I\}\},\\
+  R\hoch{KSt} &= B\hoch{KSt}\,\bar I\,\tau\hoch{KSt},
+  \qquad
+  R\hoch{GewSt} = B\hoch{GewSt}\,\bar I\,\tau\hoch{GewSt},
+\end{split}
+\end{equation}
+mit $\varepsilon_I = -0{,}40$: Zehn Prozentpunkte Unternehmensteuerlast über
+30\,\% senken Gewinne und Investitionen um 4\,\%. Die Meta-Analyse von
+\textcite{gechert2022} findet Wachstumswirkungen, die kleiner sind als oft
+behauptet. Der Faktor wirkt sofort auf die Bemessungsgrundlage und
+langfristig auf das private Kapital (Abschnitt~\ref{sec:dynamik}).
+
+\paragraph{Vermögensbezogene Steuern.} Die Erbschaftsteuer rechnet mit einer
+Erbmasse $H = 400$~Mrd.~\euro{} je Jahr, von der nach den persönlichen
+Freibeträgen der Anteil $h = 0{,}45$ steuerpflichtig bleibt. 60\,\% der Masse
+tragen den effektiven Satz $\tau\hoch{ErbSt}_{\mathrm{eff}}$, bei Verschonung
+des Betriebsvermögens (Status quo) $0{,}3\,\tau\hoch{ErbSt}$, sonst
+$0{,}9\,\tau\hoch{ErbSt}$; die übrigen 40\,\% tragen den halben, auf 15\,\%
+begrenzten Satz. Die Vermögensteuer trifft Vermögen über
+2~Mio.\,\euro{} ($W = 3.500$~Mrd.~\euro), deren deklarierte Höhe mit dem Satz
+sinkt \parencite{bruelhart2022}, die Bodenwertsteuer den Bodenwert
+($L = 5.000$~Mrd.~\euro). Die Mindeststeuer auf Milliardärsvermögen
+($W^{*} = 600$~Mrd.~\euro) rechnet die gezahlte Einkommensteuer von rund
+0,3\,\% des Vermögens und eine Vermögensteuer an \parencite{zucman2024}:
+\begin{align}
+  R\hoch{ErbSt} &= h\,H\bigl[0{,}6\,\tau\hoch{ErbSt}_{\mathrm{eff}} + 0{,}2\min\{\tau\hoch{ErbSt},\ 0{,}15\}\bigr],
+  \qquad R\hoch{BoSt} = L\,\tau\hoch{BoSt},\\
+  R\hoch{VSt} &= W\,\tau\hoch{VSt}\exp\bigl(-\varepsilon_W\tau\hoch{VSt}\bigr),\\
+  R\hoch{Min} &= W^{*}\bigl(1 - 0{,}15\min\{1,\ \tau\hoch{Min}/0{,}02\}\bigr)\max\bigl\{0,\ \tau\hoch{Min} - 0{,}003 - \tau\hoch{VSt}\bigr\}.
+\end{align}
+Die Semi-Elastizität $\varepsilon_W = 21{,}5$, also 0,215 je Prozentpunkt, ist
+die Hälfte des Schweizer Befunds, der Umzüge zwischen Kantonen einschließt.
+Die Ausweichreaktion der Mindeststeuer, 15\,\% bei einem Satz von 2\,\%,
+folgt \textcite{jakobsen2024}.
+
+\paragraph{\COz-Preis.} Die Emissionen folgen einem Basispfad $\bar E(j)$ ohne
+zusätzliche Politik, linear zwischen 649~Mt im Jahr 2025, $-63\,\%$ (2030) und
+$-80\,\%$ (2040) gegenüber 1990 \parencite{uba2025}. Den nationalen Preis $p$
+tragen nur die bepreisten Emissionen $\bar E^{p}(j) = \tfrac{327}{649}\bar E(j)$;
+auf sie wirkt die Semi-Elastizität $\varepsilon_E = -0{,}30$ je 100\,\euro/t:
+\begin{equation}
+\begin{split}
+  E_t &= \bar E(j_t) - \bar E^{p}(j_t)\bigl[1 - \psi(p)\bigr],\qquad
+  R\hoch{CO_2} = \bar E^{p}(j_t)\,\psi(p)\,p,\\
+  \psi(p) &= \min\bigl\{1{,}1,\ \max\{0{,}4,\ 1 + \varepsilon_E\,(p - 55)/100\}\bigr\}.
+\end{split}
+\end{equation}
+Ein Klimageld zahlt 70\,\% von $R\hoch{CO_2}$ je Haushalt gleich aus; im
+Status quo gibt es keines. Die übrigen Verbrauch- und Verkehrsteuern (Energie,
+Tabak, Kfz, Solidaritätszuschlag und weitere, zusammen 109~Mrd.~\euro) stehen
+fest.
+
+\paragraph{Sozialbeiträge.} Renten-, Kranken-, Arbeitslosen- und
+Pflegeversicherung erheben die Sätze $\beta\hoch{RV}$, $\beta\hoch{KV}$ und
+$\beta\hoch{AP}$ (Arbeitslosen- und Pflegeversicherung) auf das
+Arbeitseinkommen bis zu den Beitragsbemessungsgrenzen $\bar A\hoch{RV}$ und
+$\bar A\hoch{KV} = \bar A\hoch{RV}\cdot 69.750/101.400$. Der Gesamtbeitrag aus
+Arbeitnehmer- und Arbeitgeberanteil ist
+\begin{equation}
+  \sigma_i(\theta) = \min\{\tilde A_i,\ \bar A\hoch{RV}\}\bigl(\beta\hoch{RV} + 0{,}42\,\beta\hoch{AP}\bigr)
+                   + \min\{\tilde A_i,\ \bar A\hoch{KV}\}\bigl(\beta\hoch{KV} + 0{,}58\,\beta\hoch{AP}\bigr).
+\end{equation}
+Der Staat rechnet mit der sozialversicherungspflichtigen Lohnsumme
+$\Lambda = 1.750$~Mrd.~\euro{}, kalibriert bei den Grenzen des Status quo. Rund
+12\,\% der beitragspflichtigen Löhne liegen zwischen der Grenze und knapp ihrem
+Doppelten; eine um $x$\,\% andere Grenze ändert die Lohnsumme deshalb um
+$0{,}12\,x$\,\%, in beide Richtungen:
+\begin{equation}
+  R\hoch{SV} = \Lambda\Bigl(1 + 0{,}12\,\frac{\bar A\hoch{RV} - \bar A^{\mathrm{RV},0}}{\bar A^{\mathrm{RV},0}}\Bigr)
+              \bigl(\beta\hoch{RV} + \beta\hoch{KV} + \beta\hoch{AP}\bigr).
+\end{equation}
+Aus den Haushaltstypen lässt sich die Lohnmasse über der Grenze nicht rechnen: Die
+Grenze gilt je Person, die Daten sind Haushaltseinkommen, und
+Mehrverdienerhaushalte lägen fälschlich darüber. Die Beitragssätze bestimmen nur
+die Einnahmen; die Leistungen hängen am Rentenniveau (Abschnitt~\ref{sec:ausgaben}).
+
+\subsection{Ausgaben, Transfers und Renten}
+\label{sec:ausgaben}
+
+Die Ausgaben beginnen beim Stand von 2025 in grober Gliederung
+(Tabelle~\ref{tab:ausgaben} im Anhang). Bürger- und Kindergeld sind Regelsatz
+$\bar q$ beziehungsweise Betrag $\bar k$ je Monat mal Zahl der Berechtigten
+aus den Profilen,
+\begin{equation}
+  X\hoch{BG} = 12\,\bar q\sum_i N_i q_i,\qquad X\hoch{KG} = 12\,\bar k\sum_i N_i k_i ;
+\end{equation}
+Unterkunft und Mehrbedarfe (10,8~Mrd.~\euro) bleiben fest. Die Renten folgen
+dem Sicherungsniveau $\nu$ (Status quo 48\,\%, §\,154 Abs.~3 SGB~VI):
+\begin{equation}
+  \Delta P_i = \rho_i B_i f_t\bigl(\nu/\nu^0 - 1\bigr),\qquad \Delta X\hoch{R} = \sum_i N_i\,\Delta P_i .
+\end{equation}
+Die Profile $\rho_i$ sind so skaliert, dass die Renten der Haushalte den
+Zahlungen der gesetzlichen Rentenversicherung entsprechen, rund
+362~Mrd.~\euro{} \parencite{bmas2025}. Der Demografiefaktor $f_t$ bildet die
+wachsende Zahl der Rentner nach der 14.~koordinierten
+Bevölkerungsvorausberechnung ab \parencite{destatis2019}, von 1,00 im Jahr
+2025 auf 1,25 im Jahr 2041. Er macht jede Niveauänderung teurer und erhöht die
+Rentenausgaben um $X\hoch{Dem}_t = 390\,(f_t - 1)$~Mrd.~\euro.
+
+Geltendes Recht hebt die Verteidigungsausgaben von 2,4\,\% auf 3,5\,\% des BIP
+(2029) und finanziert aus dem Sondervermögen Infrastruktur von 2026 bis 2036
+jährlich $500/11$~Mrd.~\euro{} öffentliche Investitionen (Art.~143h GG); $v_t$
+ist die Verteidigungsquote der Periode, $O_t$ die Ausgabe des Sondervermögens.
+Der Klima- und Transformationsfonds gibt aus, was der \COz-Preis des Status
+quo auf dem Basispfad einbringt, und schrumpft mit den Emissionen. Die
+Erhebungskosten sind feste Anteile am Aufkommen je Steuerart, etwa 2,5\,\%
+der Einkommensteuer und 8\,\% der Erbschaftsteuer; in den Saldo geht ihre
+Änderung $\Omega(\theta) - \Omega(\theta^0)$ ein.
+
+\subsection{Inzidenz und Verteilung}
+\label{sec:inzidenz}
+
+Das verfügbare Einkommen eines Haushaltstyps ist
+\begin{equation}
+  Y_i = \tilde B_i - T_i - \hat\sigma_i - U_i - \ell_i + \Gamma_i + \Delta P_i - J_i .
+  \label{eq:netto}
+\end{equation}
+Vier Posten folgen einer Inzidenzannahme. \emph{Beiträge:} Formal zahlen
+Arbeitnehmer und Arbeitgeber je die Hälfte. Langfristig tragen die
+Beschäftigten in Kontinentaleuropa rund zwei Drittel auch des
+Arbeitgeberanteils \parencite{melguizo2013}. Das Modell lässt das Niveau beim
+Arbeitnehmeranteil und rechnet jede Änderung voll dem Haushalt zu: bei den Sätzen
+auch den Arbeitgeberanteil, bei der Beitragsbemessungsgrenze die ganze Buchung des
+Staates, verteilt nach der Lohnmasse, die je Haushalt zwischen alter und neuer
+Grenze liegt; $\hat\sigma_i$ sind die so getragenen Beiträge. \emph{Umsatzsteuer:} Eine Satzänderung trifft die volle
+Bemessungsgrundlage,
+$U_i = C_i\bigl[\bar\tau(\theta) + (\varphi(1-\gamma) - 1)\bigl(\bar\tau(\theta) - \bar\tau(\theta^0)\bigr)\bigr]$
+mit dem Durchschnittssatz
+$\bar\tau = 0{,}7\,\tau\hoch{USt}/(1+\tau\hoch{USt}) + 0{,}3\,\tau\hoch{erm}/(1+\tau\hoch{erm})$.
+\emph{\COz:} Das Bruttoaufkommen wird vollständig überwälzt,
+$\ell_i = \omega_i R\hoch{CO_2}$.
+\emph{Unternehmen und Vermögen:} Ihre Steuern tragen am Ende Beschäftigte,
+Eigentümer und Vermögende; von der Gewerbesteuer tragen die Beschäftigten
+rund die Hälfte \parencite{fuest2018}. Eine Änderung von Körperschaft- und
+Gewerbesteuer, $\Delta R\hoch{U}$, verteilt das Modell je zur Hälfte nach
+Arbeits- und Kapitaleinkommen, eine Änderung von Erbschaft-, Vermögen- und
+Bodenwertsteuer, $\Delta R\hoch{V}$, nach dem Vermögen, weil die
+Bodenwertsteuer nicht überwälzbar ist \parencite[Kap.~16]{mirrlees2011}:
+\begin{equation}
+  J_i = \Delta R\hoch{U}\Bigl(\frac{A_i}{2\sum_l N_l A_l} + \frac{K_i}{2\sum_l N_l K_l}\Bigr)
+      + \Delta R\hoch{V}\,\frac{V_i}{\sum_l N_l V_l},
+\end{equation}
+beide in Größen von 2025; die Mindeststeuer trägt allein D10c,
+$J_{12}$ enthält zusätzlich $\Delta R\hoch{Min}/N_{12}$. Die Transfers
+$\Gamma_i = 12\,(\bar q\,q_i + \bar k\,k_i) + \Gamma^{F}_i$ enthalten den festen Teil
+der Grundsicherung $\Gamma^{F}_i$ und gegebenenfalls das Klimageld. Summiert
+über die Haushalte ergeben Transfers, Renten, \COz-Last, Inzidenz und die Wirkung
+der Beitragsbemessungsgrenze genau die Buchung des Staates, Umsatzsteuer und
+Beitragssätze näherungsweise (Abschnitt~\ref{sec:validierung}).
+
+Die Verteilungsmaße beziehen sich wie in EU-SILC auf das Äquivalenzeinkommen
+$y_i = Y_i/w_i$ \parencite{oecd2013}. Der Gini-Koeffizient ist die mit $N_i$
+gewichtete Fläche zwischen Lorenzkurve und Gleichverteilung, die
+Palma-Ratio das Verhältnis der Einkommenssummen des obersten Dezils und der
+unteren vier \parencite{palma2011}. Für die Armutsrisikoquote, den Anteil der
+Haushalte unter 60\,\% des Medians, sind Durchschnitte zu grob: Kein
+Haushaltstyp liegt im Mittel unter der Schwelle. Das Modell schreibt deshalb
+die Anteile armutsgefährdeter Haushalte in D1 bis D3 aus dem Status quo fort,
+\begin{equation}
+  \pi_i = \min\Bigl\{1,\ \pi_i^0\Bigl(\frac{Y_i/Y_i^0}{Y^{*}/Y^{*0}}\Bigr)^{-1{,}5}\Bigr\},
+  \qquad \pi^0 = (0{,}90;\ 0{,}62;\ 0{,}05),
+\end{equation}
+mit der Armutsschwelle $Y^{*}$, 60\,\% des mit $N_i$ gewichteten Medians der
+$Y_i$, und der Elastizität $-1{,}5$ nach \textcite{bourguignon2003}.
+
+\subsection{Nachfrage}
+\label{sec:nachfrage}
+
+Haushalte, die mehr verfügbares Einkommen haben als im Status quo derselben
+Periode, geben einen Teil davon aus, unten mehr als oben. Zusammen mit
+zusätzlichen öffentlichen Investitionen $\Delta O$ ergibt das den
+Nachfrageimpuls $\Delta Z$ und die Nachfragelücke $u$ der Periode,
+\begin{equation}
+  \Delta Z = \frac{M_T}{\bar m}\sum_i N_i\,m_i\,\Delta Y_i + M_I\,\Delta O,
+  \qquad u = \frac{\Delta Z}{\mathit{BIP}_0},
+\end{equation}
+mit dem Steuer- und Transfermultiplikator $M_T = 0{,}6$ bei mittlerer
+Grenzkonsumneigung $\bar m = 0{,}48$, dem Investitionsmultiplikator
+$M_I = 1{,}0$ \parencite{gechert2015} und dem BIP des Jahres 2025,
+$\mathit{BIP}_0 = 4.470$~Mrd.~\euro. Die Lücke wirkt nur in der laufenden
+Periode und symmetrisch: Konsolidierung kostet Wachstum, Entlastung bringt
+welches \parencite{blanchard2013}. Von der Nachfrage bleibt dauerhaft nur,
+was in öffentliches Kapital fließt.
+
+\subsection{Saldo und Schuldenbremse}
+\label{sec:saldo}
+
+Bis hierher ist alles in Preisen von 2025 gerechnet. Die Einnahmen folgen dem
+BIP der Periode mit einer Aufkommenselastizität von eins, einschließlich der
+Nachfragelücke (automatischer Stabilisator); der Tarif gilt als indexiert.
+Der \COz-Preis ist ein Preis und folgt dem Trend
+$\Pi_t = (1+g)^{\,j_t - 2025}$ mit dem nominalen Wachstum $g = 2{,}5\,\%$. Die
+Ausgaben wachsen mit dem Trend, nicht mit dem BIP; eine Rezession senkt sie
+nicht. Zinsen entstehen aus dem Schuldenstand $D_t = d_t\,\mathit{BIP}_t$ zum
+Effektivzins $z = 2{,}0\,\%$:
+\begin{equation}
+  R_t = \frac{\mathit{BIP}_t}{\mathit{BIP}_0}(1+u)\sum_{k \neq \mathrm{CO_2}} R^{k} + \Pi_t R\hoch{CO_2}_{\mathrm{netto}},
+  \qquad
+  X_t = \Pi_t\bigl(X^{\mathrm{real}} + V_t\bigr) + O_t + z\,D_t,
+  \qquad
+  S_t = R_t - X_t .
+\end{equation}
+$X^{\mathrm{real}}$ umfasst die Ausgaben ohne Zinsen in Preisen von 2025
+einschließlich $X\hoch{BG}$, $X\hoch{KG}$, $\Delta X\hoch{R}$,
+$X\hoch{Dem}_t$, $\Delta O$ und der Änderung der Erhebungskosten; $V_t$ ist
+der Anstieg der Verteidigungsausgaben über 2,4\,\% des BIP, $R\hoch{CO_2}_{\mathrm{netto}}$
+das \COz-Aufkommen nach einem Klimageld. Der strukturelle Saldo bereinigt um
+die Konjunktur, mit der Budget-Semielastizität 0,5 der EU-Kommission
+\parencite{mourre2019}, und um die Ausnahmen der Schuldenbremse von 2025,
+Verteidigung über 1\,\% des BIP und das Sondervermögen:
+\begin{equation}
+  s^{\mathrm{str}}_t = \frac{S_t + O_t}{\mathit{BIP}_t(1+u)} - 0{,}5\,u + \max\{0,\ v_t - 0{,}01\}
+  \;\ge\; -0{,}70\,\% .
+\end{equation}
+Das Modell rechnet den Gesamtstaat, nicht Bund und Länder getrennt.
+
+\subsection{Von Periode zu Periode}
+\label{sec:dynamik}
+
+Das nominale BIP wächst mit dem Trend und drei Niveaueffekten der
+Angebotsseite,
+\begin{equation}
+  \mathit{BIP}_{t+1} = \mathit{BIP}_t\,(1+g)^n\,
+  \frac{\mathcal K_{t+1}}{\mathcal K_t}\,\frac{\mathcal A_{t+1}}{\mathcal A_t}\,\frac{\Phi(\mathcal Q_{t+1})}{\Phi(\mathcal Q_t)} .
+\end{equation}
+\emph{Arbeit} wirkt ab der folgenden Periode ohne Anpassungsverzögerung, mit dem
+Arbeitsanteil 0,65,
+$\mathcal A_{t+1} = 1 + 0{,}65\,(\bar\lambda_t - 1)$, wobei $\bar\lambda_t$ das
+mit $N_i$ gewichtete Mittel der $\lambda_i$ ist. \emph{Privates Kapital}
+nähert sich mit $\delta = 7\,\%$ je Jahr dem Niveau, das die
+Unternehmensteuern langfristig tragen,
+$\mathcal K_{t+1} = \mathcal K_t + [1 - (1-\delta)^n]\,(\mathcal K^{*}_t - \mathcal K_t)$
+mit $\mathcal K^{*}_t = 1 + 0{,}35\,(I_t - 1)$. \emph{Öffentliches Kapital}
+$\mathcal Q$ aus zusätzlichen Investitionen und dem Sondervermögen schreibt mit
+4\,\% je Jahr ab und hebt das Potenzial mit der Produktionselastizität 0,08,
+$\Phi(\mathcal Q) = 1 + 0{,}08\,\mathcal Q/1.600$~Mrd.~\euro{}
+\parencite{bom2014}. Alle drei sind Niveaus, keine Wachstumsraten: Eine höhere
+Körperschaftsteuer senkt das BIP auf einen niedrigeren Pfad, aber nicht jede
+Periode weiter.
+
+Die Schulden wachsen Jahr für Jahr mit dem Zins und fallen mit dem
+Primärsaldo der Periode, die Emissionen summieren sich entlang des
+Basispfads:
+\begin{equation}
+  D \leftarrow (1+z)\,D - \bigl(S_t + z\,D_t\bigr)\ \ (n\text{-mal}),
+  \qquad d_{t+1} = \frac{D_{t+1}}{\mathit{BIP}_{t+1}},
+  \qquad \mathcal E_{t+1} = \mathcal E_t + \frac{E_t}{\bar E(j_t)}\sum_{j\in t}\bar E(j).
+\end{equation}
+Die Lohnsumme $\Lambda$ folgt dem Arbeitsangebot mit Rückkehr zum Trend.
+Exogene Schocks verschieben BIP, Schuldenquote oder Zins.
+
+\paragraph{Tragfähigkeit.} Weil der Zins unter der nominalen Wachstumsrate
+liegt, $z - g = -0{,}5$~Pp., stabilisiert sich die Schuldenquote schon bei
+einem kleinen Primärdefizit \parencite{domar1944,blanchard2019}. Das Modell
+berichtet den Primärsaldo $ps_t = s_t + z\,d_t$, den
+schuldenstabilisierenden Primärsaldo $ps^{*}_t = (z - g)\,d_t$ und die Lücke
+$ps_t - ps^{*}_t$, dazu einen Index der Generationengerechtigkeit. Er bildet
+die Schuldenquote zwischen 60 und 150\,\% und das verbrauchte \COz-Budget zu
+gleichen Teilen auf $[0,1]$ ab; das deutsche Budget von 5.380~Mt ab 2025 ist
+der Bevölkerungsanteil am globalen Budget für 1,7\,°C \parencite{forster2026}.

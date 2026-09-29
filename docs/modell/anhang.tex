@@ -1,0 +1,115 @@
+% SPDX-License-Identifier: CC-BY-4.0
+% Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
+% Anhang — Daten, Ausgaben, Messwerte, Ressortgraphen, Elastizitäten, Quellen
+% (alle Tabellen und Graphen erzeugt von messung.js). Im Anhang gleitet nichts: Jede Tabelle
+% und jeder Graph steht unter seiner Überschrift, \captionof statt table/figure.
+
+\newenvironment{anhangblock}{\par\medskip\noindent\begin{minipage}{\textwidth}\centering}%
+  {\end{minipage}\par\medskip}
+
+\section{Haushaltsdaten}
+\label{sec:anhang-daten}
+
+\begin{anhangblock}
+\captionof{table}{Die zwölf Haushaltstypen (\datei{DEZILE} und Profile in
+\datei{js/data.js}). $B_i$ Bruttoeinkommen, $\kappa_i$ Kapitalanteil, $c_i$
+durchschnittliche Konsumquote, $w_i$ Bedarfsgewicht (neue OECD-Skala), $V_i$
+Vermögen, $N_i$ Haushalte, $\rho_i$ Rentenanteil am Einkommen (Näherung),
+$m_i$ Grenzkonsumneigung (Näherung), $k_i$ Kindergeldkinder je Haushalt, $q_i$
+Bürgergeld-Regelsatzjahre je Haushalt, $\ell_i$ \COz-Last je Haushalt im
+Status quo (55\,\euro/t, vollständig überwälzt).}
+\label{tab:dezile}
+{\footnotesize\setlength{\tabcolsep}{3.5pt}\input{generiert/daten_dezile.tex}}
+\end{anhangblock}
+
+\section{Ausgaben}
+\label{sec:anhang-ausgaben}
+
+\begin{anhangblock}
+\captionof{table}{Ausgaben des Gesamtstaats 2025 nach Posten (\datei{STAATSAUSGABEN}).
+Bürger- und Kindergeld kommen aus den Haushaltsprofilen hinzu, ebenso die
+Änderungen durch Renten, Demografie, Rechtsstand und Erhebungskosten
+(Abschnitt~\ref{sec:ausgaben}). Der Ausgleichsposten bringt den Saldo 2025 auf
+den Finanzierungssaldo der VGR.}
+\label{tab:ausgaben}
+{\small\input{generiert/ausgaben.tex}}
+\end{anhangblock}
+
+\section{Ressortgraphen}
+\label{sec:anhang-graphen}
+
+\newcommand{\ressortgraph}[3]{%
+\begin{anhangblock}
+\begin{tikzpicture}
+\input{generiert/graph_#1.tex}
+\end{tikzpicture}
+\captionof{figure}{#2}
+\label{#3}
+\end{anhangblock}}
+
+Die Abbildungen~\ref{fig:finanzen} bis~\ref{fig:umwelt} zeigen die gemessenen
+Kanten von den Stellgrößen am Tisch zu den Kanälen, erste Periode, je Schritt.
+Links stehen die Stellgröße, ihr Schritt und ihre Saldowirkung, rechts die
+Kanäle mit ihrer Einheit, an jeder Kante die Änderung des Kanals. Blau heißt,
+der Kanal steigt, orange, er sinkt. Die Strichstärke wächst mit dem Betrag,
+bezogen auf den größten Wert derselben Einheit über alle vier Ressorts. Kanten
+unter 0,3~Mrd.~\euro{} beziehungsweise 0,02\,\% entfallen;
+Tabelle~\ref{tab:kanaele} enthält alle Werte.
+
+\ressortgraph{Finanzen}{Ressort Finanzen: gemessene Wirkung auf die Kanäle,
+erste Periode, je Schritt.}{fig:finanzen}
+\ressortgraph{Wirtschaft}{Ressort Wirtschaft. Die Investitionsreaktion wirkt
+zusätzlich über das private Kapital auf das BIP der Folgeperioden
+(Abbildung~\ref{fig:struktur}).}{fig:wirtschaft}
+\ressortgraph{Soziales}{Ressort Soziales. Beitragssätze wirken unmittelbar nur
+auf die Einnahmen, das Rentenniveau nur auf die Ausgaben; alle übrigen Kanten
+laufen über Konsum und Nachfrage.}{fig:soziales}
+\ressortgraph{Umwelt}{Ressort Umwelt. Das Klimageld verschiebt 70\,\% des
+\COz-Aufkommens zu den Transfers.}{fig:umwelt}
+
+\section{Messwerte}
+\label{sec:anhang-messwerte}
+
+\begin{anhangblock}
+\captionof{table}{Wirkung auf die Kanäle, erste Periode (2025--2028, Jahreswert), je
+Schritt. Das Klimageld erscheint bei den Transfers und als Minderung der
+\COz-Einnahmen, als die der Staat es bucht; in den Saldo geht es einmal ein.}
+\label{tab:kanaele}
+{\scriptsize\setlength{\tabcolsep}{2.6pt}\input{generiert/kanaele.tex}}
+\end{anhangblock}
+
+\begin{anhangblock}
+\captionof{table}{Wirkung auf die Kennzahlen, erste Periode (2025--2028, Jahreswert), je
+Schritt. Gini in Punkten, Nettoeinkommen je Haushalt und Jahr.}
+\label{tab:kennzahlen}
+{\footnotesize\setlength{\tabcolsep}{3pt}\input{generiert/kennzahlen.tex}}
+\end{anhangblock}
+
+\begin{anhangblock}
+\captionof{table}{Wirkung am Ende des Pfads gegenüber dem Status-quo-Pfad, die Stellgröße
+über alle Perioden verschoben: Schuldenquote und BIP-Niveau zu Beginn der
+letzten Periode (2041), \COz{} kumuliert 2025--2040, Saldo und Gini der letzten
+Periode (2041--2044). Status quo: Schuldenquote \SQschuldEnde\,\%, BIP-Niveau
+\SQbipEnde~Mrd.~\euro, \COz{} kumuliert \SQcoEnde~Mt.}
+\label{tab:pfad}
+{\footnotesize\input{generiert/pfad.tex}}
+\end{anhangblock}
+
+\Needspace*{12\baselineskip}
+\section{Elastizitäten}
+\label{sec:anhang-elast}
+
+Die Objekte \datei{ELAST} und \datei{ELAST\_QUELLEN} in \datei{js/data.js}. Die
+Schlüssel \datei{capital\_supply} und \datei{evasion} stehen im Datensatz, das
+Modell verwendet sie nicht.
+
+{\small\input{generiert/elastizitaeten.tex}}
+
+\Needspace*{12\baselineskip}
+\section{Formelquellen}
+\label{sec:anhang-quellen}
+
+Die Objekte \datei{FORMEL\_QUELLEN\_*} der Rechenmodule, unverändert
+abgedruckt.
+
+{\small\input{generiert/quellen.tex}}

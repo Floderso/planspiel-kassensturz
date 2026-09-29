@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<!-- Der Verhandlungstisch ist seit dem 20.09.2026 die Hauptseite. Diese
+     Datei bleibt nur stehen, damit Links aus der Entwurfsphase nicht ins
+     Leere laufen; der Kurs-Code wird dabei mitgenommen. -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weiterleitung zur Hauptseite — Kassensturz</title>
+<link rel="canonical" href="index.html">
+<style>
+body{background:#3C4D46;color:#FBF8F0;font-family:system-ui,sans-serif;font-size:16px;
+  line-height:1.5;display:grid;place-items:center;min-height:100vh;margin:0;padding:24px}
+div{max-width:44ch;text-align:center}
+a{color:#F3E483}
+</style>
+</head>
+<body>
+<div>
+  <p>Der Verhandlungstisch ist jetzt die Hauptseite.</p>
+  <p><a id="weiter" href="index.html">Weiter zum Planspiel</a></p>
+</div>
+<script>
+  // Den Kurs-Code mitnehmen, damit alte Beitrittslinks weiter funktionieren.
+  const ziel = 'index.html' + location.search + location.hash;
+  document.getElementById('weiter').href = ziel;
+  location.replace(ziel);
+</script>
+</body>
+</html>

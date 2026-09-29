@@ -1,0 +1,457 @@
+% SPDX-License-Identifier: CC-BY-4.0
+% Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
+% Abschnitt 4 — Wirkungen der Stellgrößen. Jede Zahl im Text ist ein Makro aus
+% generiert/werte.tex oder generiert/makros.tex (\W, \Wb), jede Tabelle erzeugt
+% messung.js.
+
+\section{Wirkungen der Stellgrößen}
+\label{sec:wirkungen}
+
+\subsection{Messung}
+\label{sec:messung}
+
+Die Wirkung einer Stellgröße ist gemessen, nicht hergeleitet. Ausgehend vom
+Status quo wird sie um einen festen Schritt verschoben
+(Tabelle~\ref{tab:stellgroessen}), das Modell rechnet den Pfad über alle fünf
+Perioden neu, und die Differenz zum Status-quo-Pfad ist die Wirkung. Sätze
+verschieben sich um einen Prozentpunkt, Vermögen- und Bodenwertsteuer um
+0,1~Punkte, monatliche Beträge um 10\,\euro, der Grundfreibetrag um
+1.000\,\euro, die Beitragsbemessungsgrenze um 10.000\,\euro{} und der
+\COz-Preis um 10\,\euro/t; die Grenze der Spitzenzone sinkt um 10.000\,\euro,
+das Klimageld wird eingeschaltet. Das Modell ist stetig, aber nicht
+überall differenzierbar: Knicke liegen an den Tarifgrenzen, an den
+Klammern der Verhaltensreaktionen, dort, wo eine Beitragsbemessungsgrenze das
+Arbeitseinkommen eines Haushaltstyps kreuzt, und an der Anrechnungsschwelle der
+Mindeststeuer. Die Messwerte sind deshalb endliche Differenzen für genau diesen
+Schritt, keine Ableitungen; Abschnitt~\ref{sec:nichtlinear} zeigt, wie weit sie
+tragen.
+
+Zwei Arten von Gewichten verbinden Stellgrößen und Kennzahlen. Von der
+Stellgröße zu den Kanälen, also zu Aufkommen je Steuerart, Transfers, Renten,
+Arbeitsangebot, Investitionen und Nachfrage, sind sie gemessen. Von den Kanälen
+zu den Kennzahlen folgen sie aus den Gleichungen des Abschnitts~\ref{sec:modell}
+im Status quo: Ein Euro Aufkommen verbessert den Saldo um einen Euro, ein Euro
+Nachfrage bringt \Wstabil\,\euro{} Einnahmen (Abbildung~\ref{fig:struktur}).
+Innerhalb einer Periode ist dieser Graph kreisfrei; Kreise entstehen erst über
+die Periodengrenze, wenn Schulden Zinsen erzeugen und das BIP-Niveau die
+Einnahmen der nächsten Periode skaliert.
+
+\begin{table}[tbp]
+\centering\small
+\caption{Stellgrößen, Status quo und Messschritt. Die oberen stehen am
+Verhandlungstisch des Planspiels, geordnet nach Ressort; die weiteren sind
+keinem Ressort zugeordnet. Körperschaftsteuer und Rentenbeitrag folgen
+zusätzlich dem geltenden Recht (Abschnitt~\ref{sec:aufbau}).}
+\label{tab:stellgroessen}
+\input{generiert/stellgroessen.tex}
+\end{table}
+
+\subsection{Zielkonflikte}
+\label{sec:zielkonflikte}
+
+Tabelle~\ref{tab:gesamt} fasst die Wirkungen der Stellgrößen am Tisch zusammen,
+in der ersten Periode und am Ende des Pfads. Die Färbung zeigt, ob sich eine
+Kennzahl in die erwünschte Richtung bewegt: höherer Saldo, niedrigerer Gini,
+niedrigere Armut und Emissionen, höheres BIP und Nettoeinkommen, niedrigere
+Schuldenquote. Keine Zeile ist durchgehend blau. Der Gini-Koeffizient steht hier
+und im Folgenden in Punkten, ein Punkt ist 0,01. Tabelle~\ref{tab:preise} bezieht
+die Wirkungen auf eine Milliarde Saldoverbesserung: Jede Stellgröße wird in der
+Richtung verschoben, die den Saldo verbessert, und die Änderungen von Gini und
+BIP werden durch die Saldoverbesserung geteilt. Das Ergebnis ist der Preis
+einer Milliarde Konsolidierung in Verteilung und Wachstum. Drei Muster treten
+hervor.
+
+\emph{Einnahmen und Gleichheit stehen im Konflikt.} Beitragssätze,
+Umsatzsteuer und \COz-Preis erhöhen den Gini-Koeffizienten, ebenso jede
+Kürzung von Renten, Bürger- oder Kindergeld. Steuern auf hohe Einkommen,
+Kapitaleinkommen und Vermögen senken ihn, ebenso eine höhere
+Beitragsbemessungsgrenze und sogar ein höherer Eingangssteuersatz, weil D1
+und D2 unter dem Grundfreibetrag liegen. Die ergiebigsten Instrumente liegen
+auf der regressiven Seite: Ein Prozentpunkt Rentenbeitrag verbessert den Saldo
+um \Wb{kennzahl}{rv}{saldo}~Mrd.~\euro, ein Prozentpunkt Spitzensteuersatz um
+\Wb{kennzahl}{spitze}{saldo}~Mrd.~\euro.
+
+\emph{Konsolidierung kostet Wachstum, je nach Träger verschieden viel.} Weil
+die Grenzkonsumneigung unten höher ist, senkt eine Milliarde, die untere und
+mittlere Einkommen tragen, die Nachfrage stärker als eine Milliarde aus dem
+obersten Prozent. In der ersten Periode kostet eine Milliarde über den
+Rentenbeitrag \Wb{preis}{rv}{bip}~Mrd.~\euro{} BIP, über die Mindeststeuer
+auf Milliardärsvermögen \Wb{preis}{zucman}{bip}~Mrd.~\euro. Was davon bleibt,
+entscheidet die Angebotsseite: Das BIP-Niveau 2041 bewegen nur Stellgrößen, die
+über das Arbeitsangebot oder das private Kapital wirken. Ein Prozentpunkt
+Körperschaftsteuer senkt es um \Wb{pfad}{kst}{bip}~Mrd.~\euro{} und verbessert
+den Saldo der letzten Periode nur um \Wb{pfad}{kst}{saldo}~Mrd.~\euro.
+
+\emph{Transfers wirken zielgenau, aber teuer.} Ein Klimageld zahlt jedem
+Haushalt \Wb{dezil}{klimageld}{D1}\,\euro{} im Jahr, senkt den Gini um
+\Wb{kennzahl}{klimageld}{gini}~Punkte und kostet
+\Wb{kennzahl}{klimageld}{saldo}~Mrd.~\euro. Ein Prozentpunkt Rentenniveau
+senkt den Gini um \Wb{kennzahl}{rentenniveau}{gini}~Punkte, weil die gesetzliche
+Rente in der unteren Hälfte einen großen Teil des Einkommens ausmacht. Je
+Milliarde wirkt das Bürgergeld am stärksten: Je 10~Mrd.~\euro{} Einsparung steigt
+der Gini um \Wb{preis}{bg}{gini10}~Punkte, beim Rentenniveau um
+\Wb{preis}{rentenniveau}{gini10}. Ein höherer Grundfreibetrag senkt zwar den Gini,
+erhöht aber die Armutsrisikoquote um \Wb{kennzahl}{freibetrag}{armut}~Prozentpunkte:
+D1 und D2 zahlen keine Einkommensteuer und gewinnen nichts, während mit dem
+Median die Armutsschwelle steigt.
+
+\begin{table}[tbp]
+\centering\scriptsize
+\setlength{\tabcolsep}{2.8pt}
+\caption{Gesamtmatrix der Wirkungen je Schritt: erste Periode (Jahreswerte
+2025--2028) und Ende des Pfads, Schuldenquote und BIP-Niveau zu Beginn der
+letzten Periode (2041), Emissionen 2025--2040 kumuliert; die Stellgröße bleibt
+über alle Perioden verschoben.
+\textcolor{pos}{Blau}: erwünschte Richtung, \textcolor{neg}{orange}: unerwünschte,
+Sättigung nach Betrag relativ zum größten Wert der Spalte; grau: keine messbare
+Wirkung. Gini in Punkten (1~Punkt = 0,01), Nettoeinkommen je Haushalt und Jahr,
+BIP-Niveau zu Beginn der letzten Periode ohne deren Nachfrage.}
+\label{tab:gesamt}
+\input{generiert/gesamtmatrix.tex}
+\end{table}
+
+\begin{table}[tbp]
+\centering\footnotesize
+\caption{Preis einer Milliarde Konsolidierung. Jede Stellgröße in der Richtung,
+die den Saldo verbessert; $\Delta$Saldo in der ersten Periode, Änderung des
+Gini-Koeffizienten je 10~Mrd.~\euro{} Saldoverbesserung, Änderung des BIP je
+Mrd.~\euro{} Saldoverbesserung in der ersten Periode und des BIP-Niveaus 2041
+je Mrd.~\euro{} Saldoverbesserung in der letzten. Geordnet vom progressivsten zum
+regressivsten Instrument.}
+\label{tab:preise}
+\input{generiert/preise.tex}
+\end{table}
+
+\subsection{Mechanische Wirkung, Verhalten und Nachfrage}
+\label{sec:zerlegung}
+
+Jede Saldowirkung der ersten Periode zerfällt genau in drei Teile, wenn man das
+Modell stufenweise einschaltet:
+\begin{equation}
+\Delta S=\underbrace{\Delta S\big|_{\varepsilon=0,\;u=0}}_{\text{mechanisch}}
++\underbrace{\Bigl(\Delta S\big|_{u=0}-\Delta S\big|_{\varepsilon=0,\;u=0}\Bigr)}_{\text{Verhalten}}
++\underbrace{\Bigl(\Delta S-\Delta S\big|_{u=0}\Bigr)}_{\text{Nachfrage}} .
+\end{equation}
+Mechanisch heißt: alle Elastizitäten null und keine Nachfrage, also die Rechnung
+mit festen Bemessungsgrundlagen. Verhalten ist, was Arbeitsangebot, Konsum,
+Investitionen, Emissionen und Vermögen daran ändern, Nachfrage, was die veränderte
+Kaufkraft der Haushalte über das BIP an Einnahmen kostet oder bringt. Die
+Reihenfolge ist festgelegt; eine andere verschiebt kleine Beträge zwischen
+Verhalten und Nachfrage, weil beide über das Nettoeinkommen verbunden sind
+(Tabelle~\ref{tab:zerlegung}).
+
+Beitragssätze verlieren rund ein Viertel ihrer mechanischen Wirkung über die
+Nachfrage. Ein Prozentpunkt Rentenbeitrag bringt mechanisch \Wb{zerl}{rv}{mechanisch}~Mrd.~\euro,
+die Nachfrage nimmt davon \Wb{zerl}{rv}{nachfrage}~Mrd.~\euro{} wieder weg, weil
+Beiträge die Mitte und die unteren Einkommen treffen, deren Konsumneigung hoch
+ist. Verhalten spielt keine Rolle, denn Beiträge gehen im Modell nicht in den
+Grenzsteuersatz des Arbeitsangebots ein. Bei der Umsatzsteuer wirken beide
+Kanäle: Von \Wb{zerl}{mwst}{mechanisch}~Mrd.~\euro{} mechanisch kostet die
+Konsumreaktion \Wb{zerl}{mwst}{verhalten}, die Nachfrage
+\Wb{zerl}{mwst}{nachfrage}~Mrd.~\euro.
+
+Entlastungen finanzieren sich teilweise selbst. Ein um 1.000\,\euro{} höherer
+Grundfreibetrag kostet mechanisch \Wb{zerl}{freibetrag}{mechanisch}~Mrd.~\euro;
+mehr Arbeitsangebot bringt \Wb{zerl}{freibetrag}{verhalten}, die Nachfrage
+\Wb{zerl}{freibetrag}{nachfrage}~Mrd.~\euro{} zurück, netto bleiben
+\Wb{zerl}{freibetrag}{gesamt}~Mrd.~\euro. Den größten Teil der Angebotsreaktion
+liefert D3: Sein mittleres zu versteuerndes Einkommen liegt knapp über dem
+Grundfreibetrag und fällt bei 1.000\,\euro{} mehr ganz aus dem Tarif, sodass sein
+Grenzsteuersatz auf null sinkt. D3 gewinnt deshalb
+\Wb{dezil}{freibetrag}{D3}\,\euro, D4 nur \Wb{dezil}{freibetrag}{D4}\,\euro. Ein
+Klimageld kostet mechanisch \Wb{zerl}{klimageld}{mechanisch}~Mrd.~\euro; über die
+Nachfrage fließen \Wb{zerl}{klimageld}{nachfrage}~Mrd.~\euro{} zurück.
+
+Verhalten zehrt dort, wo die Bemessungsgrundlage ausweichen kann. Bei der
+Körperschaftsteuer kostet die Investitionsreaktion
+\Wb{zerl}{kst}{verhalten}~Mrd.~\euro{} von \Wb{zerl}{kst}{mechanisch}~Mrd.~\euro{}
+mechanisch; der größere Preis zeigt sich erst im Pfad (Abschnitt~\ref{sec:pfad}).
+Der Spitzensteuersatz bringt mechanisch nur \Wb{zerl}{spitze}{mechanisch}~Mrd.~\euro,
+weil er allein den Teil der Einkommen im obersten Prozent trifft, der im
+Pareto-Rand über der Grenze liegt; das Ausweichen nimmt davon
+\Wb{zerl}{spitze}{verhalten}~Mrd.~\euro{} zurück. Der \COz-Preis untergräbt
+seine eigene Basis, wie beabsichtigt: Die Emissionsminderung kostet
+\Wb{zerl}{co2}{verhalten}~Mrd.~\euro{} der mechanischen
+\Wb{zerl}{co2}{mechanisch}~Mrd.~\euro.
+
+\begin{table}[tbp]
+\centering\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{Zerlegung der Saldowirkung in der ersten Periode (2025--2028,
+Jahreswert). Anteile in Prozent der Gesamtwirkung, nur wo diese mindestens
+0,05~Mrd.~\euro{} beträgt. Die feste Ausweichquote der Mindeststeuer und die
+Klammern der Reaktionen zählen zur mechanischen Wirkung.}
+\label{tab:zerlegung}
+\input{generiert/zerlegung.tex}
+\end{table}
+
+\subsection{Übertragungskanäle}
+\label{sec:kanaele}
+
+Abbildung~\ref{fig:struktur} zeigt, wie die Kanäle auf die Kennzahlen wirken,
+unabhängig davon, welche Stellgröße sie bewegt hat. Ein Euro mehr Rente
+verschlechtert den Saldo um einen Euro und erhöht das Nettoeinkommen eines
+Haushalts um einen Euro. Mit Konsumneigung und Multiplikator werden daraus je
+nach Dezil \WnachfrDzehnc{} bis \WnachfrDeins\,\euro{} Nachfrage, und jeder Euro
+Nachfrage bringt \Wstabil\,\euro{} Einnahmen zurück. Ein Euro Rente an einen
+Haushalt aus D1 kostet den Staat also nicht einen Euro, sondern
+\WkostenDeins\,\euro. Über die Periode hinaus wirken nur Arbeitsangebot, Kapital
+und Schulden.
+
+Abbildung~\ref{fig:uebersicht} zeigt die gemessenen Kanten aller Stellgrößen am
+Tisch. Jede Steuer bewegt mehr als ihren eigenen Kanal. Ein Prozentpunkt
+Rentenbeitrag bringt \Wb{kanal}{rv}{sv}~Mrd.~\euro{} Beiträge, senkt aber das
+Aufkommen aus Umsatzsteuer um \Wb{kanal}{rv}{mwst} und aus Einkommensteuer um
+\Wb{kanal}{rv}{est}~Mrd.~\euro: die Umsatzsteuer, weil der Konsum mit dem
+Nettoeinkommen sinkt und die Nachfrage nachlässt, die Einkommensteuer allein über
+die Nachfrage. Der Nachfrageimpuls ist fast überall die zweitgrößte Kante; er ist
+der Grund, warum keine Konsolidierung umsonst ist. Das Arbeitsangebot bewegen
+messbar nur Grundfreibetrag und Eingangssatz, weil sie den Grenzsteuersatz der
+Mitte ändern. Die vollständigen Messwerte stehen in
+Tabelle~\ref{tab:kanaele}, die Ressortgraphen mit allen Kantengewichten in
+Anhang~\ref{sec:anhang-graphen}.
+
+\begin{figure}[tbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  kn/.style={draw=grau, rounded corners=2pt, fill=hell, align=center, font=\small, text width=27mm, minimum height=10mm},
+  zk/.style={draw=black, thick, rounded corners=2pt, fill=white, align=center, font=\small, text width=27mm, minimum height=10mm},
+  pf/.style={-{Stealth[length=2.2mm]}, thick},
+  rk/.style={-{Stealth[length=2.2mm]}, thick, dashed, grau},
+  gl/.style={font=\scriptsize, fill=white, inner sep=1pt, align=center}]
+% Spalte A: Kanäle
+\node[kn] (aus)  at (0, 1.9)   {Ausgaben an Haushalte\\{\scriptsize Transfers, Renten}};
+\node[kn] (ein)  at (0,-0.3)   {Einnahmen\\{\scriptsize ESt, USt, KSt, GewSt,\\Verm., \COz, Beiträge}};
+\node[kn] (arb)  at (0,-5.8)   {Arbeitsangebot $\bar\lambda$};
+\node[kn] (inv)  at (0,-7.7)   {Investitionsfaktor $I$};
+\node[kn] (emi)  at (0,-9.8)   {Emissionen $E$};
+% Spalte B: Haushalte und Nachfrage
+\node[kn] (hh)   at (4.3,-2.4) {Nettoeinkommen\\der Haushalte $Y_i$};
+\node[kn] (nf)   at (4.3,-4.7) {Nachfrageimpuls $\Delta Z$};
+% Spalte C: Kennzahlen der Periode und Niveau
+\node[zk] (sal)  at (8.6, 0.8) {Saldo $S$};
+\node[zk] (ver)  at (8.6,-2.4) {Gini, Palma,\\Armutsrisiko};
+\node[zk] (bip)  at (8.6,-4.7) {BIP der Periode};
+\node[zk] (bipl) at (8.6,-6.9) {BIP-Niveau\\Folgeperiode};
+\node[zk] (cob)  at (8.6,-9.8) {\COz-Budget\\(kumuliert)};
+% Spalte D: Schulden
+\node[zk] (sq)   at (12.9,-2.4) {Schuldenquote\\Folgeperiode};
+% Kanten der Periode
+\draw[pf] (ein.east) -- node[gl, pos=0.5]{$+1$} (sal.west);
+\draw[pf] (aus.east) -- node[gl, pos=0.75]{$-1$} (sal.west);
+\draw[pf] (ein.east) -- node[gl, pos=0.5, below left=0pt and 1pt]{$-1$ {\tiny Inzidenz}} (hh.west);
+\draw[pf] (aus.east) -- node[gl, pos=0.18]{$+1$} (hh.west);
+\draw[pf] (hh.east)  -- (ver.west);
+\draw[pf] (hh.south) -- node[gl]{$\frac{0{,}6}{0{,}48}\,m_i$ {\tiny(\WnachfrDzehnc{} bis \WnachfrDeins)}} (nf.north);
+\draw[pf] (nf.east)  -- node[gl]{$+1$} (bip.west);
+\draw[pf] (nf.north east) -- node[gl, pos=0.78]{$+$\Wstabil} (sal.south west);
+% Kanten über die Periode hinaus
+\draw[pf] (sal.east) -- node[gl]{\Wschuld\,Pp.\\{\tiny je Mrd./a}} (sq.north west);
+\draw[pf] (bipl.east) -- node[gl, pos=0.5]{Nenner} (sq.south);
+\draw[pf] (arb.east) -- node[gl, pos=0.5]{$+$\Warbeit{} {\tiny Mrd. je \%}} (bipl.west);
+\draw[pf] (inv.east) -- node[gl, pos=0.5]{$+$\Winvestn{} / \Winvestlang{} {\tiny Mrd. je \%, 1 Per. / lang}} (bipl.south west);
+\draw[pf] (emi.east) -- node[gl]{$\frac{E_t}{\bar E(j_t)}\sum_{j\in t}\bar E(j)$ {\tiny entlang des Pfads}} (cob.west);
+\draw[pf] (arb.north east) -- node[gl, pos=0.55]{$\tilde A_i=\lambda_iA_i$} (hh.south west);
+\draw[rk] (sq.north) |- node[gl, pos=0.3, text=grau]{{\tiny Zinsen $z\,D_t$}\\{\tiny nächste Periode}} ($(sal.east)+(0,0.3)$);
+\node[font=\scriptsize, text=grau, align=center] (ynote) at (8.6,-8.25) {$\times\,\mathit{BIP}_{t+1}/\mathit{BIP}_0$: alle Einnahmen\\der nächsten Periode};
+\draw[rk] (bipl.south) -- (ynote.north);
+% Rückwirkungen (gestrichelt)
+\draw[rk] (bipl.north) -- node[gl, text=grau]{{\tiny Ausgangsniveau}\\{\tiny nächste Periode}} (bip.south);
+\draw[rk] (arb.west) to[out=160,in=200,looseness=1.0] node[gl, pos=0.5, text=grau]{Basis} (ein.west);
+\draw[rk] (inv.west) to[out=170,in=190,looseness=1.3] node[gl, pos=0.5, text=grau]{Basis $\bar I$} (ein.south west);
+\draw[rk] (emi.west) to[out=175,in=185,looseness=1.5] node[gl, pos=0.5, text=grau]{\COz-Basis} ($(ein.south west)+(0,0.2)$);
+\end{tikzpicture}}
+\caption{Strukturgraph: wie Kanäle auf Kennzahlen wirken. Durchgezogene Kanten
+tragen das Gewicht aus den Gleichungen des Abschnitts~\ref{sec:modell} im Status
+quo, \euro{} Kennzahl je \euro{} Kanal, wenn nicht anders angegeben. Gestrichelte
+Kanten sind Rückwirkungen auf die Bemessungsgrundlagen und in die nächste
+Periode. $m_i$ ist die Grenzkonsumneigung, 0,15 in D10c bis 0,65 in D1.}
+\label{fig:struktur}
+\end{figure}
+
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}[
+  x=1cm, y=1cm, font=\footnotesize,
+  stell/.style={anchor=east, inner sep=2pt},
+  kanal/.style={draw=grau, fill=hell, rounded corners=1.5pt, minimum width=27mm,
+                minimum height=5mm, inner sep=1.5pt},
+  ziel/.style={draw=grau, fill=white, rounded corners=1.5pt, minimum width=14mm,
+               minimum height=6mm, font=\footnotesize\bfseries},
+  struktur/.style={-{Stealth[length=1.6mm]}, grau},
+  gewicht/.style={font=\scriptsize, fill=white, inner sep=0.8pt},
+]
+% Stellgrößen am Tisch, nach Ressort gruppiert (Schlüssel wie in messung.js)
+\foreach \k/\t/\y in {freibetrag/Grundfreibetrag/0, eingang/Eingangssteuersatz/-0.6,
+    spitze/Spitzensteuersatz/-1.2, mwst/Umsatzsteuer/-1.8, erb/Erbschaftsteuer/-2.4,
+    kst/Körperschaftsteuer/-3.3, gewst/Gewerbesteuer/-3.9,
+    rv/RV-Beitrag/-4.8, kv/KV-Beitrag/-5.4, rentenniveau/Rentenniveau/-6.0,
+    bg/Bürgergeld/-6.6, kg/Kindergeld/-7.2, co2/\COz-Preis/-8.1, klimageld/Klimageld/-8.7}
+  \node[stell] (s-\k) at (0,\y) {\t};
+\foreach \r/\a/\b in {Finanzen/0/-2.4, Wirtschaft/-3.3/-3.9, Soziales/-4.8/-7.2, Umwelt/-8.1/-8.7}
+  \draw[grau, thick] (-3.3,\a+0.2) -- (-3.3,\b-0.2)
+    node[midway, left=1pt, rotate=90, anchor=south, font=\scriptsize\itshape] {\r};
+% Kanäle (Spalten der Tabelle der Übertragungskanäle)
+\foreach \k/\t/\y in {est/Einkommensteuer/0.2, arbeit/Arbeitsangebot/-0.75,
+    mwst/Umsatzsteuer/-1.7, verm/Vermögensteuern/-2.65, unt/Unternehmensteuern/-3.6,
+    invest/Investitionen/-4.55, nachfr/Nachfrage/-5.5, sv/Beiträge/-6.45,
+    rente/Renten/-7.4, transfer/Transfers/-8.35, co2/\COz-Aufkommen/-9.3}
+  \node[kanal] (k-\k) at (5.6,\y) {\t};
+\node[ziel] (bip) at (10.3,-2.4) {BIP};
+\node[ziel] (saldo) at (10.3,-6.0) {Saldo};
+% Gemessene Kanten (generiert/uebersicht.tex)
+\begin{scope}[on background layer]
+\input{generiert/uebersicht.tex}
+\end{scope}
+% Strukturelle Gewichte aus den Gleichungen (generiert/makros.tex)
+\foreach \k in {est, mwst, verm, unt, sv, co2}
+  \draw[struktur] (k-\k.east) to[out=0, in=180] (saldo.west);
+\foreach \k in {rente, transfer}
+  \draw[struktur, dashed] (k-\k.east) to[out=0, in=180] (saldo.west);
+\draw[struktur] (k-nachfr.east) to[out=0, in=180] node[gewicht, pos=0.13] {\Wstabil} (saldo.west);
+\draw[struktur] (k-nachfr.east) to[out=0, in=180] node[gewicht, pos=0.3] {1} (bip.west);
+\draw[struktur] (k-arbeit.east) to[out=0, in=180] node[gewicht, pos=0.13] {\Warbeit} (bip.west);
+\draw[struktur] (k-invest.east) to[out=0, in=180] node[gewicht, pos=0.13] {\Winvestn} (bip.west);
+\end{tikzpicture}
+\caption{Übertragungskanäle der Stellgrößen am Tisch in der ersten Periode.
+Farbige Kanten sind gemessen (Tabelle~\ref{tab:kanaele}): blau, wenn der Kanal
+steigt, orange, wenn er sinkt; die Strichstärke wächst mit dem Betrag, bezogen
+auf die stärkste Wirkung derselben Einheit. Wirkungen unter 0,3~Mrd.~\euro{}
+beziehungsweise 0,02\,\% entfallen. Graue Kanten folgen aus den Gleichungen:
+Einnahmen gehen eins zu eins in den Saldo, Ausgaben (gestrichelt) mit
+umgekehrtem Vorzeichen. Das Klimageld erscheint zweimal, als Transfer an die
+Haushalte und als Minderung der \COz-Einnahmen, als die der Staat es bucht; in
+den Saldo geht es einmal ein. Eine Milliarde Nachfrage hebt den Saldo um
+\Wstabil~Mrd.~\euro, ein Prozent mehr Arbeitsangebot das BIP der folgenden
+Periode um \Warbeit~Mrd.~\euro, ein um ein Prozent höherer Investitionsfaktor
+das BIP nach einer Periode um \Winvestn~Mrd.~\euro.}
+\label{fig:uebersicht}
+\end{figure}
+
+\subsection{Verteilung über die Haushaltstypen}
+
+Tabelle~\ref{tab:dezile-wirkung} zeigt, bei wem die Wirkungen ankommen.
+Umsatzsteuer und Beitragssätze belasten jeden Haushaltstyp, in Euro oben mehr,
+im Verhältnis zum Einkommen unten. Die Bemessungsgrenzen deckeln die Beiträge,
+die der Krankenversicherung ab D9, die der Rentenversicherung ab D10a: Ein
+Prozentpunkt Rentenbeitrag kostet das oberste Prozent \Wb{dezil}{rv}{D10c}\,\euro,
+eine um 10.000\,\euro{} höhere Beitragsbemessungsgrenze
+\Wb{dezil}{bbg}{D10c}\,\euro; weil die Grenze der Krankenversicherung mitwandert,
+zahlt auch D9. Die \COz-Abgabe kostet je 10\,\euro/t D1 \Wb{dezil}{co2}{D1}\,\euro{}
+und D10c \Wb{dezil}{co2}{D10c}\,\euro; im Verhältnis zum Einkommen ist die Last
+unten ein Vielfaches der Last oben. Das Klimageld zahlt allen gleich viel und
+stellt D1 bis D3 besser, als sie ohne \COz-Preis stünden
+(Tabelle~\ref{tab:dezile}). Das Rentenniveau kommt vor allem bei D3 bis D5 an,
+das Bürgergeld nur bei D1 bis D4, das Kindergeld am meisten bei D3. Unternehmen-
+und Vermögensteuern landen über die Inzidenzregel zu mehr als der Hälfte beim
+obersten Dezil, die Mindeststeuer allein bei D10c.
+
+\begin{table}[tbp]
+\centering\footnotesize
+\setlength{\tabcolsep}{2.25pt}
+\caption{Änderung des verfügbaren Einkommens je Haushalt in der ersten
+Periode, \euro{} je Jahr.}
+\label{tab:dezile-wirkung}
+\input{generiert/dezile.tex}
+\end{table}
+
+\subsection{Langfristige Wirkungen}
+\label{sec:pfad}
+
+Am Ende des Pfads summieren sich die Saldowirkungen in der Schuldenquote
+(Tabelle~\ref{tab:pfad} im Anhang). Wirkt eine Stellgröße nur über den Saldo,
+senkt eine Milliarde Saldoverbesserung in der ersten Periode die Schuldenquote
+2041 um rund 0,3~Prozentpunkte: Ein Prozentpunkt Umsatzsteuer senkt sie um
+\Wb{pfad}{mwst}{schuld}, ein Prozentpunkt Rentenbeitrag um
+\Wb{pfad}{rv}{schuld}~Punkte. Beim \COz-Preis und beim Klimageld ist es weniger,
+weil das Aufkommen mit den Emissionen schrumpft. Bei Grundfreibetrag,
+Eingangssatz und Unternehmensteuern bewegt ein zweiter Kanal das BIP im Nenner.
+Der Grundfreibetrag kostet \Wb{kennzahl}{freibetrag}{saldo}~Mrd.~\euro{}
+im Jahr, erhöht die Quote aber nur um \Wb{pfad}{freibetrag}{schuld}~Punkte, weil
+das zusätzliche Arbeitsangebot das BIP-Niveau 2041 um
+\Wb{pfad}{freibetrag}{bip}~Mrd.~\euro{} hebt; den größten Teil davon liefert D3
+an der Tarifgrenze (Abschnitt~\ref{sec:zerlegung}). Die Körperschaftsteuer bringt
+\Wb{kennzahl}{kst}{saldo}~Mrd.~\euro, senkt die Quote aber nur um
+\Wb{pfad}{kst}{schuld}~Punkte, weil das private Kapital schrumpft, das sich mit
+7\,\% je Jahr anpasst. Der \COz-Preis ist die einzige Stellgröße am Tisch, die die
+kumulierten Emissionen senkt, um \Wb{pfad}{co2}{co2kum}~Mt je 10\,\euro/t bis
+2040.
+
+\subsection{Nichtlinearität}
+\label{sec:nichtlinear}
+
+Abbildung~\ref{fig:kurven} verschiebt fünf Stellgrößen über ihren ganzen
+Spielraum. Eine Gerade heißt, dass jeder Schritt gleich wirkt, ein Knick, dass
+eine Schwelle oder Klammer greift, eine flacher werdende Kurve, dass die
+Verhaltensreaktion einen wachsenden Teil der mechanischen Wirkung aufzehrt.
+Unterhalb von 42\,\% deckelt der Spitzensatz auch die Proportionalzone, und eine
+Senkung wird zur breiten Steuersenkung; darüber trifft er nur den Pareto-Rand, und
+ab 45 und 60\,\% flachen Ausweichen und Wegzug die Kurve ab. Ihr Maximum liegt
+oberhalb des Spielraums. Die Formel von \textcite{saez2001} für den
+aufkommensmaximierenden Spitzensatz, $1/(1+\alpha e)$, ergäbe mit $\alpha = 1{,}5$
+und einer Elastizität des zu versteuernden Einkommens von $e = 0{,}25$
+\parencite{saez2012} 73\,\%. Im Modell ist das Ausweichen linear im Satz, eine
+Semi-Elastizität; die Elastizität sinkt deshalb mit steigendem Satz, und das
+Maximum liegt höher. Die Umsatzsteuer bringt je Punkt umso weniger, je höher sie
+steht, weil der Anteil $\tau/(1+\tau)$ konkav ist und der Konsum reagiert. Die
+Körperschaftsteuer ist Satz mal schrumpfende Basis, eine nach unten geöffnete
+Parabel mit dem Scheitel weit außerhalb des Spielraums. Das Rentenniveau wirkt
+linear. Beim \COz-Preis fallen die Emissionen linear, solange die Reaktion
+zwischen ihren Klammern liegt, und erreichen bei \COzBoden\,\euro/t die
+Untergrenze. Aufkommen und Saldo erreichen bei \COzMax\,\euro/t ein Maximum und
+fallen dann, weil die Bemessungsgrundlage schneller schrumpft, als der Preis
+steigt; jenseits der Untergrenze steigen sie wieder linear mit dem Preis, ohne
+weitere Minderung.
+
+Auch um den Status quo sind nicht alle Wirkungen symmetrisch
+(Tabelle~\ref{tab:symmetrie}). Der Spitzensatz steht genau an der Schwelle, ab der
+das Ausweichen einsetzt: Ein Punkt mehr bringt \Wb{sym}{spitze}{auf}~Mrd.~\euro, ein
+Punkt weniger kostet \Wb{sym}{spitze}{ab}. Ein höherer Grundfreibetrag kostet
+\Wb{sym}{freibetrag}{auf}~Mrd.~\euro, ein niedrigerer bringt
+\Wb{sym}{freibetrag}{ab}: Beim höheren fällt D3 aus dem Tarif, spart nur seine
+geringe Steuer und arbeitet mehr, beim niedrigeren zahlt D3 auf die vollen
+1.000\,\euro. Tabelle~\ref{tab:preise} misst deshalb jede Stellgröße in ihrer
+Konsolidierungsrichtung.
+
+\newcommand{\kurve}[6]{% Stellgröße, Spalte, x-Beschriftung, y-Beschriftung, Titel, Farbe
+  \nextgroupplot[title={#5}, xlabel={#3}, ylabel={#4},
+    extra x ticks={\csname Wsq@#1\endcsname}, extra x tick labels={},
+    extra x tick style={grid=major, major grid style={dashed, grau}}]
+  \addplot[color=#6, very thick, mark=none] table[x=x, y=#2] {generiert/verlauf_#1.dat};}
+
+\begin{figure}[p]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=2 by 5, horizontal sep=18mm, vertical sep=19mm},
+  width=0.44\textwidth, height=0.15\textheight,
+  tick label style={font=\scriptsize}, label style={font=\scriptsize},
+  title style={font=\small}, grid=none, axis line style={grau},
+  /pgf/number format/use comma, /pgf/number format/1000 sep={.},
+  scaled y ticks=false]
+\kurve{spitze}{saldo}{Spitzensteuersatz, \%}{Saldo, Mrd.\,\euro}{Spitzensteuersatz: Saldo}{pos}
+\kurve{spitze}{gini}{Spitzensteuersatz, \%}{Gini, Pkt.}{Spitzensteuersatz: Gini}{neg}
+\kurve{mwst}{saldo}{Umsatzsteuer, \%}{Saldo, Mrd.\,\euro}{Umsatzsteuer: Saldo}{pos}
+\kurve{mwst}{gini}{Umsatzsteuer, \%}{Gini, Pkt.}{Umsatzsteuer: Gini}{neg}
+\kurve{kst}{saldo}{Körperschaftsteuer, \%}{Saldo, Mrd.\,\euro}{Körperschaftsteuer: Saldo}{pos}
+\kurve{kst}{bip}{Körperschaftsteuer, \%}{BIP, Mrd.\,\euro}{Körperschaftsteuer: BIP der Periode}{neg}
+\kurve{rentenniveau}{saldo}{Rentenniveau, \%}{Saldo, Mrd.\,\euro}{Rentenniveau: Saldo}{pos}
+\kurve{rentenniveau}{gini}{Rentenniveau, \%}{Gini, Pkt.}{Rentenniveau: Gini}{neg}
+\kurve{co2}{saldo}{\COz-Preis, \euro/t}{Saldo, Mrd.\,\euro}{\COz-Preis: Saldo}{pos}
+\kurve{co2}{emiss}{\COz-Preis, \euro/t}{Emissionen, Mt/a}{\COz-Preis: Emissionen}{neg}
+\end{groupplot}
+\end{tikzpicture}
+\caption{Saldo und eine zweite Kennzahl der ersten Periode über den ganzen
+Spielraum der Stellgröße, alle übrigen im Status quo. Gestrichelt: Wert des Status
+quo. 21 Stützstellen je Kurve.}
+\label{fig:kurven}
+\end{figure}
+
+\begin{table}[tbp]
+\centering\footnotesize
+\caption{Nichtlinearität: Saldowirkung einer Erhöhung um den Schritt und einer
+Senkung um denselben Schritt (mit umgekehrtem Vorzeichen), erste Periode,
+Mrd.~\euro. Gleiche Werte heißen: in diesem Bereich linear.}
+\label{tab:symmetrie}
+\input{generiert/symmetrie.tex}
+\end{table}

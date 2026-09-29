@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Econland Planspiel — Makroökonomie im Kabinett</title>
+  <meta name="description" content="Makroökonomisches Planspiel für die Lehre: Teams regieren ein Land über mehrere Jahre — Fiskal-, Geld- und Strukturpolitik mit sichtbaren Konsequenzen auf der Landkarte.">
+  <link rel="preload" href="fonts/BespokeStencil-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/BespokeStencil-Bold.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+
+  <!-- Cockpit: session status bar, always separated from content -->
+  <header id="cockpit" role="banner"></header>
+
+  <!-- Active view -->
+  <main id="app" role="main">
+    <noscript>
+      <p style="max-width:60ch;margin:40px auto;font-family:Georgia,serif">
+        Econland Planspiel benötigt JavaScript — die Simulation läuft vollständig
+        lokal in Ihrem Browser, es werden keine Daten übertragen.
+      </p>
+    </noscript>
+  </main>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

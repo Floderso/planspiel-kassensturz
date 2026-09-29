@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kassensturz Planspiel — Entwurf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400..700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="mockup.css">
+</head>
+<body>
+
+<a class="skip-link" href="#hebel">Direkt zu den Stellschrauben</a>
+
+<header class="kopf">
+  <h1 class="marke">Kassensturz <span>Planspiel</span></h1>
+  <div class="kopf-trenner"></div>
+  <dl class="kopf-feld"><dt>Team</dt><dd>Team A</dd></dl>
+  <div class="kopf-trenner"></div>
+  <dl class="kopf-feld"><dt>Legislatur</dt><dd>2025–2028</dd></dl>
+  <div class="kopf-rechts">
+    <button class="knopf" id="thema-schalter" aria-pressed="false">
+      <span aria-hidden="true">◐</span> Hörsaal-Modus
+    </button>
+    <button class="knopf">Auswertung</button>
+    <button class="knopf">Übersicht</button>
+  </div>
+</header>
+
+<nav class="perioden" aria-label="Spielperioden">
+  <span class="periode periode--fertig"><span class="periode__nr" aria-hidden="true">✓</span> 2021–2024</span>
+  <span class="periode" aria-current="step"><span class="periode__nr">1</span> 2025–2028</span>
+  <span class="periode"><span class="periode__nr">2</span> 2029–2032</span>
+  <span class="periode"><span class="periode__nr">3</span> 2033–2036</span>
+  <span class="periode"><span class="periode__nr">4</span> 2037–2040</span>
+  <span class="periode"><span class="periode__nr">5</span> 2041–2044</span>
+</nav>
+
+<div class="buehne">
+
+  <!-- ══ ZONE LINKS: die Hebel. Immer sichtbar, kein Dialog. ══ -->
+  <section class="zone--links" id="hebel" aria-labelledby="t-kabinett">
+    <div class="zone__titel">
+      <h2 id="t-kabinett">Kabinett</h2>
+      <span class="zone__zusatz">3 von 14 Hebeln bewegt</span>
+    </div>
+
+    <div class="karte">
+      <div class="ressort">
+        <button class="ressort__kopf" aria-expanded="true">
+          <span class="ressort__symbol" aria-hidden="true">€</span>
+          <span>
+            <span class="ressort__name">Finanzen</span><br>
+            <span class="ressort__lage">Steuern, Progression, Vermögen</span>
+          </span>
+          <span class="zaehler zaehler--aktiv">3</span>
+        </button>
+        <div class="ressort__inhalt">
+
+          <div class="hebel">
+            <div class="hebel__zeile">
+              <label class="hebel__name" for="h1">Grundfreibetrag</label>
+              <output class="hebel__wert" for="h1">12 348 €</output>
+            </div>
+            <input type="range" id="h1" min="10000" max="16000" step="12" value="12348"
+                   aria-describedby="h1-spanne">
+            <div class="hebel__spanne" id="h1-spanne"><span>10 000 €</span><span>16 000 €</span></div>
+          </div>
+
+          <div class="hebel">
+            <div class="hebel__zeile">
+              <label class="hebel__name" for="h2">Eingangssteuersatz</label>
+              <output class="hebel__wert" for="h2">14,0 %</output>
+            </div>
+            <input type="range" id="h2" min="8" max="24" step="0.5" value="14"
+                   aria-describedby="h2-spanne">
+            <div class="hebel__spanne" id="h2-spanne"><span>8 %</span><span>24 %</span></div>
+          </div>
+
+          <div class="hebel">
+            <div class="hebel__zeile">
+              <label class="hebel__name" for="h3">Spitzensteuersatz</label>
+              <span class="marke-stufe marke-stufe--fort">Fortgeschr.</span>
+              <output class="hebel__wert" for="h3">45,0 %</output>
+            </div>
+            <input type="range" id="h3" min="35" max="60" step="0.5" value="45"
+                   aria-describedby="h3-spanne">
+            <div class="hebel__spanne" id="h3-spanne"><span>35 %</span><span>60 %</span></div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="ressort">
+        <button class="ressort__kopf" aria-expanded="false">
+          <span class="ressort__symbol" aria-hidden="true">⚕</span>
+          <span>
+            <span class="ressort__name">Soziales &amp; Gesundheit</span><br>
+            <span class="ressort__lage">Rente, GKV, Transfers</span>
+          </span>
+          <span class="zaehler">0</span>
+        </button>
+      </div>
+
+      <div class="ressort">
+        <button class="ressort__kopf" aria-expanded="false">
+          <span class="ressort__symbol" aria-hidden="true">♻</span>
+          <span>
+            <span class="ressort__name">Klima &amp; Energie</span><br>
+            <span class="ressort__lage">CO₂-Preis, Pendlerpauschale</span>
+          </span>
+          <span class="zaehler">0</span>
+        </button>
+      </div>
+
+      <div class="ressort">
+        <button class="ressort__kopf" aria-expanded="false">
+          <span class="ressort__symbol" aria-hidden="true">⚙</span>
+          <span>
+            <span class="ressort__name">Wirtschaft &amp; Investition</span><br>
+            <span class="ressort__lage">Körperschaftsteuer, Abschreibung</span>
+          </span>
+          <span class="zaehler">0</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ ZONE MITTE: die Lage und die Wirkung des eigenen Zugs ══ -->
+  <main aria-labelledby="t-lage">
+    <div class="zone__titel">
+      <h2 id="t-lage">Lage</h2>
+      <span class="zone__zusatz">Stand: Periode 1, noch nicht abgeschlossen</span>
+    </div>
+
+    <article class="karte lage">
+      <div class="lage__oben">
+        <span class="rubrik">Verfassungsstreit</span>
+        <span class="lage__datum">Periode 1 · 2025–2028</span>
+      </div>
+      <h3 class="lage__titel">Haushaltsloch reißt Schuldenbremse um 116 Mrd. Euro</h3>
+      <p class="lage__text">
+        Der Bundesrechnungshof mahnt die verfassungsrechtliche Obergrenze nach
+        Art. 109 GG an. Im Kabinett entbrennt ein heftiger Streit zwischen
+        Ausgabenkürzungen und Mehreinnahmen.
+      </p>
+      <div class="lage__fuss">
+        <button class="knopf knopf--voll">Zum Finanzressort</button>
+        <span class="urteil urteil--schlecht">Schuldenbremse verfehlt</span>
+      </div>
+    </article>
+
+    <section class="karte wirkung" aria-labelledby="t-wirkung">
+      <div class="wirkung__kopf">
+        <h3 id="t-wirkung">Was deine drei Änderungen bewirken</h3>
+        <span class="wirkung__hinweis">gegenüber Rundenstart</span>
+      </div>
+
+      <div class="wirkung__liste">
+        <div class="wirkung__posten">
+          <span class="wirkung__was">Haushaltssaldo</span>
+          <span class="delta delta--gut">+18,4 Mrd. €</span>
+          <span class="urteil urteil--gut">entlastet</span>
+          <span class="wirkung__balken"><i style="width:62%;background:var(--success-line)"></i></span>
+        </div>
+
+        <div class="wirkung__posten">
+          <span class="wirkung__was">Gini-Ungleichheit</span>
+          <span class="delta delta--gut">−0,006</span>
+          <span class="urteil urteil--gut">gleicher</span>
+          <span class="wirkung__balken"><i style="width:24%;background:var(--success-line)"></i></span>
+        </div>
+
+        <div class="wirkung__posten">
+          <span class="wirkung__was">Sonntagsfrage</span>
+          <span class="delta delta--schlecht">−2,1 Prozentpunkte</span>
+          <span class="urteil urteil--schlecht">unbeliebt</span>
+          <span class="wirkung__balken"><i style="width:41%;background:var(--danger-line)"></i></span>
+        </div>
+
+        <div class="wirkung__posten">
+          <span class="wirkung__was">Bruttoinlandsprodukt</span>
+          <span class="delta delta--neutral">−0,1 %</span>
+          <span class="urteil">kaum berührt</span>
+          <span class="wirkung__balken"><i style="width:6%;background:var(--color-border-strong)"></i></span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ══ ZONE RECHTS: die Kennzahlen. Immer sichtbar. ══ -->
+  <aside class="zone--rechts" aria-labelledby="t-kennzahlen">
+    <div class="zone__titel">
+      <h2 id="t-kennzahlen">Kennzahlen</h2>
+      <span class="zone__zusatz">Anpassen</span>
+    </div>
+
+    <div class="karte">
+      <div class="kennzahl">
+        <div class="kennzahl__name">Haushaltssaldo</div>
+        <div class="kennzahl__zeile">
+          <span class="kennzahl__wert">−116</span>
+          <span class="delta delta--gut">+18,4</span>
+        </div>
+        <svg class="funke" viewBox="0 0 120 32" preserveAspectRatio="none" aria-hidden="true">
+          <polyline points="0,8 24,12 48,22 72,26 96,20 120,14" fill="none"
+                    stroke="var(--chart-1)" stroke-width="2" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <div class="kennzahl__fuss">
+          <span class="urteil urteil--schlecht">Defizit</span>
+          <span class="kennzahl__grenze">Bremse: −0,35 %</span>
+        </div>
+      </div>
+
+      <div class="kennzahl">
+        <div class="kennzahl__name">Sonntagsfrage</div>
+        <div class="kennzahl__zeile">
+          <span class="kennzahl__wert">40 %</span>
+          <span class="delta delta--schlecht">−2,1</span>
+        </div>
+        <svg class="funke" viewBox="0 0 120 32" preserveAspectRatio="none" aria-hidden="true">
+          <polyline points="0,10 24,9 48,12 72,14 96,18 120,22" fill="none"
+                    stroke="var(--chart-2)" stroke-width="2" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <div class="kennzahl__fuss">
+          <span class="urteil urteil--schlecht">unter 50 %</span>
+          <span class="kennzahl__grenze">Wählerzustimmung</span>
+        </div>
+      </div>
+
+      <div class="kennzahl">
+        <div class="kennzahl__name">Gini-Ungleichheit</div>
+        <div class="kennzahl__zeile">
+          <span class="kennzahl__wert">0,377</span>
+          <span class="delta delta--gut">−0,006</span>
+        </div>
+        <svg class="funke" viewBox="0 0 120 32" preserveAspectRatio="none" aria-hidden="true">
+          <polyline points="0,14 24,15 48,16 72,18 96,17 120,15" fill="none"
+                    stroke="var(--chart-3)" stroke-width="2" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <div class="kennzahl__fuss">
+          <span class="urteil urteil--schlecht">erhöht</span>
+          <span class="kennzahl__grenze">0 = gleich</span>
+        </div>
+      </div>
+
+      <div class="kennzahl">
+        <div class="kennzahl__name">Schuldenstand</div>
+        <div class="kennzahl__zeile">
+          <span class="kennzahl__wert">63,5 %</span>
+          <span class="delta delta--neutral">±0,0</span>
+        </div>
+        <svg class="funke" viewBox="0 0 120 32" preserveAspectRatio="none" aria-hidden="true">
+          <polyline points="0,22 24,20 48,18 72,16 96,14 120,13" fill="none"
+                    stroke="var(--chart-4)" stroke-width="2" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <div class="kennzahl__fuss">
+          <span class="urteil urteil--schlecht">über 60 %</span>
+          <span class="kennzahl__grenze">Maastricht: 60 %</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<footer class="fuss">
+  <div class="fuss__stand">
+    <strong>Periode 1 von 5</strong>
+    <span class="delta delta--schlecht">Saldo −116 Mrd. €</span>
+    <span>3 Hebel bewegt</span>
+  </div>
+  <div class="fuss__rechts">
+    <div class="quorum">
+      <span>Team-Freigabe 2 von 4</span>
+      <span class="quorum__punkte" aria-hidden="true">
+        <span class="quorum__punkt quorum__punkt--voll"></span>
+        <span class="quorum__punkt quorum__punkt--voll"></span>
+        <span class="quorum__punkt"></span>
+        <span class="quorum__punkt"></span>
+      </span>
+    </div>
+    <button class="knopf">Zur Auswertung</button>
+    <button class="knopf knopf--voll knopf--gross">Periode abschließen</button>
+  </div>
+</footer>
+
+<script>
+  // Nur für den Entwurf: Thema umschalten und Slider-Werte mitführen.
+  const schalter = document.getElementById('thema-schalter');
+  schalter.addEventListener('click', () => {
+    const dunkel = document.documentElement.dataset.theme === 'dark';
+    document.documentElement.dataset.theme = dunkel ? 'light' : 'dark';
+    schalter.setAttribute('aria-pressed', String(!dunkel));
+  });
+
+  document.querySelectorAll('input[type="range"]').forEach(s => {
+    const aus = document.querySelector(`output[for="${s.id}"]`);
+    const urspruenglich = aus.textContent;
+    s.addEventListener('input', () => {
+      const n = Number(s.value);
+      aus.textContent = urspruenglich.includes('%')
+        ? n.toLocaleString('de-DE', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' %'
+        : n.toLocaleString('de-DE') + ' €';
+    });
+  });
+
+  document.querySelectorAll('.ressort__kopf').forEach(k => {
+    k.addEventListener('click', () => {
+      const offen = k.getAttribute('aria-expanded') === 'true';
+      k.setAttribute('aria-expanded', String(!offen));
+      const inhalt = k.nextElementSibling;
+      if (inhalt) inhalt.hidden = offen;
+    });
+  });
+</script>
+</body>
+</html>

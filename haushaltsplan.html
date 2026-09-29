@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Einzelplan — Kassensturz Planspiel</title>
+  <link rel="stylesheet" href="css/schriften.css">
+  <link rel="stylesheet" href="css/einzelplan.css?v=10">
+</head>
+<body>
+
+<a class="sprung" href="#plan">Direkt zu den Titeln</a>
+
+<header class="kopf">
+  <div class="marke">Kassensturz <span>Planspiel</span></div>
+  <div class="kopf-feld">Haushaltsjahr <b>2025–2028</b></div>
+  <div class="kopf-feld">Kabinett <b>Team A</b></div>
+  <div class="kopf-feld">Stufe <b>fortgeschritten</b>, 5 Perioden, 4 Kabinette</div>
+  <div class="kopf-rechts">
+    <p class="stand" data-stand="lokal">Lokal gerechnet, keine Sitzung verbunden</p>
+  </div>
+</header>
+
+<nav class="jahre" aria-label="Haushaltsjahre">
+  <button type="button" class="jahr" aria-current="true">2025–2028</button>
+  <button type="button" class="jahr" disabled>2029–2032<span class="zustand"> · gesperrt</span></button>
+  <button type="button" class="jahr" disabled>2033–2036<span class="zustand"> · gesperrt</span></button>
+  <button type="button" class="jahr" disabled>2037–2040<span class="zustand"> · gesperrt</span></button>
+  <button type="button" class="jahr" disabled>2041–2044<span class="zustand"> · gesperrt</span></button>
+</nav>
+
+<main class="blatt">
+
+  <div class="dokumentkopf">
+    <h1>Entwurf des Haushaltsplans 2025–2028</h1>
+    <p>Kabinett Team A · Periode 1 von 5 · Stufe fortgeschritten</p>
+  </div>
+
+  <section class="lage" aria-labelledby="lage-kopf">
+    <h2 id="lage-kopf"></h2>
+    <p id="lage-text"></p>
+  </section>
+
+  <p class="einleitung">Die Soll-Spalte ist überschreibbar. Veränderung, Abschluss und
+     Gesamtplan schreiben sich mit; die hochgestellte Ziffer öffnet Rechenweg
+     und Fundstelle.</p>
+
+  <div id="plan" tabindex="-1"></div>
+
+  <section class="gesamtplan" aria-labelledby="gp-titel">
+    <h2 id="gp-titel">Gesamtplan</h2>
+
+    <p class="achse-massstab" aria-hidden="true"><span>−25 %</span><span>Fortschreibung</span><span>+25 %</span></p>
+    <dl class="schiene" id="schiene"></dl>
+
+    <div class="abschluss" id="abschluss"></div>
+
+  </section>
+
+  <section class="apparat" aria-labelledby="ap-titel">
+    <h2 id="ap-titel">Erläuterungen und Fundstellen</h2>
+    <p class="apparat-vor"><span id="apparat-zahl">0</span> Fundstellen, unverändert aus den Quellenangaben der Rechenmodule übernommen.</p>
+    <ol id="apparat-liste"></ol>
+  </section>
+
+</main>
+
+<footer class="summe">
+  <p class="fakt">Periode <b>1</b> von 5</p>
+  <p class="fakt">Abschluss <b id="fakt-saldo">—</b></p>
+  <p class="fakt"><b id="fakt-titel">0</b> Titel geändert</p>
+  <button type="button" class="beschluss" id="btn-beschluss" disabled>Beschluss fassen</button>
+</footer>
+
+<p class="stand" id="stand-live" role="status" aria-live="polite"
+   style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap"></p>
+
+<dialog class="vorlage" id="vorlage" aria-labelledby="vorlage-kopf">
+  <div class="vorlage-kopf">
+    <h2 id="vorlage-kopf">Beschlussvorlage für das Haushaltsjahr 2025–2028</h2>
+    <p>Mit dem Beschluss wird die Periode geschlossen. Die geänderten Titel gehen als
+       Fortschreibung in die nächste Periode über.</p>
+  </div>
+  <p class="vorlage-hinweis">Vorschau: Der Periodenübergang ist in dieser Etappe noch nicht gebaut.
+     Der Beschluss wird vermerkt, die nächste Periode aber nicht freigegeben.</p>
+  <div class="vorlage-rumpf" tabindex="0" role="group" aria-label="Geänderte Titel und erwartete Wirkung">
+    <h3><span id="vorlage-zahl">0</span> geänderte Titel</h3>
+    <table>
+      <thead><tr><th>Titel</th><th>Fortschreibung</th><th>Beschluss</th></tr></thead>
+      <tbody id="vorlage-titel"></tbody>
+    </table>
+    <h3>Erwartete Wirkung</h3>
+    <table>
+      <thead><tr><th>Kennzahl</th><th>Vorher</th><th>Nachher</th><th>Veränderung</th></tr></thead>
+      <tbody id="vorlage-wirkung"></tbody>
+    </table>
+  </div>
+  <div class="vorlage-fuss">
+    <button type="button" class="zurueck" id="btn-zurueck">Zurück zum Entwurf</button>
+    <button type="button" class="beschluss weiter" id="btn-fassen">Beschluss fassen</button>
+  </div>
+</dialog>
+
+<script type="module" src="js/einzelplan.js"></script>
+</body>
+</html>

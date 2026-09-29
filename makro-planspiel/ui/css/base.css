@@ -1,0 +1,138 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAKRO-PLANSPIEL · Base — reset, typography, page structure, cockpit
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 15px; }
+
+body {
+  background: var(--paper);           /* the 70 % — white is THE background */
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ── Typography ── */
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+}
+h1 { font-size: 1.9rem; text-transform: uppercase; }
+h2 { font-size: 1.35rem; text-transform: uppercase; }
+h3 { font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.04em; }
+h4 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-2); }
+
+p { max-width: 72ch; }
+small { font-size: 0.78rem; color: var(--ink-3); }
+code, .figures { font-family: var(--font-figures); }
+
+a { color: var(--sky-deep); text-decoration: none; border-bottom: 1px solid var(--sky-line); }
+a:hover { border-bottom-color: var(--sky-deep); }
+
+/* Focus — visible everywhere (accessibility) */
+:focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: 2px;
+}
+
+/* ── Cockpit (fixed top bar: session status, separated from content) ── */
+#cockpit {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: var(--cockpit-h);
+  background: var(--ink);
+  color: var(--paper);
+  display: flex;
+  align-items: stretch;
+  border-bottom: 3px solid var(--sky);
+  z-index: 100;
+}
+#cockpit .cockpit-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 16px;
+  border-right: 1px solid #31424d;
+  min-width: 0;
+}
+#cockpit .cockpit-cell:last-child { border-right: none; margin-left: auto; }
+#cockpit .cell-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8fa5b1;
+}
+#cockpit .cell-value {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#cockpit .cell-value .phase-decision { color: var(--sky); }
+#cockpit .cell-value .phase-evaluation { color: var(--sage); }
+#cockpit .cell-value .phase-done { color: var(--mauve); }
+#cockpit .brand {
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+#cockpit .brand em { color: var(--sky); font-style: normal; }
+
+/* ── Page ── */
+#app {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: calc(var(--cockpit-h) + var(--gutter)) var(--gutter) 80px;
+}
+
+.view-head {
+  border-bottom: var(--line-strong);
+  padding-bottom: 10px;
+  margin-bottom: var(--gutter);
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.view-head .view-kicker {
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sky-deep);
+}
+.view-head .view-head-note {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: var(--ink-3);
+}
+
+/* Section rule — the workhorse divider of the anti-AI look */
+.rule { border: none; border-top: var(--line); margin: 24px 0; }
+.rule-thick { border: none; border-top: var(--line-strong); margin: 28px 0; }
+.rule-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 26px 0 14px;
+}
+.rule-label::after { content: ''; flex: 1; border-top: var(--line); }
+.rule-label h3 { flex-shrink: 0; }
+
+@media (max-width: 760px) {
+  #cockpit .cockpit-cell { padding: 0 8px; }
+  #cockpit .cell-hide-m { display: none; }
+  #app { padding-left: 12px; padding-right: 12px; }
+}
+
+@media print {
+  #cockpit, .no-print { display: none !important; }
+  #app { padding-top: 0; }
+}

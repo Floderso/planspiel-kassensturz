@@ -1,0 +1,222 @@
+/* SPDX-License-Identifier: CC-BY-4.0
+   Copyright 2025 Florian Aram Feuerriegel — kassensturz.org
+
+   tiefe.css — Bausteine für die Tiefenebenen.
+   Ergänzt mockup.css. Wieder ohne festen Farbwert, ohne feste
+   Größe, ohne getönte Fläche: Text, Kante, Vollton.              */
+
+/* ═══ 1. HERLEITUNG — aufklappbare Rechenkette ═══════════════
+   Vorbild: Beautiful UI „Thinking / Expandable traces" (MIT),
+   Schichtung nach dem Muster der Stripe-Dokumentation.          */
+
+.herleitung { border-top: 1px solid var(--color-border); }
+
+.herleitung__schalter {
+  width: 100%; display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-3) 0;
+  font-size: var(--text-sm); color: var(--color-fg-muted);
+  text-align: left;
+}
+.herleitung__schalter:hover { color: var(--color-accent-text); }
+
+.herleitung__pfeil {
+  flex: none; transition: transform var(--dur-fast) var(--ease-out);
+}
+[aria-expanded="true"] .herleitung__pfeil { transform: rotate(90deg); }
+
+.herleitung__inhalt { padding-bottom: var(--space-4); }
+
+/* Die Kette: jeder Schritt eine Zeile, verbunden durch eine Linie
+   an der linken Kante. Kein Kasten, keine Fläche. */
+.kette { list-style: none; padding-left: var(--space-4); position: relative; }
+.kette::before {
+  content: ""; position: absolute; inset-block: var(--space-2);
+  left: 3px; width: 1px; background: var(--color-border);
+}
+.kette__schritt { position: relative; padding: var(--space-2) 0; }
+.kette__schritt::before {
+  content: ""; position: absolute; left: calc(-1 * var(--space-4) + 1px);
+  top: calc(var(--space-4) - 1px);
+  width: var(--space-2); height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-bg);
+  box-shadow: inset 0 0 0 1px var(--color-border-strong);
+}
+.kette__schritt--ergebnis::before {
+  background: var(--color-accent); box-shadow: none;
+}
+
+.kette__was  { font-size: var(--text-sm); }
+.kette__wert {
+  font-family: var(--font-mono); font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums; color: var(--color-fg-muted);
+}
+.kette__formel {
+  display: block; margin-top: var(--space-1);
+  font-family: var(--font-mono); font-size: var(--text-xs);
+  color: var(--color-fg-subtle);
+  overflow-x: auto; white-space: nowrap;
+  padding-bottom: var(--space-1);
+}
+
+/* ═══ 2. QUELLENKARTE ════════════════════════════════════════
+   Vorbild: Beautiful UI „Context Cards" (MIT).
+   Füllung: die FORMEL_QUELLEN_*-Objekte, die heute schon im Code
+   stehen und nirgends angezeigt werden.                         */
+
+.quellen { display: grid; gap: var(--space-3); margin-top: var(--space-4); }
+
+.quelle {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+}
+.quelle__kopf {
+  display: flex; align-items: baseline; gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+.quelle__art {
+  font-size: var(--text-xs); font-weight: var(--weight-bold);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--color-accent-text);
+}
+.quelle__jahr {
+  margin-left: auto;
+  font-family: var(--font-mono); font-size: var(--text-xs);
+  color: var(--color-fg-subtle);
+}
+.quelle__formel {
+  font-family: var(--font-mono); font-size: var(--text-xs);
+  color: var(--color-fg); margin-bottom: var(--space-2);
+  overflow-x: auto; white-space: nowrap; padding-bottom: var(--space-1);
+}
+.quelle__ref  { font-size: var(--text-sm); line-height: var(--leading-normal); }
+.quelle__note {
+  font-size: var(--text-xs); color: var(--color-fg-muted);
+  margin-top: var(--space-2);
+}
+
+/* ═══ 3. ENTSCHEIDUNGSKARTE ══════════════════════════════════
+   Vorbild: Beautiful UI „Approval Card" (MIT).
+   Macht aus dem Schock-Banner eine echte Entscheidung.          */
+
+.entscheidung { padding: var(--space-5); }
+
+.entscheidung__kopf {
+  display: flex; align-items: baseline; gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+.entscheidung__zaehler {
+  margin-left: auto;
+  font-family: var(--font-mono); font-size: var(--text-xs);
+  color: var(--color-fg-subtle);
+}
+.entscheidung__frage {
+  font-family: var(--font-serif);
+  font-size: var(--text-xl); line-height: var(--leading-tight);
+  font-weight: var(--weight-bold);
+  margin-bottom: var(--space-2);
+}
+.entscheidung__lage {
+  font-size: var(--text-sm); color: var(--color-fg-muted);
+  max-width: var(--measure); margin-bottom: var(--space-4);
+}
+
+.optionen { display: grid; gap: var(--space-2); margin-bottom: var(--space-4); }
+
+.option {
+  display: grid; grid-template-columns: auto 1fr auto;
+  align-items: start; gap: var(--space-3);
+  width: 100%; text-align: left;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  transition: border-color var(--dur-fast) var(--ease-out),
+              background var(--dur-fast) var(--ease-out);
+}
+.option:hover { background: var(--color-surface-hover); }
+.option[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+/* Das Auswahlzeichen ist ein echter Kreis, kein Farbfleck:
+   leer = nicht gewählt, gefüllt mit Haken = gewählt. */
+.option__zeichen {
+  width: 1.25rem; height: 1.25rem; margin-top: 2px;
+  display: grid; place-items: center;
+  border-radius: var(--radius-full);
+  box-shadow: inset 0 0 0 1px var(--color-border-strong);
+  font-size: var(--text-xs);
+}
+.option[aria-pressed="true"] .option__zeichen {
+  background: var(--color-accent); color: var(--color-accent-fg);
+  box-shadow: none;
+}
+.option__titel { font-size: var(--text-sm); font-weight: var(--weight-semibold); }
+.option__folge { font-size: var(--text-xs); color: var(--color-fg-muted); }
+.option__kosten {
+  font-family: var(--font-mono); font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+
+/* ═══ 4. KABINETTSPROTOKOLL ══════════════════════════════════
+   Vorbild: das Aktivitätsprotokoll in Linear.
+   Beantwortet die Frage, die ein Teamspiel unweigerlich aufwirft:
+   wer hat das eigentlich gemacht?                                */
+
+.protokoll { list-style: none; position: relative; padding-left: var(--space-6); }
+.protokoll::before {
+  content: ""; position: absolute; inset-block: var(--space-3);
+  left: calc(var(--space-3) - 1px); width: 1px; background: var(--color-border);
+}
+
+.eintrag { position: relative; padding: var(--space-3) 0; font-size: var(--text-sm); }
+.eintrag::before {
+  content: ""; position: absolute;
+  left: calc(-1 * var(--space-6) + var(--space-3) - var(--space-1) + 1px);
+  top: calc(var(--space-4) + 2px);
+  width: var(--space-2); height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-bg);
+  box-shadow: inset 0 0 0 1px var(--color-border-strong);
+}
+.eintrag--wichtig::before { background: var(--color-accent); box-shadow: none; }
+
+.eintrag__wer  { font-weight: var(--weight-semibold); }
+.eintrag__wann {
+  float: right;
+  font-family: var(--font-mono); font-size: var(--text-xs);
+  color: var(--color-fg-subtle);
+}
+.eintrag__wert { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* ═══ 5. PERIODENVERGLEICH ═══════════════════════════════════
+   Vorbild: Beautiful UI „Diff Table" (MIT).
+   Beim Periodenwechsel Zeile für Zeile: was habt ihr geändert.   */
+
+.vergleich { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.vergleich caption {
+  text-align: left; padding-bottom: var(--space-3);
+  font-size: var(--text-sm); color: var(--color-fg-muted);
+}
+.vergleich th {
+  text-align: left; font-size: var(--text-xs);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--color-fg-muted); font-weight: var(--weight-semibold);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border-strong);
+}
+.vergleich th:not(:first-child), .vergleich td:not(:first-child) { text-align: right; }
+.vergleich td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  font-variant-numeric: tabular-nums;
+}
+.vergleich tbody tr:last-child td { border-bottom: none; }
+.vergleich .alt  { font-family: var(--font-mono); color: var(--color-fg-subtle); }
+.vergleich .neu  { font-family: var(--font-mono); font-weight: var(--weight-semibold); }
+.vergleich .pfeil { color: var(--color-fg-subtle); padding-inline: var(--space-1); }
+
+/* Unveränderte Zeilen treten zurück, ohne zu verschwinden. */
+.vergleich tr[data-stand="gleich"] td { color: var(--color-fg-subtle); }

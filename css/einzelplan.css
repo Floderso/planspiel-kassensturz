@@ -1,0 +1,570 @@
+/* SPDX-License-Identifier: CC-BY-4.0 */
+/* Copyright 2025 Florian Aram Feuerriegel — kassensturz.org */
+/* ═══════════════════════════════════════════════════════════════════════════
+   EINZELPLAN — die Spielflaeche als Haushaltsplan
+
+   Linien, keine Rahmen. Vollton, keine getoenten Flaechen. Kein Mittelgrau
+   als Ausweichfarbe: Sekundaeres wird aus dem Linienblau abgetoent, nie
+   ergraut. Nichts wird weichgezeichnet — ein Haushaltsplan animiert nicht,
+   er wird korrigiert.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Tinten ── */
+  --papier:        #EDEEE8;
+  --tinte:         #191C1A;
+  --tinte-zweit:   #3E5560;   /* aus dem Linienblau abgetoent, nicht grau */
+  --linie:         #1F4E6B;
+  --linie-fein:    #B4C0C6;
+  --oxid:          #6B2118;   /* Minderung, Defizit, verfehlt */
+  --fichte:        #2F4A3A;   /* Mehrung, Entlastung, erreicht */
+
+  /* ── Mass ── */
+  --spalte-soll:   8.5rem;
+  --spalte-sq:     7rem;
+  --spalte-delta:  10.5rem;
+  --rand:          clamp(1rem, 3vw, 2.5rem);
+  --ziel:          44px;      /* Trefferflaeche, BITV */
+  --fuss:          4rem;      /* Hoehe der fixierten Summenzeile */
+
+  /* ── Zeit ── */
+  --schritt:       90ms;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  background: var(--papier);
+  color: var(--tinte);
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1, 'cv05' 1;
+}
+
+/* ── Browseroberflaechen gehoeren zum Entwurf ────────────────────────────── */
+
+::selection { background: var(--linie); color: var(--papier); }
+
+:focus-visible {
+  outline: 2px solid var(--linie);
+  outline-offset: 2px;
+}
+
+a { color: var(--linie); text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+
+* { scrollbar-color: var(--linie) var(--papier); scrollbar-width: thin; }
+
+/* ── Sprungmarke ─────────────────────────────────────────────────────────── */
+
+.sprung {
+  position: absolute; left: var(--rand); top: -4rem; z-index: 10;
+  background: var(--tinte); color: var(--papier);
+  padding: 0.6rem 1rem; font-weight: 600;
+}
+.sprung:focus { top: 0.5rem; }
+
+/* ── Kopfzeile: das Haushaltsjahr ist die Ordinate ───────────────────────── */
+
+.kopf {
+  border-bottom: 2px solid var(--tinte);
+  padding: 0.75rem var(--rand);
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 1.5rem;
+}
+
+.marke { font-size: 1.0625rem; font-weight: 700; letter-spacing: -0.01em; }
+.marke span { font-weight: 400; color: var(--tinte-zweit); }
+
+.kopf-feld { font-size: 0.9375rem; color: var(--tinte-zweit); }
+.kopf-feld b { color: var(--tinte); font-weight: 600; }
+
+.kopf-rechts { margin-left: auto; display: flex; align-items: center; gap: 1rem; }
+
+/* Verbindungsstand — Wort und Zeichen, nie Farbe allein */
+.stand { font-size: 0.9375rem; display: flex; align-items: baseline; gap: 0.4rem; }
+.stand::before { content: '\25CF'; font-size: 0.75em; }
+.stand[data-stand='offline'] { color: var(--oxid); }
+.stand[data-stand='offline']::before { content: '\25CB'; }
+.stand[data-stand='lokal']   { color: var(--tinte-zweit); }
+
+/* ── Jahresleiste: jede Zahl haengt an ihrer Periode ─────────────────────── */
+
+.jahre {
+  border-bottom: 1px solid var(--linie-fein);
+  padding: 0 var(--rand);
+  display: flex; gap: 0; overflow-x: auto;
+}
+
+.jahr {
+  appearance: none; background: none; border: 0;
+  border-bottom: 3px solid transparent;
+  font: inherit; font-size: 0.9375rem; color: var(--tinte-zweit);
+  padding: 0 1rem; min-height: var(--ziel); min-width: var(--ziel);
+  cursor: pointer; white-space: nowrap; flex: 0 0 auto;
+}
+.jahr[aria-current='true'] {
+  color: var(--tinte); font-weight: 700;
+  border-bottom-color: var(--tinte);
+}
+.jahr:disabled { cursor: default; opacity: 1; }
+.jahr .zustand { font-size: 0.8125rem; }
+
+/* ── Die Dokumentflaeche ─────────────────────────────────────────────────── */
+
+.blatt {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 0 var(--rand);
+  padding: 0 var(--rand) 8rem;
+  align-items: start;
+}
+
+/* ── Einzelplan ──────────────────────────────────────────────────────────── */
+
+.einzelplan { margin-top: 2rem; }
+
+.einzelplan > h2 {
+  font-size: 1.0625rem; font-weight: 700; letter-spacing: 0.02em;
+  text-transform: none;
+  border-bottom: 2px solid var(--tinte);
+  padding-bottom: 0.3rem; margin-bottom: 0;
+  display: flex; gap: 0.75rem; align-items: baseline;
+}
+.einzelplan > h2 .nr {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 400; color: var(--linie);
+}
+
+.plan { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.plan col.c-marge { width: 0.75rem; }
+.plan col.c-nr    { width: 4.5rem; }
+.plan col.c-zweck { width: auto; }
+.plan col.c-soll  { width: var(--spalte-soll); }
+.plan col.c-sq    { width: var(--spalte-sq); }
+.plan col.c-delta { width: var(--spalte-delta); }
+
+.plan caption { text-align: left; font-size: 0.875rem; color: var(--tinte-zweit); padding: 0.4rem 0 0.6rem; }
+
+.plan th {
+  font-size: 0.8125rem; font-weight: 600; color: var(--tinte-zweit);
+  text-align: right; padding: 0.5rem 0.5rem 0.4rem;
+  border-bottom: 1px solid var(--linie);
+  white-space: nowrap;
+}
+.plan th.zweck, .plan th.nr { text-align: left; }
+
+.plan td {
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--linie-fein);
+  vertical-align: baseline;
+  text-align: right;
+}
+.plan td.nr {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.875rem; color: var(--linie); text-align: left; white-space: nowrap;
+}
+.plan td.zweck { text-align: left; }
+.plan td.zweck .einheit { color: var(--tinte-zweit); font-size: 0.875rem; }
+
+
+/* Randstrich: die Aenderungsmarke des Gesetzestexts, in der Marge */
+.plan td.marge {
+  width: 0.75rem; padding: 0; border-bottom: 0;
+  text-align: left;
+}
+.plan tr[data-geaendert='true'] td.marge {
+  box-shadow: inset 3px 0 0 0 var(--tinte);
+}
+
+/* ── Das Sollfeld: die Primaerhandlung ───────────────────────────────────── */
+
+.soll {
+  appearance: none; -moz-appearance: textfield;
+  background: none; border: 0; border-bottom: 1.5px solid var(--linie);
+  font: inherit; font-variant-numeric: tabular-nums;
+  color: var(--tinte); font-weight: 600;
+  width: 100%; min-height: var(--ziel);
+  padding: 0 0.25rem; text-align: right;
+}
+.soll::-webkit-outer-spin-button, .soll::-webkit-inner-spin-button {
+  -webkit-appearance: none; margin: 0;
+}
+.soll:hover { border-bottom-color: var(--tinte); }
+.soll:focus-visible { outline-offset: 1px; }
+.soll:disabled { border-bottom-style: dotted; color: var(--tinte-zweit); }
+
+.schalter {
+  appearance: none; background: none;
+  border: 1.5px solid var(--linie); border-radius: 0;
+  font: inherit; font-size: 0.9375rem; color: var(--tinte);
+  min-height: var(--ziel); min-width: 5.5rem; padding: 0 0.75rem;
+  cursor: pointer;
+}
+.schalter[aria-pressed='true'] { background: var(--tinte); color: var(--papier); border-color: var(--tinte); }
+
+.sq { color: var(--tinte-zweit); font-size: 0.9375rem; }
+
+/* Veraenderung: Vorzeichen, Farbe UND Wort — nie Farbe allein */
+.delta { font-weight: 600; white-space: nowrap; }
+.delta[data-richtung='mehr']    { color: var(--fichte); }
+.delta[data-richtung='minder']  { color: var(--oxid); }
+.delta[data-richtung='gleich']  { color: var(--tinte-zweit); font-weight: 400; }
+.delta .wort { font-weight: 400; font-size: 0.875rem; }
+
+/* Wertwechsel: ein Schritt, kein Uebergang */
+@keyframes gesetzt { from { background: var(--tinte); color: var(--papier); } }
+.frisch { animation: gesetzt var(--schritt) steps(2, jump-none); }
+
+/* ── Erlaeuterung: der Beschluss bleibt lebendig ─────────────────────────── */
+
+/* Die Erlaeuterung haengt an der Zweckbestimmung, nicht an einer eigenen
+   Zeile: fuenfzehn wiederholte Aufklapp-Zeilen zerschlagen den Satzspiegel. */
+details.erl > summary {
+  list-style: none; cursor: pointer;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 0 0.15rem;
+  min-height: var(--ziel);
+}
+details.erl > summary::-webkit-details-marker { display: none; }
+details.erl > summary:hover { color: var(--linie); }
+details.erl > summary:hover .fussmarke { color: var(--tinte); }
+details.erl[open] > summary { font-weight: 600; }
+
+.erl-text {
+  font-size: 0.9375rem; padding: 0.2rem 0.5rem 0.9rem 0.75rem;
+  max-width: 68ch; border-left: 1px solid var(--linie-fein);
+  margin: 0 0 0.4rem;
+}
+.erl-text dt { font-weight: 600; margin-top: 0.6rem; }
+.erl-text dd { color: var(--tinte-zweit); }
+.erl-text .formel {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.875rem; color: var(--tinte);
+}
+
+/* ── Der Gesamtplan ──────────────────────────────────────────────────────── */
+
+.gesamtplan { margin-top: 2rem; position: sticky; top: 1rem; }
+
+.gesamtplan > h2 {
+  font-size: 1.0625rem; font-weight: 700;
+  border-bottom: 2px solid var(--tinte); padding-bottom: 0.3rem;
+}
+
+/* Die gemeinsame Messachse: eine Nulllinie fuer alle vier Kennzahlen */
+.schiene { margin: 1.25rem 0 0; }
+
+.bahn {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0 0.75rem;
+  align-items: baseline;
+  padding: 0.6rem 0 0.5rem;
+  border-bottom: 1px solid var(--linie-fein);
+}
+
+.bahn dt { font-size: 0.9375rem; color: var(--tinte-zweit); }
+.bahn dd { text-align: right; }
+.bahn .wert { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.015em; }
+.bahn .einheit { font-size: 0.875rem; color: var(--tinte-zweit); font-weight: 400; }
+
+.messachse { grid-column: 1 / -1; margin-top: 0.4rem; }
+.messachse svg { display: block; width: 100%; height: 14px; overflow: visible; }
+
+.abschluss { margin-top: 1.5rem; border-top: 2px solid var(--tinte); }
+.abschluss div {
+  display: flex; justify-content: space-between; gap: 1rem;
+  padding: 0.4rem 0; border-bottom: 1px solid var(--linie-fein);
+  font-size: 0.9375rem;
+}
+.abschluss div:last-child { border-bottom: 0; font-weight: 700; font-size: 1.0625rem; }
+
+/* ── Die Lage als gesetzter Absatz, nicht als Banner ─────────────────────── */
+
+.lage { margin-top: 2rem; border-top: 2px solid var(--tinte); padding-top: 0.9rem; }
+.lage h3 {
+  font-size: 1.375rem; line-height: 1.25; letter-spacing: -0.02em;
+  text-wrap: balance; max-width: 34ch;
+}
+.lage p { margin-top: 0.6rem; max-width: 68ch; color: var(--tinte-zweit); }
+
+/* ── Summenzeile ─────────────────────────────────────────────────────────── */
+
+.summe {
+  position: fixed; inset: auto 0 0 0;
+  background: var(--papier); border-top: 2px solid var(--tinte);
+  padding-block: 0.6rem; padding-inline: var(--rand);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.5rem;
+  min-height: var(--ziel);
+}
+.summe .fakt { font-size: 0.9375rem; color: var(--tinte-zweit); }
+.summe .fakt b { color: var(--tinte); font-weight: 700; }
+
+.beschluss {
+  margin-left: auto;
+  appearance: none; background: var(--tinte); color: var(--papier);
+  border: 2px solid var(--tinte); border-radius: 0;
+  font: inherit; font-weight: 700;
+  min-height: var(--ziel); padding: 0 1.25rem; cursor: pointer;
+}
+.beschluss:hover { background: var(--linie); border-color: var(--linie); }
+.beschluss:disabled { background: none; color: var(--tinte-zweit); border-color: var(--linie-fein); cursor: default; }
+
+/* ── Der Beschluss: geschuetzter Fokus, weil unumkehrbar ─────────────────── */
+
+dialog.vorlage {
+  border: 2px solid var(--tinte); border-radius: 0;
+  background: var(--papier); color: var(--tinte);
+  padding: 0; max-width: min(46rem, 92vw); width: 100%;
+}
+dialog.vorlage::backdrop { background: rgb(25 28 26 / 0.55); }
+
+.vorlage-kopf { border-bottom: 2px solid var(--tinte); padding: 1rem var(--rand); }
+.vorlage-kopf h2 { font-size: 1.25rem; }
+.vorlage-kopf p { font-size: 0.9375rem; color: var(--tinte-zweit); margin-top: 0.25rem; max-width: 62ch; }
+
+.vorlage-rumpf { padding: 1rem var(--rand); max-height: 50vh; overflow-y: auto; }
+.vorlage-rumpf h3 { font-size: 0.9375rem; margin: 1rem 0 0.4rem; }
+.vorlage-rumpf h3:first-child { margin-top: 0; }
+.vorlage-rumpf table { width: 100%; border-collapse: collapse; }
+.vorlage-rumpf th { font-size: 0.8125rem; color: var(--tinte-zweit); text-align: right; border-bottom: 1px solid var(--linie); padding: 0.3rem 0.5rem; }
+.vorlage-rumpf th:first-child { text-align: left; }
+.vorlage-rumpf td { padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--linie-fein); text-align: right; }
+.vorlage-rumpf td:first-child { text-align: left; }
+
+.vorlage-fuss {
+  border-top: 2px solid var(--tinte); padding: 0.9rem var(--rand);
+  display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;
+}
+.vorlage-fuss .weiter { margin-left: auto; }
+.zurueck {
+  appearance: none; background: none; color: var(--tinte);
+  border: 1.5px solid var(--linie); border-radius: 0;
+  font: inherit; min-height: var(--ziel); padding: 0 1rem; cursor: pointer;
+}
+
+/* ── Leerer Apparat ──────────────────────────────────────────────────────── */
+
+.apparat { grid-column: 1 / -1; margin-top: 2.5rem; border-top: 1px solid var(--linie-fein); padding-top: 0.9rem; }
+.apparat h2 { font-size: 0.9375rem; font-weight: 700; }
+.apparat ol { margin-top: 0.6rem; padding-left: 1.5rem; max-width: 80ch; }
+.apparat li { font-size: 0.875rem; color: var(--tinte-zweit); margin-bottom: 0.35rem; }
+.apparat li b { color: var(--tinte); font-weight: 600; }
+
+.fussmarke {
+  font-size: 0.7em; vertical-align: super; line-height: 0;
+  color: var(--linie); text-decoration: none; padding: 0 0.1em;
+}
+
+/* ── Schmale Fenster: das Dokument wird einspaltig ───────────────────────── */
+
+@media (max-width: 62rem) {
+  .blatt { grid-template-columns: minmax(0, 1fr); }
+  .gesamtplan { position: static; }
+  .plan { font-size: 16px; }
+  .plan th.sq-sp, .plan td.sq-sp { display: none; }
+  .plan caption { padding-bottom: 0.4rem; }
+}
+
+@media (max-width: 34rem) {
+  .kopf-rechts { margin-left: 0; width: 100%; }
+  .summe { gap: 0.4rem 1rem; }
+  .summe .beschluss { margin-left: 0; width: 100%; }
+}
+
+/* Nichts wird weichgezeichnet, also findet reduced-motion nur den Schritt */
+@media (prefers-reduced-motion: reduce) {
+  .frisch { animation: none; }
+}
+
+@media print {
+  .summe, .jahre, .sprung { display: none; }
+  body { background: #fff; font-size: 11pt; }
+  .gesamtplan { position: static; }
+}
+
+/* ── Einleitung ueber dem Plan ────────────────────────────────────────────── */
+
+.einleitung {
+  grid-column: 1 / -1;
+  margin-top: 1.5rem; max-width: 72ch;
+  font-size: 0.9375rem; color: var(--tinte-zweit);
+}
+.einleitung + #plan .einzelplan:first-child { margin-top: 1.25rem; }
+
+/* ── Schmale Fenster: die Tabelle rollt, das Dokument nie ────────────────── */
+
+.planrolle { overflow-x: auto; }
+
+@media (max-width: 34rem) {
+  .plan td, .plan th { padding-inline: 0.3rem; }
+  .plan td.nr { font-size: 0.8125rem; }
+
+  /* Das Richtungswort bleibt fuer Screenreader erhalten, weicht aber aus der
+     Spalte: Vorzeichen und Farbe tragen hier sichtbar, das Wort hoerbar. */
+  .delta .wort {
+    position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+}
+
+/* ── Kein Element spannt das Dokument auf ────────────────────────────────── */
+/* Grid-Kinder haben von Haus aus min-width:auto und schrumpfen darum nie
+   unter ihren Inhalt. Eine einzige lange Formel im Apparat reichte, um das
+   ganze Blatt breiter zu machen als das Fenster — und der fixierte Fuss
+   erbt diese Breite. */
+
+.blatt > * { min-width: 0; }
+.apparat li, .erl-text dd { overflow-wrap: anywhere; }
+
+
+/* ── Kapitel, Summen, Fehler, Achse ──────────────────────────────────────── */
+
+.plan tr.kapitel th {
+  text-align: left; font-size: 0.9375rem; font-weight: 700; color: var(--tinte);
+  border-bottom: 1px solid var(--linie); padding-top: 1rem;
+}
+.plan tr.kapitel td.nr { padding-top: 1rem; vertical-align: bottom; }
+
+.plan tfoot .summenzeile th,
+.plan tfoot .summenzeile td {
+  border-top: 3px double var(--tinte); border-bottom: 0;
+  padding-top: 0.5rem; font-weight: 700; text-align: right;
+}
+.plan tfoot .summenzeile th { text-align: left; font-size: 0.9375rem; }
+.plan tfoot .summenzeile td { font-size: 0.9375rem; }
+
+.fehler {
+  color: var(--oxid); font-size: 0.875rem; font-weight: 600;
+  padding: 0.2rem 0 0.3rem;
+}
+.soll[aria-invalid='true'] { border-bottom-width: 2.5px; border-bottom-color: var(--oxid); }
+
+/* Der Abschluss schliesst mit dem Doppelstrich des Rechnungswesens */
+.abschluss div.doppelstrich {
+  border-top: 3px double var(--tinte); border-bottom: 0;
+  margin-top: 0.2rem; padding-top: 0.4rem;
+}
+
+
+.achse-massstab {
+  display: flex; justify-content: space-between;
+  font-size: 0.8125rem; color: var(--tinte-zweit); padding-top: 0.2rem;
+}
+.bahn-abw { display: block; font-size: 0.875rem; color: var(--tinte-zweit); font-weight: 400; }
+
+/* Fix: der Reset setzt margin:0 auf alles und schlaegt damit die
+   Zentrierung von dialog:modal. */
+dialog.vorlage { margin: auto; }
+.vorlage-rumpf:focus-visible { outline-offset: -2px; }
+
+.vorlage-hinweis {
+  font-size: 0.9375rem; color: var(--oxid); font-weight: 600;
+  padding: 0.6rem var(--rand) 0;
+}
+
+/* Fix: die Schlagzeile darf nicht unter der Summenzeile verschwinden */
+.gesamtplan { max-height: calc(100vh - 7rem); overflow-y: auto; scrollbar-gutter: stable; }
+@media (max-width: 62rem) { .gesamtplan { max-height: none; overflow-y: visible; } }
+
+/* Statuspunkt gezeichnet, nicht als Unicode-Glyphe */
+.stand::before {
+  content: ''; width: 0.5rem; height: 0.5rem; border-radius: 50%;
+  background: currentColor; display: inline-block; flex: 0 0 auto;
+}
+.stand[data-stand='offline']::before { background: none; box-shadow: inset 0 0 0 1.5px currentColor; }
+.stand { align-items: center; }
+
+/* Das Dokument beginnt mit seinem Kopf */
+.dokumentkopf { grid-column: 1 / -1; margin-top: 1.5rem; }
+.dokumentkopf h1 { font-size: 1.5rem; letter-spacing: -0.02em; }
+.dokumentkopf p  { font-size: 0.9375rem; color: var(--tinte-zweit); margin-top: 0.2rem; }
+.apparat-vor { font-size: 0.875rem; color: var(--tinte-zweit); margin-top: 0.3rem; }
+
+/* ── Messbahnen: gemeinsame Nulllinie, durchgehend ──────────────────────── */
+
+.schiene { position: relative; }
+/* Die Nulllinie laeuft als eine Linie durch alle vier Bahnen, nicht je Bahn */
+.schiene::before {
+  content: ''; position: absolute; left: 50%; top: 0; bottom: 0;
+  border-left: 1px solid var(--tinte); pointer-events: none;
+}
+.bahn { grid-template-columns: 1fr auto; row-gap: 0.15rem; }
+.bahn-mass { grid-column: 1 / -1; }
+.bahn-grafik { display: block; width: 100%; height: 12px; }
+.bahn-abw { grid-column: 1 / -1; font-size: 0.875rem; color: var(--tinte-zweit); }
+
+.achse-massstab { margin-top: 0.8rem; border-bottom: 1px solid var(--linie-fein); padding-bottom: 0.2rem; }
+
+/* Die Lage steht als Vorbemerkung am Kopf des Dokuments, nicht in der
+   rollenden Seitenspalte — sie ist die Erfindung dieses Produkts. */
+.lage {
+  grid-column: 1 / -1; margin-top: 1.25rem;
+  border-top: 3px double var(--tinte); border-bottom: 1px solid var(--linie);
+  padding-block: 0.8rem;
+}
+.lage h2 { font-size: 1.625rem; line-height: 1.2; letter-spacing: -0.02em; text-wrap: balance; max-width: 40ch; }
+.lage p  { margin-top: 0.5rem; max-width: 72ch; color: var(--tinte-zweit); }
+.gesamtplan { max-height: calc(100vh - 5rem); }
+
+/* ── Schmale Fenster: feste Spalten zerreissen die Zeile ─────────────────── */
+/* 8,5 rem Soll plus 10,5 rem Veraenderung vergeben bei 390 px schon 316 von
+   358 px; fuer Titelnummer und Zweckbestimmung blieben 40 px, und die
+   Zweckbestimmung ueberdruckte die Soll-Zahl. Unter 62 rem entscheidet
+   deshalb wieder der Inhalt ueber die Spaltenbreite. */
+
+@media (max-width: 62rem) {
+  /* Fuenf Hauptbuchspalten passen nicht auf ein Telefon: 358 px abzueglich
+     der festen Spalten lassen 124 px fuer die Zweckbestimmung, die 150
+     braucht — der Text lief in die Soll-Zahl. Schmal wird die Zeile deshalb
+     zum gestapelten Satz. Die Rollen stehen im Markup ausgeschrieben, damit
+     Zeilen- und Spaltenbezug fuer Screenreader erhalten bleiben. */
+
+  .plan, .plan thead, .plan tbody, .plan tfoot,
+  .plan tr, .plan th, .plan td { display: block; }
+  .plan colgroup { display: none; }
+
+  .plan thead, .plan caption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
+  .plan tr { border-bottom: 1px solid var(--linie-fein); padding: 0.5rem 0 0.6rem 0.75rem; position: relative; }
+  .plan tr[data-geaendert='true'] { box-shadow: inset 3px 0 0 0 var(--tinte); }
+  .plan td.marge { display: none; }
+
+  .plan td.nr { font-size: 0.8125rem; padding: 0; }
+  .plan td.zweck { padding: 0 0 0.3rem; }
+  .plan td.zweck .einheit { font-size: 0.9375rem; }
+
+  .plan td[data-spalte] { padding: 0.15rem 0; display: flex; align-items: baseline; gap: 0.5rem; }
+  .plan td[data-spalte]::before {
+    content: attr(data-spalte); flex: 0 0 8.5rem;
+    font-size: 0.8125rem; color: var(--tinte-zweit);
+  }
+  .plan td[data-spalte] > .soll, .plan td[data-spalte] > .schalter { max-width: 9rem; text-align: left; }
+  .plan td.delta { justify-content: flex-start; }
+
+  .plan tr.kapitel { padding-left: 0; border-bottom: 1px solid var(--linie); }
+  .plan tr.kapitel th { font-size: 1rem; padding: 0.6rem 0 0.2rem; }
+  .plan tr.kapitel td.nr { padding: 0; }
+
+  .plan tfoot .summenzeile { padding-left: 0; border-top: 3px double var(--tinte); }
+  .plan tfoot .summenzeile th,
+  .plan tfoot .summenzeile td { border-top: 0; text-align: left; padding: 0.2rem 0; }
+
+  .planrolle { overflow-x: visible; }
+}
+
+/* Der Gesamtplan braucht Bodenfreiheit zur fixierten Summenzeile, sonst
+   faellt sein Abschluss aus der ersten Bildschirmseite. */
+.gesamtplan { max-height: calc(100vh - var(--fuss) - 2.5rem); }
+
+/* ── Die fixierte Summenzeile darf die Rollflaeche nicht aufspannen ──────── */
+/* Ein position:fixed-Element wird ueber left/right vom Viewport bemessen,
+   sein ueberlaufender Inhalt vergroessert aber die Rollflaeche — die dann
+   wieder seine eigene Breite bestimmt. Diese Rueckkopplung hat das Dokument
+   bei 390 px auf 449 px aufgezogen. `clip` bricht sie; verloren geht nichts,
+   weil die Zeile ohnehin umbricht. */
+
+.summe { overflow-x: clip; }
+.summe > * { min-width: 0; }

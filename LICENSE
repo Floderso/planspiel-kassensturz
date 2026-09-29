@@ -1,0 +1,46 @@
+# Lizenzen
+
+## Eigener Code und Inhalte
+
+Copyright 2025–2026 Florian Aram Feuerriegel — kassensturz.org
+
+Lizenziert unter **Creative Commons Namensnennung 4.0 International
+(CC BY-4.0)**. Jede Quelldatei trägt den entsprechenden SPDX-Kopf:
+
+```
+// SPDX-License-Identifier: CC-BY-4.0
+```
+
+Du darfst das Material teilen und bearbeiten, auch kommerziell, solange
+du angemessene Urheberangaben machst, einen Link zur Lizenz beifügst und
+Änderungen kenntlich machst.
+
+- Kurzfassung: https://creativecommons.org/licenses/by/4.0/deed.de
+- Verbindlicher Volltext: https://creativecommons.org/licenses/by/4.0/legalcode.de
+
+> **Offen:** Der Lizenzvolltext sollte dieser Datei noch beigelegt werden.
+> Bis dahin gilt die verlinkte Fassung.
+
+---
+
+## Fremde Bestandteile
+
+Die folgenden Teile stehen **nicht** unter CC BY-4.0. Ihre Bedingungen
+gelten unabhängig davon und sind beim Ausrollen zu beachten.
+
+| Bestandteil | Lizenz | Was daraus folgt |
+|---|---|---|
+| **Bespoke Stencil** (Fontshare) | Fontshare Free License | **Die Schriftdatei darf nicht auf einen öffentlichen Server geladen werden** (FFL Abschnitt 27). Erlaubt ist, daraus ein Logo zu setzen und als Vektorgrafik zu exportieren. Deshalb liegen die Dateien in `.gitignore`. |
+| **Inter**, **Newsreader**, **JetBrains Mono** | SIL Open Font License 1.1 | Liegen seit 12.09.2026 in `fonts/` und werden selbst ausgeliefert — das ist erlaubt. **Offen:** Die drei `OFL.txt` müssen noch beigelegt werden, siehe `fonts/README.md`. |
+| **Hono** (`api/`) | MIT | unproblematisch |
+
+---
+
+## Wirtschaftsdaten und Formeln
+
+Die ökonomischen Annahmen der Rechenmodule sind in den
+`FORMEL_QUELLEN_*`-Objekten mit Fundstelle belegt (Institut, Jahr,
+Publikation). Die zugrunde liegenden Veröffentlichungen — BMF, Destatis,
+DIW, IW und andere — haben eigene Nutzungsbedingungen. Die Umsetzung als
+Formel im Code ist davon nicht berührt; eine Weitergabe der Originaldaten
+wäre es.

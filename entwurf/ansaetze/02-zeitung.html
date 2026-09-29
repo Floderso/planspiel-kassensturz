@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<!-- KONZEPTBILD, nicht funktionsfaehig. Zahlen echt aus der Engine. -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Die Zeitung von morgen — Konzeptbild</title>
+<link rel="stylesheet" href="../../css/schriften.css">
+<style>
+:root{
+  --zeitung:#F4F1E8; --tinte:#161511; --grau:#57534A; --linie:#BDB6A5;
+  --rot:#8C1D13; --blau:#1B3A5C;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#D9D4C6;color:var(--tinte);font-family:Newsreader,Georgia,serif;
+  font-size:17px;line-height:1.42;font-variant-numeric:tabular-nums}
+.hinweis{background:var(--tinte);color:var(--zeitung);font-family:Inter,sans-serif;
+  font-size:13px;padding:6px 20px}
+
+.blatt{max-width:1180px;margin:0 auto;background:var(--zeitung);
+  padding:0 30px 50px;box-shadow:0 0 26px rgba(0,0,0,.2);min-height:100vh}
+
+/* ── Kopf ───────────────────────────────────────────────────────────────── */
+.titelkopf{text-align:center;padding:24px 0 8px;border-bottom:1px solid var(--tinte)}
+.titelkopf .motto{font-family:Inter,sans-serif;font-size:11px;letter-spacing:.24em;
+  text-transform:uppercase;color:var(--grau)}
+.titelkopf h1{font-size:clamp(38px,8vw,74px);font-weight:600;letter-spacing:-.03em;
+  line-height:.95;margin:4px 0 6px}
+.impressum{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;
+  font-family:Inter,sans-serif;font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--grau);border-top:1px solid var(--tinte);border-bottom:3px double var(--tinte);
+  padding:5px 0;margin-top:6px}
+
+/* ── Aufmacher ──────────────────────────────────────────────────────────── */
+.aufmacher{padding:22px 0 16px;border-bottom:1px solid var(--linie)}
+.dachzeile{font-family:Inter,sans-serif;font-size:12px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--rot);font-weight:700}
+.aufmacher h2{font-size:clamp(30px,5.4vw,52px);line-height:1.02;letter-spacing:-.025em;
+  font-weight:600;margin:6px 0 8px;max-width:22ch}
+.unterzeile{font-size:20px;color:var(--grau);max-width:56ch;line-height:1.3}
+.autor{font-family:Inter,sans-serif;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--grau);margin-top:12px}
+
+.satz{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:0 30px;padding-top:18px}
+.spalten{columns:2;column-gap:28px;column-rule:1px solid var(--linie);font-size:16px}
+.spalten p{margin-bottom:.7em;text-align:justify;hyphens:auto}
+.spalten p:first-child::first-letter{font-size:3.1em;float:left;line-height:.82;
+  padding:.04em .09em 0 0;font-weight:600}
+.spalten b{font-weight:600}
+
+/* ── Der Kurszettel: hier stehen die Stellgroessen ──────────────────────── */
+.kasten{border:1px solid var(--tinte);padding:12px 14px 14px;margin-bottom:20px;background:#EEEADD}
+.kasten h3{font-family:Inter,sans-serif;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  border-bottom:1px solid var(--tinte);padding-bottom:4px;margin-bottom:8px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td{padding:3px 0;border-bottom:1px dotted var(--linie)}
+td+td{text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px}
+tr.neu td{font-weight:600}
+tr.neu td+td{color:var(--rot)}
+.kasten .quelle{font-family:Inter,sans-serif;font-size:10px;color:var(--grau);margin-top:7px;
+  letter-spacing:.04em}
+
+/* ── Saeulen, im Stil eines Zeitungsschaubilds ──────────────────────────── */
+.grafik{border:1px solid var(--tinte);padding:12px 14px 14px;margin-bottom:20px}
+.grafik h3{font-family:Inter,sans-serif;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  margin-bottom:2px}
+.grafik .bu{font-family:Inter,sans-serif;font-size:11px;color:var(--grau);margin-bottom:12px}
+.saeulen{display:flex;align-items:flex-end;gap:16px;height:124px;
+  border-bottom:2px solid var(--tinte);padding:0 4px}
+.saeulen div{flex:1;text-align:center;position:relative}
+.saeulen i{display:block;margin:0 auto;width:74%;
+  background:repeating-linear-gradient(45deg,var(--blau),var(--blau) 3px,#2E5B85 3px,#2E5B85 6px)}
+.saeulen i.h{background:repeating-linear-gradient(45deg,var(--rot),var(--rot) 3px,#B03426 3px,#B03426 6px)}
+.saeulen span{position:absolute;top:-17px;left:0;right:0;font-family:'JetBrains Mono',monospace;
+  font-size:12px;font-weight:700}
+.saeulen em{font-style:normal;font-family:Inter,sans-serif;font-size:10px;
+  display:block;margin-top:5px;color:var(--grau);letter-spacing:.04em}
+
+/* ── Stimme aus dem Land ────────────────────────────────────────────────── */
+.stimme{border-top:3px double var(--tinte);border-bottom:3px double var(--tinte);
+  padding:14px 0;margin-bottom:20px}
+.stimme blockquote{font-size:21px;line-height:1.25;font-style:italic;max-width:30ch}
+.stimme figcaption{font-family:Inter,sans-serif;font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--grau);margin-top:9px}
+
+.notiz{font-family:Inter,sans-serif;font-size:12px;color:var(--grau);
+  border-top:1px solid var(--linie);padding-top:10px;margin-top:6px;max-width:70ch}
+@media(max-width:60rem){.satz{grid-template-columns:1fr}.spalten{columns:1}}
+</style>
+</head>
+<body>
+<p class="hinweis">Konzeptbild 2 von 10 — nicht bedienbar. Alle Zahlen echt aus der Simulation gerechnet.</p>
+
+<div class="blatt">
+<header class="titelkopf">
+  <p class="motto">Unabhängig seit der ersten Runde</p>
+  <h1>Der Kassensturz</h1>
+  <div class="impressum">
+    <span>Ausgabe zur Runde 1 von 5</span>
+    <span>Kabinett Team A</span>
+    <span>Haushaltsjahr 2026</span>
+  </div>
+</header>
+
+<section class="aufmacher">
+  <p class="dachzeile">Kabinett beschließt Steuerpaket</p>
+  <h2>Spitzensteuer auf 62 Prozent — Loch im Haushalt halbiert sich</h2>
+  <p class="unterzeile">Die Koalition hebt zugleich den CO₂-Preis auf 140 Euro je Tonne an.
+     Die Emissionen fallen um ein Viertel. Die Schuldenbremse bleibt gerissen.</p>
+  <p class="autor">Redaktion Wirtschaft · aus den Zahlen des Kabinetts</p>
+</section>
+
+<div class="satz">
+  <div class="spalten">
+    <p>Das Kabinett hat in seiner ersten Sitzung zwei Stellgrößen deutlich bewegt. Der
+       Spitzensteuersatz steigt von 45 auf <b>62 Prozent</b>, der Preis je Tonne Kohlendioxid
+       von 55 auf <b>140 Euro</b>. Alle übrigen Sätze bleiben unverändert.</p>
+    <p>Die Einnahmen des Staates steigen dadurch von 1.642,9 auf <b>1.694,6 Milliarden Euro</b>.
+       Da die Ausgaben mit 1.763,7 Milliarden nahezu gleich bleiben, schrumpft der Fehlbetrag
+       von 119 auf <b>69 Milliarden Euro</b>.</p>
+    <p>Bei der Verteilung ist die Wirkung deutlich: der Gini-Koeffizient sinkt von 0,377 auf
+       <b>0,351</b>, das Palma-Verhältnis von 1,72 auf 1,52. Das Armutsrisiko geht von 15,7
+       auf 15,0 Prozent zurück — auch, weil das Klimageld sich mit dem CO₂-Preis auf
+       23,9 Milliarden Euro fast verdoppelt.</p>
+    <p>Kritiker verweisen auf die <b>Zusatzlast</b>: die Wohlfahrtsverluste der Besteuerung
+       steigen von 19,6 auf 37,7 Milliarden Euro. Jeder eingenommene Euro kostet die
+       Volkswirtschaft also mehr als zuvor.</p>
+    <p>Die Schuldenbremse ist nicht eingehalten. Die Neuverschuldung entspricht
+       <b>1,55 Prozent</b> der Wirtschaftsleistung; erlaubt sind 0,35 Prozent. Das Kabinett
+       hat vier weitere Runden, um die Lücke zu schließen.</p>
+  </div>
+
+  <aside>
+    <div class="kasten">
+      <h3>Kurszettel — beschlossene Sätze</h3>
+      <table>
+        <tr><td>Grundfreibetrag</td><td>12.348 €</td></tr>
+        <tr><td>Eingangssteuersatz</td><td>14,0 %</td></tr>
+        <tr class="neu"><td>Spitzensteuersatz</td><td>62,0 % ▲</td></tr>
+        <tr><td>Umsatzsteuer</td><td>19,0 %</td></tr>
+        <tr><td>Erbschaftsteuer</td><td>20 %</td></tr>
+        <tr><td>Körperschaftsteuer</td><td>15,0 %</td></tr>
+        <tr><td>Rentenbeitrag</td><td>18,6 %</td></tr>
+        <tr><td>Bürgergeld</td><td>563 €/Mon.</td></tr>
+        <tr class="neu"><td>CO₂-Preis</td><td>140 €/t ▲</td></tr>
+        <tr><td>Klimageld</td><td>ja</td></tr>
+      </table>
+      <p class="quelle">Quelle: Beschluss des Kabinetts, Runde 1</p>
+    </div>
+
+    <div class="grafik">
+      <h3>Haushaltssaldo</h3>
+      <p class="bu">in Milliarden Euro, Fehlbetrag</p>
+      <div class="saeulen">
+        <div><span>−119</span><i class="h" style="height:112px"></i><em>Vorher</em></div>
+        <div><span>−69</span><i style="height:65px"></i><em>Beschluss</em></div>
+        <div><span>−16</span><i style="height:15px"></i><em>Erlaubt</em></div>
+      </div>
+    </div>
+
+    <figure class="stimme">
+      <blockquote>„Beim Heizöl merke ich das sofort. Das Klimageld kommt aber erst im Sommer.“</blockquote>
+      <figcaption>Pflegekraft, 3. Einkommensdezil</figcaption>
+    </figure>
+  </aside>
+</div>
+
+<p class="notiz"><b>Die Idee:</b> Die Oberfläche ist die Zeitung von morgen. Studierende stellen
+  keine Regler ein, sie <i>machen Schlagzeilen</i> — und die Zeitung schreibt sich neu, sobald ein
+  Beschluss fällt. Die Zahl steht im Kurszettel, die Bedeutung im Text, die Betroffenheit im Zitat.
+  <b>Was das kostet:</b> Viel Fließtext muss aus wenigen Zahlen erzeugt werden; die Sätze müssen
+  bei jeder Parameterkombination stimmen. Und eine Zeitung ist kein Werkzeug: wer schnell
+  vergleichen will, blättert.</p>
+</div>
+</body>
+</html>

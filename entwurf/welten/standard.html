@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<!-- KONZEPTBILD, nicht funktionsfaehig. Zahlen echt aus der Engine.
+     Der Kategoriestandard, handwerklich sauber ausgefuehrt — kein Strohmann. -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Der Kategoriestandard — Konzeptbild</title>
+<link rel="stylesheet" href="../../css/schriften.css">
+<style>
+:root{
+  --grund:#F8FAFC; --karte:#FFFFFF; --rand:#E2E8F0;
+  --tinte:#0F172A; --zweit:#475569; --matt:#64748B;
+  --akzent:#2563EB; --akzent-w:#EFF6FF;
+  --gut:#15803D; --schlecht:#B91C1C; --warn:#A16207;
+  --r:10px; --schatten:0 1px 2px rgba(15,23,42,.06), 0 4px 12px rgba(15,23,42,.05);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--grund);color:var(--tinte);font-family:Inter,system-ui,sans-serif;
+  font-size:15px;line-height:1.5;font-variant-numeric:tabular-nums}
+::selection{background:var(--akzent);color:#fff}
+
+.hinweis{background:var(--tinte);color:#CBD5E1;font-size:13px;padding:7px 28px}
+
+header.top{background:var(--karte);border-bottom:1px solid var(--rand);
+  padding:0 28px;height:60px;display:flex;align-items:center;gap:18px}
+.logo{font-weight:700;font-size:16px;letter-spacing:-.01em}
+.logo span{color:var(--akzent)}
+.top .meta{font-size:13px;color:var(--zweit)}
+.top .rechts{margin-left:auto;display:flex;gap:10px;align-items:center}
+.pill{background:var(--akzent-w);color:var(--akzent);font-size:12px;font-weight:600;
+  padding:5px 11px;border-radius:999px}
+
+.stepper{background:var(--karte);border-bottom:1px solid var(--rand);padding:12px 28px;
+  display:flex;gap:8px;overflow-x:auto}
+.step{font-size:13px;padding:7px 15px;border-radius:999px;border:1px solid var(--rand);
+  color:var(--matt);white-space:nowrap}
+.step.aktiv{background:var(--akzent);border-color:var(--akzent);color:#fff;font-weight:600}
+.step.fertig{border-color:#BBF7D0;background:#F0FDF4;color:var(--gut)}
+
+main{padding:22px 28px 40px;display:grid;gap:18px;
+  grid-template-columns:minmax(0,300px) minmax(0,1fr)}
+
+.kpi-reihe{grid-column:1/-1;display:grid;gap:14px;grid-template-columns:repeat(4,minmax(0,1fr))}
+.kpi{background:var(--karte);border:1px solid var(--rand);border-radius:var(--r);
+  box-shadow:var(--schatten);padding:16px 18px}
+.kpi .label{font-size:12px;color:var(--matt);font-weight:500;letter-spacing:.01em}
+.kpi .zahl{font-size:30px;font-weight:700;letter-spacing:-.025em;margin-top:5px;line-height:1.1}
+.kpi .zahl small{font-size:14px;font-weight:500;color:var(--matt)}
+.kpi .fuss{display:flex;align-items:center;gap:7px;margin-top:9px}
+.chip{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px}
+.chip.gut{background:#F0FDF4;color:var(--gut)}
+.chip.schlecht{background:#FEF2F2;color:var(--schlecht)}
+.chip.neutral{background:#F1F5F9;color:var(--zweit)}
+.kpi .spark{height:26px;margin-top:11px;display:flex;align-items:flex-end;gap:2px}
+.kpi .spark i{flex:1;background:var(--akzent);opacity:.25;border-radius:1px}
+
+.panel{background:var(--karte);border:1px solid var(--rand);border-radius:var(--r);
+  box-shadow:var(--schatten);padding:18px}
+.panel h2{font-size:14px;font-weight:700;letter-spacing:-.005em}
+.panel .unter{font-size:12px;color:var(--matt);margin-top:2px}
+
+.regler{margin-top:16px}
+.regler .kopf{display:flex;justify-content:space-between;align-items:baseline;font-size:13px}
+.regler .kopf b{font-size:14px;font-weight:600}
+.regler .kopf .v{font-weight:700;font-size:15px}
+.bahn{height:6px;border-radius:999px;background:#E2E8F0;margin-top:9px;position:relative}
+.bahn i{position:absolute;left:0;top:0;height:6px;border-radius:999px;background:var(--akzent)}
+.bahn u{position:absolute;top:-4px;width:14px;height:14px;border-radius:50%;background:#fff;
+  border:2px solid var(--akzent);box-shadow:0 1px 3px rgba(15,23,42,.18)}
+.regler .sq{font-size:11px;color:var(--matt);margin-top:6px}
+
+.diagramm{height:172px;margin-top:16px;display:flex;align-items:flex-end;gap:10px;
+  padding-bottom:22px;border-bottom:1px solid var(--rand);position:relative}
+.diagramm .saeule{flex:1;display:flex;align-items:flex-end;justify-content:center;gap:3px;position:relative}
+.diagramm .saeule i{border-radius:3px 3px 0 0;display:block;width:44%;max-width:22px}
+.diagramm .saeule span{position:absolute;bottom:-20px;left:0;right:0;text-align:center;
+  font-size:11px;color:var(--matt)}
+.legende{display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--zweit)}
+.legende b{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+
+.tabelle{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px}
+.tabelle th{text-align:left;font-size:11px;letter-spacing:.03em;text-transform:uppercase;
+  color:var(--matt);font-weight:600;padding:0 10px 8px 0;border-bottom:1px solid var(--rand)}
+.tabelle td{padding:9px 10px 9px 0;border-bottom:1px solid #F1F5F9}
+.tabelle td.r,.tabelle th.r{text-align:right}
+
+.leiste{grid-column:1/-1;background:var(--karte);border:1px solid var(--rand);
+  border-radius:var(--r);box-shadow:var(--schatten);padding:14px 18px;
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.leiste .t{font-size:13px;color:var(--zweit)}
+.leiste .t b{color:var(--tinte)}
+.knopf{margin-left:auto;background:var(--akzent);color:#fff;font-weight:600;font-size:14px;
+  padding:10px 20px;border-radius:8px;box-shadow:0 1px 2px rgba(37,99,235,.35)}
+
+@media(max-width:64rem){main{grid-template-columns:1fr}.kpi-reihe{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:40rem){.kpi-reihe{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<p class="hinweis">Konzeptbild — nicht bedienbar. Alle Zahlen sind echt aus der Simulation gerechnet.</p>
+
+<header class="top">
+  <span class="logo">Kassensturz <span>Planspiel</span></span>
+  <span class="meta">Team A · Legislatur 2025–2028</span>
+  <div class="rechts">
+    <span class="pill">Periode 1 von 5</span>
+    <span class="meta">Stufe fortgeschritten</span>
+  </div>
+</header>
+
+<nav class="stepper" aria-label="Perioden">
+  <span class="step fertig">2021–2024 ✓</span>
+  <span class="step aktiv">2025–2028</span>
+  <span class="step">2029–2032</span>
+  <span class="step">2033–2036</span>
+  <span class="step">2037–2040</span>
+  <span class="step">2041–2044</span>
+</nav>
+
+<main>
+
+  <div class="kpi-reihe">
+    <div class="kpi">
+      <p class="label">Haushaltssaldo</p>
+      <p class="zahl">−69 <small>Mrd. €</small></p>
+      <p class="fuss"><span class="chip gut">+50 Mrd.</span><span class="label">ggü. Vorperiode</span></p>
+      <div class="spark"><i style="height:38%"></i><i style="height:44%"></i><i style="height:40%"></i><i style="height:52%"></i><i style="height:74%;opacity:.85"></i></div>
+    </div>
+    <div class="kpi">
+      <p class="label">Gini-Ungleichheit</p>
+      <p class="zahl">0,351</p>
+      <p class="fuss"><span class="chip gut">−0,026</span><span class="label">ggü. Vorperiode</span></p>
+      <div class="spark"><i style="height:82%"></i><i style="height:80%"></i><i style="height:81%"></i><i style="height:78%"></i><i style="height:62%;opacity:.85"></i></div>
+    </div>
+    <div class="kpi">
+      <p class="label">Emissionen</p>
+      <p class="zahl">244 <small>Mio. t</small></p>
+      <p class="fuss"><span class="chip gut">−83 Mio. t</span><span class="label">ggü. Vorperiode</span></p>
+      <div class="spark"><i style="height:88%"></i><i style="height:86%"></i><i style="height:84%"></i><i style="height:80%"></i><i style="height:56%;opacity:.85"></i></div>
+    </div>
+    <div class="kpi">
+      <p class="label">Bruttoinlandsprodukt</p>
+      <p class="zahl">4.470 <small>Mrd. €</small></p>
+      <p class="fuss"><span class="chip neutral">±0,0 %</span><span class="label">ggü. Vorperiode</span></p>
+      <div class="spark"><i style="height:60%"></i><i style="height:62%"></i><i style="height:63%"></i><i style="height:64%"></i><i style="height:64%;opacity:.85"></i></div>
+    </div>
+  </div>
+
+  <section class="panel">
+    <h2>Steuerpolitik</h2>
+    <p class="unter">7 von 35 Parametern · Stufe fortgeschritten</p>
+
+    <div class="regler">
+      <div class="kopf"><b>Spitzensteuersatz</b><span class="v">62,0 %</span></div>
+      <div class="bahn"><i style="width:76%"></i><u style="left:calc(76% - 7px)"></u></div>
+      <p class="sq">Status quo 45,0 % · Spanne 20–75 %</p>
+    </div>
+
+    <div class="regler">
+      <div class="kopf"><b>CO₂-Preis</b><span class="v">140 €/t</span></div>
+      <div class="bahn"><i style="width:47%"></i><u style="left:calc(47% - 7px)"></u></div>
+      <p class="sq">Status quo 55 €/t · Spanne 0–300 €/t</p>
+    </div>
+
+    <div class="regler">
+      <div class="kopf"><b>Grundfreibetrag</b><span class="v">12.348 €</span></div>
+      <div class="bahn"><i style="width:41%"></i><u style="left:calc(41% - 7px)"></u></div>
+      <p class="sq">Status quo 12.348 € · unverändert</p>
+    </div>
+
+    <div class="regler">
+      <div class="kopf"><b>Umsatzsteuer, Regelsatz</b><span class="v">19,0 %</span></div>
+      <div class="bahn"><i style="width:63%"></i><u style="left:calc(63% - 7px)"></u></div>
+      <p class="sq">Status quo 19,0 % · unverändert</p>
+    </div>
+
+    <div class="regler">
+      <div class="kopf"><b>Bürgergeld</b><span class="v">563 €/Monat</span></div>
+      <div class="bahn"><i style="width:37%"></i><u style="left:calc(37% - 7px)"></u></div>
+      <p class="sq">Status quo 563 € · unverändert</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Aufkommen nach Steuerart</h2>
+    <p class="unter">Mrd. € · Beschluss gegen Status quo · größte Säule 431 Mrd. €</p>
+
+    <div class="diagramm">
+      <div class="saeule"><i style="height:150px;background:var(--akzent)"></i><i style="height:129px;background:#BFDBFE"></i><span>ESt</span></div>
+      <div class="saeule"><i style="height:96px;background:var(--akzent)"></i><i style="height:101px;background:#BFDBFE"></i><span>USt</span></div>
+      <div class="saeule"><i style="height:113px;background:var(--akzent)"></i><i style="height:113px;background:#BFDBFE"></i><span>RV</span></div>
+      <div class="saeule"><i style="height:99px;background:var(--akzent)"></i><i style="height:99px;background:#BFDBFE"></i><span>KV</span></div>
+      <div class="saeule"><i style="height:21px;background:var(--akzent)"></i><i style="height:21px;background:#BFDBFE"></i><span>KSt</span></div>
+      <div class="saeule"><i style="height:20px;background:var(--akzent)"></i><i style="height:20px;background:#BFDBFE"></i><span>GewSt</span></div>
+      <div class="saeule"><i style="height:4px;background:var(--akzent)"></i><i style="height:2px;background:#BFDBFE"></i><span>CO₂</span></div>
+      <div class="saeule"><i style="height:4px;background:var(--akzent)"></i><i style="height:4px;background:#BFDBFE"></i><span>ErbSt</span></div>
+    </div>
+    <p class="legende"><span><b style="background:var(--akzent)"></b>Beschluss</span><span><b style="background:#BFDBFE"></b>Status quo</span></p>
+
+    <table class="tabelle">
+      <thead><tr><th>Position</th><th class="r">Status quo</th><th class="r">Beschluss</th><th class="r">Veränderung</th></tr></thead>
+      <tbody>
+        <tr><td>Einnahmen gesamt</td><td class="r">1.643</td><td class="r">1.695</td><td class="r" style="color:var(--gut)">+52</td></tr>
+        <tr><td>Ausgaben gesamt</td><td class="r">1.762</td><td class="r">1.764</td><td class="r" style="color:var(--schlecht)">+2</td></tr>
+        <tr><td><b>Saldo</b></td><td class="r">−119</td><td class="r"><b>−69</b></td><td class="r" style="color:var(--gut)"><b>+50</b></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="leiste">
+    <span class="t">Periode <b>1</b> von 5</span>
+    <span class="t">Saldo <b>−69 Mrd. €</b></span>
+    <span class="t"><b>2</b> Parameter geändert</span>
+    <span class="t">Freigabe <b>2/4</b> Teams</span>
+    <span class="knopf">Periode abschließen</span>
+  </div>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zehn Ansätze für die Spielfläche</title>
+<link rel="stylesheet" href="../../css/schriften.css">
+<style>
+:root{--grund:#1A1C1F;--karte:#24272B;--rand:#3A3F45;--licht:#EDEFF1;--matt:#9AA3AC;--akz:#E0C05A}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--grund);color:var(--licht);font-family:Inter,system-ui,sans-serif;
+  font-size:16px;line-height:1.45}
+.kopf{padding:28px 26px 18px;border-bottom:1px solid var(--rand)}
+.kopf h1{font-size:28px;letter-spacing:-.02em}
+.kopf p{color:var(--matt);margin-top:8px;max-width:78ch;font-size:15px}
+.kopf p b{color:var(--licht)}
+main{padding:24px 26px 20px;display:grid;gap:18px;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,282px),1fr));max-width:1560px}
+a.karte{display:flex;flex-direction:column;text-decoration:none;color:inherit;
+  background:var(--karte);border:1px solid var(--rand);overflow:hidden}
+a.karte:hover{border-color:var(--akz)}
+a.karte:focus-visible{outline:3px solid var(--akz);outline-offset:2px}
+.probe{height:128px;position:relative;overflow:hidden;border-bottom:1px solid var(--rand)}
+.txt{padding:13px 15px 16px;display:flex;flex-direction:column;flex:1}
+.nr{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--akz)}
+h2{font-size:18px;letter-spacing:-.01em;margin:3px 0 6px}
+.these{font-size:13.5px;color:var(--matt);flex:1}
+.achse{font-family:'JetBrains Mono',monospace;font-size:11px;color:#869098;margin-top:10px;
+  border-top:1px solid var(--rand);padding-top:8px}
+.stand{font-size:11px;font-weight:700;letter-spacing:.06em;margin-top:6px}
+.stand.gebaut{color:#7BD3A2}
+.stand.bild{color:#E0A96B}
+a.karte:has(.stand.gebaut){border-color:#3E6B54}
+a.karte:has(.stand.gebaut):hover{border-color:#7BD3A2}
+.fuss{padding:8px 26px 48px;max-width:1560px}
+.fuss p{font-size:13.5px;color:var(--matt);max-width:80ch;margin-bottom:8px}
+.fuss a{color:var(--akz)}
+
+/* Farbproben, je Ansatz aus seiner eigenen Palette */
+.p01{background:#20262B}
+.p01 u{position:absolute;left:0;right:0;top:0;height:42px;background:#161A1E}
+.p01 i{position:absolute;bottom:14px;width:9px;background:#D6DEE3}
+.p01 i:nth-of-type(1){left:26px;height:54px}.p01 i:nth-of-type(2){left:58px;height:34px}
+.p01 i:nth-of-type(3){left:90px;height:66px}.p01 i:nth-of-type(4){left:122px;height:44px}
+.p01 b{position:absolute;border-radius:50%;width:14px;height:14px;background:#C9A227}
+.p01 b:nth-of-type(1){left:23px;bottom:66px}.p01 b:nth-of-type(2){left:55px;bottom:46px}
+.p01 b:nth-of-type(3){left:87px;bottom:78px}.p01 b:nth-of-type(4){left:119px;bottom:56px}
+.p01 em{position:absolute;right:20px;top:12px;width:13px;height:13px;border-radius:50%;background:#D14A3C;
+  box-shadow:0 0 11px rgba(209,74,60,.8)}
+
+.p02{background:#F4F1E8}
+.p02 u{position:absolute;left:16px;right:16px;top:16px;height:14px;background:#161511}
+.p02 i{position:absolute;height:1px;background:#BDB6A5;left:16px;right:16px}
+.p02 i:nth-of-type(1){top:40px}.p02 i:nth-of-type(2){top:46px}.p02 i:nth-of-type(3){top:52px}
+.p02 i:nth-of-type(4){top:58px}.p02 i:nth-of-type(5){top:64px}
+.p02 b{position:absolute;left:16px;top:74px;width:112px;height:40px;
+  background:repeating-linear-gradient(45deg,#1B3A5C,#1B3A5C 3px,#2E5B85 3px,#2E5B85 6px)}
+.p02 em{position:absolute;right:16px;top:74px;width:3px;height:40px;background:#8C1D13}
+
+.p03{background:#F6F1E4}
+.p03 u{position:absolute;left:50%;top:22px;bottom:22px;width:8px;margin-left:-4px;background:#C8A53F}
+.p03 i{position:absolute;left:24px;right:24px;top:44px;height:7px;border-radius:4px;background:#C8A53F;
+  transform:rotate(7deg)}
+.p03 b{position:absolute;width:44px;height:15px;background:#EBE3D0;border:2px solid #1F5D4A;
+  left:26px;top:52px;transform:rotate(7deg)}
+.p03 em{position:absolute;width:44px;height:15px;background:#EBE3D0;border:2px solid #8E3620;
+  right:26px;top:70px;transform:rotate(7deg)}
+
+.p04{background:#2A2722}
+.p04 u{position:absolute;left:26px;top:0;width:104px;bottom:0;background:#FBFAF4}
+.p04 i{position:absolute;left:34px;width:88px;height:2px;background:#1A1814}
+.p04 i:nth-of-type(1){top:20px}.p04 i:nth-of-type(2){top:32px}.p04 i:nth-of-type(3){top:44px}
+.p04 i:nth-of-type(4){top:56px}.p04 i:nth-of-type(5){top:78px;height:3px}
+.p04 b{position:absolute;left:34px;top:90px;width:60px;height:8px;background:#A02A1C}
+.p04 em{position:absolute;right:22px;top:36px;width:56px;height:52px;background:#3A3630;
+  border:1px solid #514B42}
+
+.p05{background:#2B2622}
+.p05 i{position:absolute;background:#F7F4EC;box-shadow:3px 4px 0 rgba(0,0,0,.4)}
+.p05 i:nth-of-type(1){left:14px;top:16px;width:64px;height:76px;transform:rotate(-2deg)}
+.p05 i:nth-of-type(2){left:88px;top:22px;width:64px;height:76px;transform:rotate(1.6deg)}
+.p05 i:nth-of-type(3){left:162px;top:14px;width:64px;height:76px;transform:rotate(-1deg)}
+.p05 b{position:absolute;left:20px;top:22px;width:30px;height:9px;background:#153C8C}
+.p05 u{position:absolute;left:94px;top:28px;width:30px;height:9px;background:#0E7C6B}
+.p05 em{position:absolute;left:168px;top:20px;width:30px;height:9px;background:#C62368}
+
+.p06{background:linear-gradient(180deg,#0C1420 0%,#122033 58%,#071020 58.5%)}
+.p06 u{position:absolute;left:0;right:0;top:58%;border-top:2px dashed #F0B23C;
+  transform-origin:50% 0;transform:rotate(-4deg)}
+.p06 i{position:absolute;border-radius:50%;border:2px solid #2A3E56;background:#0A1320;
+  width:38px;height:38px;bottom:12px}
+.p06 i:nth-of-type(1){left:18px}.p06 i:nth-of-type(2){left:64px}.p06 i:nth-of-type(3){left:110px}
+.p06 b{position:absolute;width:2px;height:15px;background:#F0B23C;bottom:29px}
+.p06 b:nth-of-type(1){left:37px;transform:rotate(-30deg);transform-origin:bottom}
+.p06 b:nth-of-type(2){left:83px;transform:rotate(20deg);transform-origin:bottom}
+.p06 b:nth-of-type(3){left:129px;transform:rotate(-8deg);transform-origin:bottom}
+.p06 em{position:absolute;right:18px;top:16px;width:26px;height:18px;background:#F0B23C}
+
+.p07{background:#F1EDE1}
+.p07 u{position:absolute;left:0;right:0;top:0;height:30px;background:#AFC6CC}
+.p07 i{position:absolute;border:1px solid #1B2019}
+.p07 i:nth-of-type(1){left:16px;top:34px;width:78px;height:32px;background:rgba(30,94,68,.34)}
+.p07 i:nth-of-type(2){left:100px;top:34px;width:74px;height:32px;background:rgba(43,76,126,.26)}
+.p07 i:nth-of-type(3){left:16px;top:72px;width:120px;height:40px;background:rgba(142,51,36,.24)}
+.p07 i:nth-of-type(4){left:142px;top:72px;width:60px;height:40px;background:rgba(122,90,18,.2)}
+.p07 b{position:absolute;right:18px;bottom:14px;width:26px;height:26px;border-radius:50%;
+  background:#FAF8F1;border:1px solid #1B2019}
+
+.p08{background:#E4EBDD;
+  background-image:repeating-linear-gradient(180deg,transparent 0 13px,rgba(95,122,82,.3) 13px 14px)}
+.p08 u{position:absolute;left:50%;top:0;bottom:0;width:2px;background:#5F7A52}
+.p08 i{position:absolute;height:2px;background:#17200F}
+.p08 i:nth-of-type(1){left:18px;width:82px;top:24px}
+.p08 i:nth-of-type(2){left:18px;width:64px;top:52px}
+.p08 i:nth-of-type(3){right:18px;width:82px;top:24px}
+.p08 i:nth-of-type(4){right:18px;width:70px;top:52px}
+.p08 b{position:absolute;left:18px;right:18px;bottom:26px;height:3px;background:#1E3B6E}
+.p08 em{position:absolute;left:14px;top:0;bottom:0;width:1px;background:#8A2118}
+
+.p09{background:#40514A}
+.p09 i{position:absolute;background:#D8C9A6;box-shadow:4px 5px 12px rgba(0,0,0,.4)}
+.p09 i:nth-of-type(1){left:14px;top:14px;width:70px;height:48px;transform:rotate(-2deg)}
+.p09 i:nth-of-type(2){left:96px;top:12px;width:70px;height:48px;transform:rotate(1.4deg)}
+.p09 b{position:absolute;left:24px;right:24px;bottom:14px;height:44px;background:#FBF8F0;
+  box-shadow:0 6px 16px rgba(0,0,0,.45)}
+.p09 u{position:absolute;left:18px;top:10px;width:26px;height:7px;background:#1F4A7A}
+.p09 em{position:absolute;right:16px;top:44px;width:38px;height:28px;background:#F5E67E;
+  transform:rotate(5deg);box-shadow:2px 3px 7px rgba(0,0,0,.35)}
+
+.p10{background:#12100E}
+.p10 u{position:absolute;left:50%;top:10px;width:108px;height:108px;margin-left:-54px;
+  border-radius:50%;border:2px solid #38322A;background:#1C1915}
+.p10 i{position:absolute;left:50%;top:64px;width:2px;height:52px;background:#E0C05A;
+  transform-origin:top;transform:rotate(0deg)}
+.p10 b{position:absolute;left:50%;top:64px;width:2px;height:52px;background:#C4663E;
+  transform-origin:top;transform:rotate(118deg)}
+.p10 em{position:absolute;left:50%;top:60px;width:9px;height:9px;margin-left:-4px;
+  border-radius:50%;background:#E0C05A}
+</style>
+</head>
+<body>
+
+<header class="kopf">
+  <h1>Zehn Ansätze für die Spielfläche</h1>
+  <p>Zehn <b>Organisationsideen</b>, nicht zehn Anstriche: jeder Entwurf ordnet dieselbe Aufgabe
+     nach einer anderen Achse — Verriegelung, Erzählung, Gleichgewicht, Beleg, Öffentlichkeit,
+     Navigation, Raum, Buchführung, Aushandlung, Zeit. Jeder Entwurf nennt am Fuß, was er
+     gut kann <b>und was er kostet</b>.</p>
+  <p><b>Fünf davon sind ausgearbeitet und bedienbar</b> — sie rechnen mit der echten Engine
+     über alle fünf Runden, samt Periodenübergang, Fehlerbehandlung und Quellenapparat.
+     Die übrigen fünf sind weiterhin Konzeptbilder: nicht bedienbar, aber mit echten Zahlen
+     aus derselben Simulation.</p>
+</header>
+
+<main>
+
+  <a class="karte" href="01-stellwerk.html">
+    <div class="probe p01"><u></u><em></em><i></i><i></i><i></i><i></i><b></b><b></b><b></b><b></b></div>
+    <div class="txt"><p class="nr">01</p><h2>Das Stellwerk</h2>
+      <p class="these">Kein Hebel steht für sich. Wer einen umlegt, stellt eine Fahrstraße und
+         sperrt andere Wege — erst wenn alle Ressorts eingestellt sind, wird verriegelt.</p>
+      <p class="achse">Achse: Verriegelung · Abhängigkeit</p>
+      <p class="stand bild">Konzeptbild</p></div>
+  </a>
+
+  <a class="karte" href="02-zeitung.html">
+    <div class="probe p02"><u></u><i></i><i></i><i></i><i></i><i></i><b></b><em></em></div>
+    <div class="txt"><p class="nr">02</p><h2>Die Zeitung von morgen</h2>
+      <p class="these">Die Oberfläche ist die Ausgabe von morgen. Man stellt keine Regler ein,
+         man macht Schlagzeilen — Zahl im Kurszettel, Bedeutung im Text, Betroffenheit im Zitat.</p>
+      <p class="achse">Achse: Erzählung · Öffentlichkeit</p>
+      <p class="stand bild">Konzeptbild</p></div>
+  </a>
+
+  <a class="karte" href="03-waage.html">
+    <div class="probe p03"><u></u><i></i><b></b><em></em></div>
+    <div class="txt"><p class="nr">03</p><h2>Die Waage</h2>
+      <p class="these">Der Saldo ist keine Zahl, sondern eine Lage. Jede Entscheidung ist ein
+         Gewicht, das sichtbar auf eine Seite wandert. Der Name wörtlich genommen.</p>
+      <p class="achse">Achse: Gleichgewicht · Körperlichkeit</p>
+      <p class="stand bild">Konzeptbild</p></div>
+  </a>
+
+  <a class="karte" href="04-kassenbon.html">
+    <div class="probe p04"><u></u><em></em><i></i><i></i><i></i><i></i><i></i><b></b></div>
+    <div class="txt"><p class="nr">04</p><h2>Der Kassenbon</h2>
+      <p class="these">Der Bon druckt mit. Jede Entscheidung wird als Zeile gesetzt, Stornos
+         bleiben durchgestrichen stehen — am Ende geht die Lade auf.</p>
+      <p class="achse">Achse: Beleg · Nachvollziehbarkeit</p>
+      <p class="stand gebaut">bedienbar · echte Engine</p></div>
+  </a>
+
+  <a class="karte" href="05-plakat.html">
+    <div class="probe p05"><i></i><i></i><i></i><b></b><u></u><em></em></div>
+    <div class="txt"><p class="nr">05</p><h2>Die Litfaßsäule</h2>
+      <p class="these">Jede Entscheidung muss sich einen Satz leisten, mit dem man vor die
+         Leute treten kann. Offene Flächen zeigen, welches Ressort geschwiegen hat.</p>
+      <p class="achse">Achse: Rechtfertigung · Kampagne</p>
+      <p class="stand gebaut">bedienbar · echte Engine</p></div>
+  </a>
+
+  <a class="karte" href="06-brueckenwache.html">
+    <div class="probe p06"><u></u><em></em><i></i><i></i><i></i><b></b><b></b><b></b></div>
+    <div class="txt"><p class="nr">06</p><h2>Die Brückenwache</h2>
+      <p class="these">Ein Kurs hat Trägheit. Die Brücke zeigt nicht nur, wo man steht, sondern
+         wohin man bei diesem Ruderwinkel bis 2030 läuft.</p>
+      <p class="achse">Achse: Navigation · Vorausschau</p>
+      <p class="stand gebaut">bedienbar · echte Engine</p></div>
+  </a>
+
+  <a class="karte" href="07-landkarte.html">
+    <div class="probe p07"><u></u><i></i><i></i><i></i><i></i><b></b></div>
+    <div class="txt"><p class="nr">07</p><h2>Die Landkarte</h2>
+      <p class="these">Verteilung hat einen Ort. Ein Gini von 0,351 sagt niemandem etwas —
+         „der Industriegürtel trägt die Kosten“ sofort. <b>Achtung:</b> das Modell rechnet nicht regional.</p>
+      <p class="achse">Achse: Raum · Betroffenheit</p>
+      <p class="stand bild">Konzeptbild</p></div>
+  </a>
+
+  <a class="karte" href="08-kassenbuch.html">
+    <div class="probe p08"><u></u><em></em><i></i><i></i><i></i><i></i><b></b></div>
+    <div class="txt"><p class="nr">08</p><h2>Das Kassenbuch</h2>
+      <p class="these">Jede Entscheidung ist eine Buchung mit Gegenkonto. Soll und Haben stehen
+         nebeneinander, die Differenz ist nicht behauptet, sondern ablesbar.</p>
+      <p class="achse">Achse: Buchführung · Prüfbarkeit</p>
+      <p class="stand gebaut">bedienbar · echte Engine</p></div>
+  </a>
+
+  <a class="karte" href="09-verhandlungstisch.html">
+    <div class="probe p09"><i></i><i></i><u></u><em></em><b></b></div>
+    <div class="txt"><p class="nr">09</p><h2>Der Verhandlungstisch</h2>
+      <p class="these">Vier Ressorts legen Mappen ein, keine Zahl wird verbindlich, bevor vier
+         Unterschriften stehen. Der Konflikt ist Gegenstand der Oberfläche.</p>
+      <p class="achse">Achse: Aushandlung · Mehrspieler</p>
+      <p class="stand gebaut">bedienbar · echte Engine</p></div>
+  </a>
+
+  <a class="karte" href="10-generationenuhr.html">
+    <div class="probe p10"><u></u><i></i><b></b><em></em></div>
+    <div class="txt"><p class="nr">10</p><h2>Die Generationenuhr</h2>
+      <p class="these">Die Achse ist die Zeit. Jede Entscheidung wird sofort übersetzt in das,
+         was sie 2045 bedeutet — 69 Milliarden heute sind 187 in zwanzig Jahren.</p>
+      <p class="achse">Achse: Zeit · Zinseszins</p>
+      <p class="stand bild">Konzeptbild</p></div>
+  </a>
+
+</main>
+
+<div class="fuss">
+  <p>Frühere Runde, vier Welten: <a href="../welten/index.html">entwurf/welten/</a> —
+     daraus gebaut und bedienbar sind <a href="../../haushaltsplan.html">Der Einzelplan</a>,
+     <a href="../../registerband.html">Das Acetat-Registerband</a> und
+     <a href="../../kabinett.html">Das Kabinett</a>.</p>
+  <p>Kein Entwurf rührt die Engine an; sie wird nur gelesen. Die fünf bedienbaren teilen sich
+     <code>js/entwurf/spielkern.js</code> — die Übersetzung zur Engine steht genau einmal, damit
+     sich die fünf im Aussehen unterscheiden und nicht in den Zahlen.</p>
+</div>
+
+</body>
+</html>

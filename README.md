@@ -14,6 +14,7 @@ Privates Repo — nicht öffentlich zugänglich.
 | -------- | ------ |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Systemüberblick, Komponentendiagramm, Datenfluss |
 | [docs/ENGINE.md](docs/ENGINE.md) | Wie die Rechenmodule funktionieren (ohne Code lesen zu müssen) |
+| [docs/RECHTSSTAND.md](docs/RECHTSSTAND.md) | Welcher Rechtsstand im Status quo steckt (Referenzjahr 2026) und was fehlt |
 | [docs/API.md](docs/API.md) | Alle API-Endpunkte mit Beispielen |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Schritt-für-Schritt: Frontend + Backend deployen |
 | [docs/adrs/](docs/adrs/) | Architekturentscheidungen (ADR 001–004) |

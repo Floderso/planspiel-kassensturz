@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kabinett — Kassensturz Planspiel</title>
+  <link rel="stylesheet" href="css/schriften.css">
+  <link rel="stylesheet" href="css/kabinett.css?v=9">
+</head>
+<body>
+
+<a class="sprung" href="#kabinett">Direkt zu den Stellgrößen</a>
+
+<header class="kopf">
+  <h1>Das Kabinett tagt</h1>
+  <p class="fakt">Runde <b>1</b> von 5 · Legislatur <b>2025–2028</b></p>
+  <p class="fakt">Team <b>A</b></p>
+  <p class="fakt rechts">Stufe <b>fortgeschritten</b></p>
+</header>
+
+<section class="rat" id="rat" aria-label="Der Rat — die vier Kennzahlen"></section>
+
+<section class="ausruf" aria-labelledby="ausruf-kopf">
+  <h2 id="ausruf-kopf"></h2>
+  <p id="ausruf-text"></p>
+</section>
+
+<main class="kabinett" id="kabinett" tabindex="-1"></main>
+
+<p class="vermerk" id="vermerk" hidden></p>
+
+<footer class="leiste">
+  <span class="t">Runde <b>1</b> von 5</span>
+  <span class="t">Abschluss <b id="fakt-abschluss">—</b></span>
+  <span class="t" id="fakt-bewegt">0 Stellgrößen bewegt</span>
+  <button type="button" class="schliessen" id="btn-schliessen" disabled>Runde schließen</button>
+</footer>
+
+<p id="live" role="status" aria-live="polite"
+   style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap"></p>
+
+<dialog class="vorlage" id="vorlage" aria-labelledby="v-kopf">
+  <div class="v-kopf"><h2 id="v-kopf">Runde 1 schließen</h2></div>
+  <p class="v-hinweis">Vorschau: Der Rundenwechsel ist in dieser Etappe noch nicht gebaut.
+     Der Beschluss wird vermerkt, die nächste Runde aber nicht freigegeben.</p>
+  <div class="v-rumpf" tabindex="0" role="group" aria-label="Bewegte Stellgrößen und erwartete Wirkung">
+    <h3 id="v-zahl">0 bewegte Stellgrößen</h3>
+    <table>
+      <thead><tr><th>Stellgröße</th><th>Rundenstart</th><th>Beschluss</th></tr></thead>
+      <tbody id="v-stell"></tbody>
+    </table>
+    <h3>Wie der Rat danach dasteht</h3>
+    <table>
+      <thead><tr><th>Kennzahl</th><th>Vorher</th><th>Nachher</th><th>Veränderung</th></tr></thead>
+      <tbody id="v-wirkung"></tbody>
+    </table>
+  </div>
+  <div class="v-fuss">
+    <button type="button" class="zurueck" id="btn-zurueck">Zurück zum Kabinett</button>
+    <button type="button" class="zurueck weiter" id="btn-fassen">Beschluss fassen</button>
+  </div>
+</dialog>
+
+<script type="module" src="js/kabinett.js?v=3"></script>
+</body>
+</html>

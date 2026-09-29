@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Die vier Welten zur Wahl</title>
+<link rel="stylesheet" href="../../css/schriften.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#EDEEE8;color:#191C1A;font-family:Inter,system-ui,sans-serif;font-size:16px;line-height:1.5}
+.kopf{border-bottom:2px solid #191C1A;padding:26px 28px 14px}
+.kopf h1{font-size:26px;letter-spacing:-.02em}
+.kopf p{color:#3E5560;margin-top:6px;max-width:74ch;font-size:15px}
+main{padding:24px 28px 60px;display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));max-width:1500px}
+a.karte{display:block;text-decoration:none;color:inherit;border:1px solid #B4C0C6;
+  background:#F4F5F0;padding:0 0 18px;transition:none}
+a.karte:hover{border-color:#191C1A}
+a.karte:focus-visible{outline:2px solid #1F4E6B;outline-offset:2px}
+.probe{height:132px;position:relative;overflow:hidden;border-bottom:1px solid #B4C0C6}
+.txt{padding:14px 18px 0}
+.kicker{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:#1F4E6B}
+h2{font-size:19px;letter-spacing:-.01em;margin:4px 0 6px}
+.these{font-size:14px;color:#3E5560}
+.stand{font-size:12px;margin-top:10px;font-weight:600}
+.gebaut{color:#2F4A3A}.bild{color:#6B2118}
+
+/* Farbproben, je Welt aus ihrer eigenen Palette */
+.p-einzelplan{background:#EDEEE8}
+.p-einzelplan i{position:absolute;left:0;right:0;height:1px;background:#B4C0C6}
+.p-einzelplan i:nth-child(1){top:34px}.p-einzelplan i:nth-child(2){top:58px}
+.p-einzelplan i:nth-child(3){top:82px}
+.p-einzelplan u{position:absolute;left:18px;top:14px;width:3px;height:104px;background:#191C1A}
+.p-einzelplan b{position:absolute;right:18px;top:44px;width:86px;height:9px;background:#2F4A3A}
+
+.p-tafelwerk{background:#F2F4F1}
+.p-tafelwerk i{position:absolute;left:18px;right:18px;height:1px;background:#AFBEC2}
+.p-tafelwerk i:nth-child(1){top:30px}.p-tafelwerk i:nth-child(2){top:48px}
+.p-tafelwerk i:nth-child(3){top:66px}.p-tafelwerk i:nth-child(4){top:84px}
+.p-tafelwerk u{position:absolute;left:18px;right:18px;top:16px;height:2px;background:#23536E}
+.p-tafelwerk b{position:absolute;left:50%;top:26px;width:1px;height:76px;background:#14181B}
+
+.p-registerband{background:#2B3A8C}
+.p-registerband i{position:absolute;left:14px;right:96px;height:1px;background:rgba(248,247,242,.4)}
+.p-registerband i:nth-child(1){top:44px}.p-registerband i:nth-child(2){top:66px}
+.p-registerband i:nth-child(3){top:88px}
+.p-registerband u{position:absolute;right:0;top:0;bottom:0;width:26px;background:#1C6B63}
+.p-registerband u::after{content:'';position:absolute;right:26px;top:22px;width:62px;height:88px;
+  background:rgba(248,247,242,.86);box-shadow:4px 5px 0 rgba(0,0,0,.2)}
+.p-registerband b{position:absolute;left:14px;top:18px;width:9px;height:9px;border-radius:50%;background:#262622}
+
+.p-standard{background:#F8FAFC}
+.p-standard i{position:absolute;top:18px;width:64px;height:40px;background:#fff;
+  border:1px solid #E2E8F0;border-radius:8px}
+.p-standard i:nth-child(1){left:18px}.p-standard i:nth-child(2){left:90px}
+.p-standard i:nth-child(3){left:162px}.p-standard i:nth-child(4){left:234px}
+.p-standard u{position:absolute;left:18px;right:18px;top:68px;height:46px;background:#fff;
+  border:1px solid #E2E8F0;border-radius:8px}
+.p-standard b{position:absolute;left:28px;top:88px;width:110px;height:6px;border-radius:999px;background:#2563EB}
+</style>
+</head>
+<body>
+
+<header class="kopf">
+  <h1>Die vier Welten, die zur Wahl standen</h1>
+  <p>Aus der Richtungsrunde vom 16.09.2026. Gebaut und bedienbar ist nur <b>Der Einzelplan</b>.
+     Die drei anderen sind Konzeptbilder: sie zeigen die Idee, nicht die Funktion — aber alle
+     Zahlen darin sind echt aus der Simulation gerechnet.</p>
+</header>
+
+<main>
+
+  <a class="karte" href="../../haushaltsplan.html">
+    <div class="probe p-einzelplan"><u></u><i></i><i></i><i></i><b></b></div>
+    <div class="txt">
+      <p class="kicker">Gewählt · gebaut</p>
+      <h2>Der Einzelplan</h2>
+      <p class="these">Das Planspiel ist ein Haushalt, also ist die Oberfläche der Haushaltsplan.
+         Der Spielzug ist das Überschreiben eines Titels im Dokument.</p>
+      <p class="stand gebaut">Vollständig gebaut, an der Engine, bedienbar</p>
+    </div>
+  </a>
+
+  <a class="karte" href="tafelwerk.html">
+    <div class="probe p-tafelwerk"><u></u><i></i><i></i><i></i><i></i><b></b></div>
+    <div class="txt">
+      <p class="kicker">Der Wurf</p>
+      <h2>Das Tafelwerk</h2>
+      <p class="these">Statistisches Jahrbuch. Die Tabelle ist das Instrument, jede Zahl trägt
+         ihre Fußnote, und die Wirkungsreihen hängen an einer gemeinsamen Achse.</p>
+      <p class="stand bild">Konzeptbild</p>
+    </div>
+  </a>
+
+  <a class="karte" href="registerband.html">
+    <div class="probe p-registerband"><b></b><i></i><i></i><i></i><u></u></div>
+    <div class="txt">
+      <p class="kicker">Herausforderer · competitive</p>
+      <h2>Das Acetat-Registerband</h2>
+      <p class="these">Jede Periode ein Registerblatt in Vollton, jede Auswertung eine gestanzte
+         Folie darüber. Lage ist der einzige Rang.</p>
+      <p class="stand bild">Konzeptbild</p>
+    </div>
+  </a>
+
+  <a class="karte" href="standard.html">
+    <div class="probe p-standard"><i></i><i></i><i></i><i></i><u></u><b></b></div>
+    <div class="txt">
+      <p class="kicker">Die Ausweichtür</p>
+      <h2>Der Kategoriestandard</h2>
+      <p class="these">Das Kennzahlen-Dashboard, wie es diese Kategorie baut — aber handwerklich
+         einwandfrei statt halb.</p>
+      <p class="stand bild">Konzeptbild</p>
+    </div>
+  </a>
+
+</main>
+</body>
+</html>

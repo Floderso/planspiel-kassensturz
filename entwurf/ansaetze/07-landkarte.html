@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- Copyright 2025 Florian Aram Feuerriegel — kassensturz.org -->
+<!-- KONZEPTBILD, nicht funktionsfaehig. Zahlen echt aus der Engine.
+     Die Regionen sind schematisch und tragen KEINE regionalisierten
+     Modellwerte — das Modell rechnet nicht regional. Siehe Fussnote. -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Die Landkarte — Konzeptbild</title>
+<link rel="stylesheet" href="../../css/schriften.css">
+<style>
+:root{
+  --pergament:#F1EDE1; --papier:#FAF8F1; --tinte:#1B2019; --grau:#5A6157;
+  --hoehe:#CFC6AE; --wasser:#AFC6CC; --strich:#8C9486;
+  --sig1:#1E5E44; --sig2:#7A5A12; --sig3:#8E3324; --sig4:#2B4C7E;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--pergament);color:var(--tinte);font-family:Inter,system-ui,sans-serif;
+  font-size:16px;line-height:1.45;font-variant-numeric:tabular-nums}
+.hinweis{background:var(--tinte);color:var(--pergament);font-size:13px;padding:6px 20px}
+
+.kopf{padding:18px 22px 10px;border-bottom:1.5px solid var(--tinte);
+  display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}
+.kopf h1{font-family:Newsreader,serif;font-size:27px;font-weight:500;letter-spacing:.02em}
+.kopf .blattnr{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;
+  color:var(--sig4);text-transform:uppercase}
+.kopf .stand{margin-left:auto;font-size:13px;color:var(--grau)}
+
+.raum{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:0;align-items:start}
+@media(max-width:64rem){.raum{grid-template-columns:minmax(0,1fr)}}
+
+/* ── Das Kartenblatt ────────────────────────────────────────────────────── */
+.karte{padding:18px 22px 24px;border-right:1px solid var(--strich)}
+.karte svg{width:100%;height:auto;max-width:min(640px,100%);display:block;margin:0 auto;
+  background:var(--papier);border:1px solid var(--strich)}
+.legende{max-width:640px;margin:14px auto 0;display:grid;gap:8px;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,178px),1fr))}
+.legende div{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--grau)}
+.legende i{flex:none;width:16px;height:16px;border:1px solid var(--tinte);margin-top:1px}
+.legende b{color:var(--tinte);font-weight:600;display:block}
+.massstab{max-width:640px;margin:12px auto 0;display:flex;align-items:center;gap:10px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--grau)}
+.massstab span{display:flex;height:7px;border:1px solid var(--tinte)}
+.massstab span i{width:26px}.massstab span i:nth-child(odd){background:var(--tinte)}
+
+/* ── Der Randapparat ────────────────────────────────────────────────────── */
+.rand{padding:18px 22px 40px}
+.rand h2{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--sig4);border-bottom:1px solid var(--strich);
+  padding-bottom:4px;margin:0 0 10px}
+.rand h2+h2{margin-top:22px}
+.werte{display:grid;gap:9px}
+.wert{display:grid;grid-template-columns:1fr auto;gap:3px 12px;align-items:baseline;
+  border-bottom:1px dotted var(--strich);padding-bottom:7px}
+.wert .n{font-size:13px}
+.wert .v{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;text-align:right}
+.wert .d{grid-column:1/-1;font-size:11px;color:var(--grau)}
+.wert.hoch .v{color:var(--sig1)}.wert.tief .v{color:var(--sig3)}
+
+.stell{display:grid;gap:5px;font-size:13px}
+.stell .z{display:flex;justify-content:space-between;gap:10px;
+  border-bottom:1px dotted var(--strich);padding:3px 0}
+.stell .z b{font-family:'JetBrains Mono',monospace;font-weight:700}
+.stell .z.neu{background:#E8E2CE;margin:0 -6px;padding:3px 6px;border-bottom-color:var(--sig2)}
+.stell .z.neu b{color:var(--sig3)}
+
+.fussnote{border-top:1.5px solid var(--tinte);padding:16px 22px 46px;
+  display:grid;gap:22px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.fussnote h3{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--sig4);margin-bottom:6px}
+.fussnote p{font-size:14px;color:var(--grau);max-width:58ch}
+.fussnote b{color:var(--tinte)}
+.warnung{border-left:3px solid var(--sig3);padding-left:12px}
+.warnung h3{color:var(--sig3)}
+</style>
+</head>
+<body>
+<p class="hinweis">Konzeptbild 7 von 10 — nicht bedienbar. Alle Zahlen echt aus der Simulation gerechnet.</p>
+
+<header class="kopf">
+  <span class="blattnr">Blatt 1 · Runde 1/5</span>
+  <h1>Die Landkarte</h1>
+  <span class="stand">Kabinett Team A · Wirkungsaufnahme nach dem Beschluss</span>
+</header>
+
+<div class="raum">
+<div class="karte">
+<svg viewBox="0 0 640 470" role="img"
+     aria-label="Schematische Karte des Landes mit fünf Wirkungsräumen: Küste, Ballungsraum Nord, Industriegürtel, Agrarfläche Ost und Ballungsraum Süd.">
+  <!-- Wasser -->
+  <path d="M0 0 h640 v92 q-120 26 -250 6 T140 80 T0 96 Z" fill="#AFC6CC"/>
+  <!-- Hoehenschichten, rein dekorativ -->
+  <g fill="none" stroke="#CFC6AE" stroke-width="1">
+    <path d="M90 420 q120 -60 240 -20 t230 -40"/>
+    <path d="M70 392 q130 -62 250 -24 t250 -44"/>
+    <path d="M60 364 q140 -64 260 -26 t260 -46"/>
+  </g>
+  <!-- Landesgrenze -->
+  <path d="M60 96 q90 -18 160 2 t180 -6 q110 -12 178 12 l-14 300 q-140 34 -260 8
+           t-250 22 Z" fill="none" stroke="#1B2019" stroke-width="2.5" stroke-linejoin="round"/>
+
+  <!-- Wirkungsraum Kueste: Emissionen fallen stark -->
+  <path d="M74 104 q100 -14 176 4 l-6 74 q-96 16 -178 -4 Z" fill="#1E5E44" fill-opacity=".34"
+        stroke="#1E5E44" stroke-width="1.5"/>
+  <text x="150" y="146" text-anchor="middle" font-family="Inter, sans-serif" font-size="13"
+        font-weight="600" fill="#1B2019">Küste</text>
+  <text x="150" y="163" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12"
+        fill="#1E5E44">−31 % CO₂</text>
+
+  <!-- Ballungsraum Nord -->
+  <path d="M262 110 q86 -8 150 2 l-4 80 q-84 12 -150 -2 Z" fill="#2B4C7E" fill-opacity=".26"
+        stroke="#2B4C7E" stroke-width="1.5"/>
+  <text x="340" y="150" text-anchor="middle" font-family="Inter, sans-serif" font-size="13"
+        font-weight="600" fill="#1B2019">Ballungsraum Nord</text>
+  <text x="340" y="167" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12"
+        fill="#2B4C7E">Gini −0,031</text>
+
+  <!-- Industriegürtel: traegt die Last -->
+  <path d="M96 198 q180 -16 330 -4 l-8 96 q-170 20 -334 4 Z" fill="#8E3324" fill-opacity=".24"
+        stroke="#8E3324" stroke-width="1.5"/>
+  <text x="258" y="244" text-anchor="middle" font-family="Inter, sans-serif" font-size="14"
+        font-weight="600" fill="#1B2019">Industriegürtel</text>
+  <text x="258" y="262" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12"
+        fill="#8E3324">Zusatzlast +18,2 Mrd. €</text>
+  <text x="258" y="279" text-anchor="middle" font-family="Inter, sans-serif" font-size="11"
+        fill="#5A6157">CO₂-Kosten treffen hier zuerst</text>
+
+  <!-- Agrarflaeche Ost -->
+  <path d="M440 190 q80 -6 130 6 l-10 108 q-70 12 -128 -2 Z" fill="#7A5A12" fill-opacity=".2"
+        stroke="#7A5A12" stroke-width="1.5"/>
+  <text x="504" y="240" text-anchor="middle" font-family="Inter, sans-serif" font-size="13"
+        font-weight="600" fill="#1B2019">Agrarfläche</text>
+  <text x="504" y="257" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12"
+        fill="#7A5A12">Klimageld +11,3</text>
+
+  <!-- Ballungsraum Sued -->
+  <path d="M150 314 q180 -12 300 0 l-10 96 q-160 24 -300 2 Z" fill="#2B4C7E" fill-opacity=".18"
+        stroke="#2B4C7E" stroke-width="1.5"/>
+  <text x="298" y="358" text-anchor="middle" font-family="Inter, sans-serif" font-size="13"
+        font-weight="600" fill="#1B2019">Ballungsraum Süd</text>
+  <text x="298" y="375" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12"
+        fill="#2B4C7E">Spitzensatz greift · Dezil 10</text>
+
+  <!-- Windrose -->
+  <g transform="translate(578 400)">
+    <circle r="26" fill="#FAF8F1" stroke="#1B2019" stroke-width="1.5"/>
+    <path d="M0 -22 L6 0 L0 22 L-6 0 Z" fill="#1B2019"/>
+    <path d="M-22 0 L0 -5 L22 0 L0 5 Z" fill="none" stroke="#1B2019" stroke-width="1.2"/>
+    <text y="-30" text-anchor="middle" font-family="Inter, sans-serif" font-size="11"
+          font-weight="700" fill="#1B2019">N</text>
+  </g>
+</svg>
+
+<div class="legende">
+  <div><i style="background:rgba(30,94,68,.34);border-color:#1E5E44"></i>
+    <span><b>Entlastet</b>Emissionen und Abgaben sinken</span></div>
+  <div><i style="background:rgba(43,76,126,.24);border-color:#2B4C7E"></i>
+    <span><b>Umverteilt</b>Steuerlast wandert nach oben</span></div>
+  <div><i style="background:rgba(142,51,36,.24);border-color:#8E3324"></i>
+    <span><b>Belastet</b>trägt die Anpassungskosten</span></div>
+  <div><i style="background:rgba(122,90,18,.2);border-color:#7A5A12"></i>
+    <span><b>Kompensiert</b>Klimageld übersteigt die Kosten</span></div>
+</div>
+
+<div class="massstab"><span><i></i><i></i><i></i><i></i></span> schematisch, ohne geografischen Maßstab</div>
+</div>
+
+<div class="rand">
+  <h2>Landesweite Kennzahlen</h2>
+  <div class="werte">
+    <div class="wert hoch"><span class="n">Haushaltssaldo</span><span class="v">−69</span>
+      <span class="d">Mrd. € · +50 gegenüber Rundenstart · Schuldenbremse nicht eingehalten</span></div>
+    <div class="wert hoch"><span class="n">Ungleichheit</span><span class="v">0,351</span>
+      <span class="d">Gini · −0,026 · Palma von 1,72 auf 1,52</span></div>
+    <div class="wert hoch"><span class="n">Emissionen</span><span class="v">244</span>
+      <span class="d">Mio. t · −83 gegenüber Rundenstart</span></div>
+    <div class="wert"><span class="n">Wirtschaftsleistung</span><span class="v">4.470</span>
+      <span class="d">Mrd. € · in dieser Runde unverändert</span></div>
+    <div class="wert tief"><span class="n">Zusatzlast</span><span class="v">37,7</span>
+      <span class="d">Mrd. € · +18,2 · Wohlfahrtsverlust der Besteuerung</span></div>
+  </div>
+
+  <h2>Eingetragene Stellgrößen</h2>
+  <div class="stell">
+    <p class="z"><span>Grundfreibetrag</span><b>12.348 €</b></p>
+    <p class="z"><span>Eingangssteuersatz</span><b>14,0 %</b></p>
+    <p class="z neu"><span>Spitzensteuersatz</span><b>62,0 %</b></p>
+    <p class="z"><span>Umsatzsteuer</span><b>19,0 %</b></p>
+    <p class="z"><span>Erbschaftsteuer</span><b>20 %</b></p>
+    <p class="z"><span>Körperschaftsteuer</span><b>15,0 %</b></p>
+    <p class="z"><span>Rentenbeitrag</span><b>18,6 %</b></p>
+    <p class="z"><span>Bürgergeld</span><b>563 €</b></p>
+    <p class="z neu"><span>CO₂-Preis</span><b>140 €/t</b></p>
+    <p class="z"><span>Klimageld</span><b>ja</b></p>
+  </div>
+</div>
+
+<footer class="fussnote">
+  <div><h3>Die Idee</h3>
+    <p>Verteilung hat einen <b>Ort</b>. Ein Gini von 0,351 sagt niemandem etwas; „der
+       Industriegürtel trägt die Anpassungskosten, die Küste gewinnt“ sagt es sofort.
+       Die Karte macht aus einer Kennzahl eine Landschaft, über die man streiten kann.</p></div>
+  <div><h3>Was das gut kann</h3>
+    <p>Politisch anschlussfähig: Studierende argumentieren sonst über Dezile, hier über
+       <b>Regionen</b> — und merken, dass Verteilungspolitik immer auch Raumpolitik ist.
+       Eine Karte prägt sich ein und funktioniert am Beamer.</p></div>
+  <div class="warnung"><h3>Der offene Punkt</h3>
+    <p>Das Modell rechnet <b>nicht regional</b>. Die Räume hier sind eine Deutung der
+       Dezil- und Sektorwirkungen, keine Modellausgabe. Dieser Ansatz ist nur ehrlich,
+       wenn entweder die Engine um eine Regionalzerlegung erweitert wird oder die Karte
+       ausdrücklich als Illustration gekennzeichnet bleibt.</p></div>
+</footer>
+</div>
+</body>
+</html>

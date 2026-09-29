@@ -7,9 +7,48 @@
 
 ---
 
+## Reihenfolge
+
+**Erst das Backend, dann das Frontend.** Das Frontend schickt den Admin-Token
+seit der Umstellung als `Authorization`-Kopfzeile. Ein Backend, das diese
+Kopfzeile noch nicht kennt, weist alle Admin-Aufrufe ab. Umgekehrt ist es
+unkritisch: Ein neues Backend versteht auch alte Frontends.
+
+---
+
 ## Frontend deployen
 
 Das Frontend sind reine statische Dateien (`index.html` + `js/`) — kein Build-Schritt.
+
+### Zuerst: `konfig.js` für die Zielumgebung
+
+`/konfig.js` ist die **einzige** Datei mit Adressen. Vor dem Hochladen
+anpassen:
+
+```js
+window.KASSENSTURZ_KONFIG = {
+  umgebung:  'produktion',
+  api_basis: 'https://<deine-api>/api',   // '' = Betrieb ganz ohne Backend
+  tutor: { aktiv: false, basis: '', token: '' },
+};
+```
+
+Zwei Dinge, die im Betrieb sonst Ärger machen:
+
+- **Der Tutor gehört auf einem Server ausgeschaltet** (`aktiv: false`). Er
+  zeigt auf einen Dify-Server, den es dort nicht gibt.
+- **`konfig.js` darf nicht zwischengespeichert werden.** Sonst sehen Browser
+  nach einer Umstellung noch die alte Adresse. Auf dem Webserver dafür
+  `Cache-Control: no-store` für genau diese Datei setzen — bei einem
+  Apache-Uni-Webspace zum Beispiel per `.htaccess`:
+
+  ```apache
+  <Files "konfig.js">
+    Header set Cache-Control "no-store"
+  </Files>
+  ```
+
+### Danach: hochladen
 
 **Option A — GitHub Pages (empfohlen):**
 

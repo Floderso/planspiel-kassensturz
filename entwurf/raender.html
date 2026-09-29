@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kartenränder — Varianten</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400..700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="mockup.css">
+<style>
+  /* Nur für diese Vergleichsseite — nicht Teil des Entwurfs. */
+  .blatt { max-width: 920px; margin-inline: auto; padding: var(--space-8) var(--space-5) var(--space-16); }
+  .blatt > h1 { font-size: var(--text-2xl); margin-bottom: var(--space-2); }
+  .blatt > p  { color: var(--color-fg-muted); margin-bottom: var(--space-8); max-width: var(--measure); }
+
+  .probe { margin-bottom: var(--space-10); }
+  .probe__kopf { display: flex; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-3); }
+  .probe__buchstabe {
+    width: 1.75rem; height: 1.75rem; flex: none; display: grid; place-items: center;
+    border-radius: var(--radius-full); background: var(--color-fg); color: var(--color-bg);
+    font-size: var(--text-sm); font-weight: var(--weight-bold);
+  }
+  .probe__name { font-size: var(--text-lg); font-weight: var(--weight-semibold); }
+  .probe__was  { font-size: var(--text-sm); color: var(--color-fg-muted); margin-left: auto; text-align: right; }
+
+  /* Basis zurücksetzen: .lage bringt von sich aus den Streifen oben
+     mit. Auf dieser Vergleichsseite soll jede Variante allein
+     bestimmen, was sie zeigt. */
+  .probe .lage { border-top: 1px solid var(--color-border); }
+
+  /* ══ A — wie jetzt: 3px Streifen oben ══ */
+  .v-a { border-top: 3px solid var(--danger-line) !important; }
+
+  /* ══ B — kein farbiger Rand. Die Rubrik trägt die Farbe allein ══ */
+  .v-b { /* nichts weiter — nur die Karte */ }
+
+  /* ══ C — farbige Kante links, über die volle Höhe ══ */
+  .v-c {
+    border-left: 3px solid var(--danger-line);
+    border-top-color: var(--color-border);
+    padding-left: calc(var(--space-6) - 2px);
+  }
+
+  /* ══ D — ohne Rahmen, nur Fläche und Schatten ══ */
+  .v-d { border: none; box-shadow: var(--shadow-md); }
+
+  /* ══ E — Rahmen selbst eingefärbt, kein Extrastreifen ══ */
+  .v-e { border-color: var(--danger-line) !important; }
+
+  /* ══ F — schmale Kante links, an die Rubrik gebunden ══ */
+  .v-f { position: relative; overflow: hidden; }
+  .v-f::before {
+    content: ""; position: absolute; inset-block: 0; inset-inline-start: 0;
+    width: var(--space-1); background: var(--danger-line);
+  }
+</style>
+</head>
+<body>
+<div class="blatt">
+
+<h1>Die Ränder der Lage-Karte</h1>
+<p>
+  Sechs Varianten mit demselben Inhalt. A ist der aktuelle Stand.
+  Oben rechts steht jeweils, was sie tut. Der Hörsaal-Modus lässt sich
+  unten umschalten — manche Varianten wirken dort anders.
+</p>
+
+<!-- A -->
+<section class="probe">
+  <div class="probe__kopf">
+    <span class="probe__buchstabe">A</span>
+    <span class="probe__name">Streifen oben</span>
+    <span class="probe__was">aktueller Stand · 3px, folgt der Rundung</span>
+  </div>
+  <article class="karte lage v-a">
+    <div class="lage__oben">
+      <span class="rubrik">Verfassungsstreit</span>
+      <span class="lage__datum">Periode 1 · 2025–2028</span>
+    </div>
+    <h2 class="lage__titel">Haushaltsloch reißt Schuldenbremse um 116 Mrd. Euro</h2>
+    <p class="lage__text">Der Bundesrechnungshof mahnt die verfassungsrechtliche Obergrenze nach Art. 109 GG an.</p>
+  </article>
+</section>
+
+<!-- B -->
+<section class="probe">
+  <div class="probe__kopf">
+    <span class="probe__buchstabe">B</span>
+    <span class="probe__name">Gar kein Farbrand</span>
+    <span class="probe__was">die Rubrik trägt die Farbe allein</span>
+  </div>
+  <article class="karte lage v-b">
+    <div class="lage__oben">
+      <span class="rubrik">Verfassungsstreit</span>
+      <span class="lage__datum">Periode 1 · 2025–2028</span>
+    </div>
+    <h2 class="lage__titel">Haushaltsloch reißt Schuldenbremse um 116 Mrd. Euro</h2>
+    <p class="lage__text">Der Bundesrechnungshof mahnt die verfassungsrechtliche Obergrenze nach Art. 109 GG an.</p>
+  </article>
+</section>
+
+<!-- C -->
+<section class="probe">
+  <div class="probe__kopf">
+    <span class="probe__buchstabe">C</span>
+    <span class="probe__name">Kante links</span>
+    <span class="probe__was">3px über die volle Höhe</span>
+  </div>
+  <article class="karte lage v-c">
+    <div class="lage__oben">
+      <span class="rubrik">Verfassungsstreit</span>
+      <span class="lage__datum">Periode 1 · 2025–2028</span>
+    </div>
+    <h2 class="lage__titel">Haushaltsloch reißt Schuldenbremse um 116 Mrd. Euro</h2>
+    <p class="lage__text">Der Bundesrechnungshof mahnt die verfassungsrechtliche Obergrenze nach Art. 109 GG an.</p>
+  </article>
+</section>
+
+<!-- D -->
+<section class="probe">
+  <div class="probe__kopf">
+    <span class="probe__buchstabe">D</span>
+    <span class="probe__name">Ohne Rahmen</span>
+    <span class="probe__was">nur weiße Fläche und Schatten</span>
+  </div>
+  <article class="karte lage v-d">
+    <div class="lage__oben">
+      <span class="rubrik">Verfassungsstreit</span>
+      <span class="lage__datum">Periode 1 · 2025–2028</span>
+    </div>
+    <h2 class="lage__titel">Haushaltsloch reißt Schuldenbremse um 116 Mrd. Euro</h2>
+    <p class="lage__text">Der Bundesrechnungshof mahnt die verfassungsrechtliche Obergrenze nach Art. 109 GG an.</p>
+  </article>
+</section>
+
+<!-- E -->
+<section class="probe">
+  <div class="probe__kopf">
+    <span class="probe__buchstabe">E</span>
+    <span class="probe__name">Rahmen eingefärbt</span>
+    <span class="probe__was">ein Rand statt zwei übereinander</span>
+  </div>
+  <article class="karte lage v-e">
+    <div class="lage__oben">
+      <span class="rubrik">Verfassungsstreit</span>
+      <span class="lage__datum">Periode 1 · 2025–2028</span>
+    </div>
+    <h2 class="lage__titel">Haushaltsloch reißt Schuldenbremse um 116 Mrd. Euro</h2>
+    <p class="lage__text">Der Bundesrechnungshof mahnt die verfassungsrechtliche Obergrenze nach Art. 109 GG an.</p>
+  </article>
+</section>
+
+<!-- F -->
+<section class="probe">
+  <div class="probe__kopf">
+    <span class="probe__buchstabe">F</span>
+    <span class="probe__name">Schmale Kante links</span>
+    <span class="probe__was">4px, innen — die Rundung bleibt sauber</span>
+  </div>
+  <article class="karte lage v-f">
+    <div class="lage__oben">
+      <span class="rubrik">Verfassungsstreit</span>
+      <span class="lage__datum">Periode 1 · 2025–2028</span>
+    </div>
+    <h2 class="lage__titel">Haushaltsloch reißt Schuldenbremse um 116 Mrd. Euro</h2>
+    <p class="lage__text">Der Bundesrechnungshof mahnt die verfassungsrechtliche Obergrenze nach Art. 109 GG an.</p>
+  </article>
+</section>
+
+<button class="knopf knopf--gross" id="thema-schalter" aria-pressed="false">
+  <span aria-hidden="true">◐</span> Hörsaal-Modus umschalten
+</button>
+
+</div>
+<script>
+  const s = document.getElementById('thema-schalter');
+  s.addEventListener('click', () => {
+    const d = document.documentElement.dataset.theme === 'dark';
+    document.documentElement.dataset.theme = d ? 'light' : 'dark';
+    s.setAttribute('aria-pressed', String(!d));
+  });
+</script>
+</body>
+</html>
